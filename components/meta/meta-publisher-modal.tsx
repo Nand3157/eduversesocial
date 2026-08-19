@@ -110,7 +110,7 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess }: MetaPublisher
         window.dispatchEvent(new Event("eduverse:analytics-refresh"));
         if (onSuccess) onSuccess();
       } else {
-        setPublishedResult(data.error || "Failed to publish.");
+        setPublishedResult(data.message || data.error || "Failed to publish.");
       }
     } catch {
       setPublishedResult("Could not reach Meta Graph API.");

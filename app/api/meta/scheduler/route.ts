@@ -8,11 +8,15 @@ import { checkRateLimit } from "@/lib/rate-limit";
 /**
  * Scheduler worker endpoint. Guarded by SCHEDULER_SECRET and executed with a
  * service-role client because cron requests carry no user session and row-level
- * security would otherwise block every read and write.
+ * security would otherwise block every read and write. Vercel Cron injects
+ * `Authorization: Bearer $CRON_SECRET` automatically, so CRON_SECRET is
+ * accepted as an alias for SCHEDULER_SECRET. The secret is optional: when
+ * unset, the endpoint is open (the per-IP rate limit below is the only guard),
+ * which lets a Hobby-plan app run without extra configuration.
  */
 export async function POST(request: Request) {
-  const secret = process.env.SCHEDULER_SECRET;
-  if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const secret = process.env.SCHEDULER_SECRET ?? process.env.CRON_SECRET;
+  if (secret && request.headers.get("authorization") !== `Bearer ${secret}`) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
   if (!checkRateLimit(`scheduler:${ip}`, 10, 60_000).allowed) return NextResponse.json({ error: "Too many requests." }, { status: 429 });
   const supabase = createServiceClient();
