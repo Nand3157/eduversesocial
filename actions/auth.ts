@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 
 const credentialsSchema = z.object({ email: z.string().trim().email("Enter a valid email address"), password: z.string().min(8, "Use at least 8 characters") });
@@ -60,11 +61,17 @@ export async function updatePassword(_: AuthResult, formData: FormData): Promise
   if (!password.success) return { error: password.error.issues[0]?.message };
   const supabase = await createClient();
   if (!supabase) return { error: "Supabase is not configured. Add the environment variables to enable authentication." };
-  // The settings form sends the current password so it can be verified before
-  // the change; the reset-password flow (no current password) skips the check
-  // because the reset link itself is the proof of identity.
+  // The settings form verifies the current password before the change; the
+  // reset-password flow skips that check because the emailed recovery link is
+  // the proof of identity. The server only skips it when the session was minted
+  // by a recovery code exchange (HttpOnly pw_recovery cookie) — a session
+  // cookie alone never bypasses re-authentication.
+  const cookieStore = await cookies();
+  const isRecoverySession = cookieStore.get("pw_recovery")?.value === "1";
   const current = formData.get("current");
-  if (typeof current === "string" && current) {
+  if (typeof current !== "string" || !current) {
+    if (!isRecoverySession) return { error: "Enter your current password to change it." };
+  } else {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user?.email) return { error: "Sign in required to change your password." };
     const { error: reauthError } = await supabase.auth.signInWithPassword({ email: user.email, password: current });
@@ -72,6 +79,7 @@ export async function updatePassword(_: AuthResult, formData: FormData): Promise
   }
   const { error } = await supabase.auth.updateUser({ password: password.data });
   if (error) return { error: error.message };
+  cookieStore.delete("pw_recovery");
   return { message: "Password updated successfully." };
 }
 

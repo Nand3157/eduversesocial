@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/providers/theme-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
   title: {
     default: "EduVerse — Social intelligence that remembers your audience",
     template: "%s · EduVerse"
@@ -17,7 +18,9 @@ export const metadata: Metadata = {
     title: "EduVerse",
     description:
       "Social intelligence that remembers your audience. Post with context, not guesswork.",
-    type: "website"
+    type: "website",
+    siteName: "EduVerse",
+    locale: "en_US"
   }
 };
 

@@ -15,8 +15,10 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false;
     queueMicrotask(() => { if (!cancelled) setLoading(true); });
     // The server caches snapshots per day; manual refreshes bypass the cache.
+    // The route always answers 200 with a snapshot (failures are success:false
+    // snapshots), so non-OK responses (e.g. 429) become a null payload.
     fetch(refreshKey > 0 ? "/api/meta/analytics?refresh=1" : "/api/meta/analytics", { cache: "no-store" })
-      .then(async (response) => (response.ok || response.status === 401 ? response.json() : null))
+      .then(async (response) => (response.ok ? response.json() : null))
       .then((payload) => {
         if (!cancelled) setData(payload);
       })

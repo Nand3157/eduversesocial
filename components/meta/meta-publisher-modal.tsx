@@ -14,6 +14,7 @@ interface MetaPublisherModalProps {
 
 export function MetaPublisherModal({ isOpen, onClose, onSuccess }: MetaPublisherModalProps) {
   const [platform, setPlatform] = useState<"instagram" | "facebook" | "threads">("instagram");
+  const [selectedAccount, setSelectedAccount] = useState<MetaAccount | null>(null);
   const [mediaType, setMediaType] = useState<"CAROUSEL" | "IMAGE" | "VIDEO" | "TEXT">("CAROUSEL");
   const [caption, setCaption] = useState("5 AI automations creators use weekly to save 10 hours 🚀 swipe to see the exact prompts!");
   const [mediaUrls, setMediaUrls] = useState("");
@@ -30,8 +31,11 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess }: MetaPublisher
       .then((data) => {
         const accounts = (data.accounts ?? []) as MetaAccount[];
         setConnectedAccounts(accounts);
-        const firstPlatform = accounts.map((account) => account.platform).find((value) => value === "instagram" || value === "facebook" || value === "threads");
-        if (firstPlatform === "instagram" || firstPlatform === "facebook" || firstPlatform === "threads") setPlatform(firstPlatform);
+        const firstAccount = accounts.find((account) => account.platform === "instagram" || account.platform === "facebook" || account.platform === "threads");
+        if (firstAccount) {
+          setPlatform(firstAccount.platform);
+          setSelectedAccount(firstAccount);
+        }
       })
       .catch(() => setConnectedAccounts([]));
   }, [isOpen]);
@@ -63,7 +67,7 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess }: MetaPublisher
         method: "POST",
         headers: { "Content-Type": "application/json" },          body: JSON.stringify({
           platform,
-          targetAccountId: connectedAccounts.find((account) => account.platform === platform)?.id,
+          targetAccountId: selectedAccount?.id ?? connectedAccounts.find((account) => account.platform === platform)?.id,
           mediaType,
           caption,
           mediaUrls: mediaType === "TEXT" ? undefined : parsedMediaUrls,
@@ -115,17 +119,23 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess }: MetaPublisher
         <form onSubmit={handlePublish} className="mt-5 space-y-5">
           {/* Target Channel */}
           <div>
-            <label className="block text-xs font-medium text-mutedText mb-2">Target Channel</label>
+            <label className="block text-xs font-medium text-mutedText mb-2">
+              Target Channel {connectedAccounts.length > 1 ? `(${connectedAccounts.length} accounts returned by Meta — select one)` : ""}
+            </label>
             {connectedAccounts.length === 0 ? <div className="rounded-xl border border-dashed border-borderSoft bg-surface p-4 text-xs leading-relaxed text-mutedText">No connected Meta channel is available. Connect a Facebook Page with a linked Instagram Business account first.</div> : <div className="grid gap-2 sm:grid-cols-2">
-              {connectedAccounts.filter((account) => account.platform === "instagram" || account.platform === "facebook" || account.platform === "threads").map((account) => {
+              {connectedAccounts.map((account) => {
                 const id = account.platform as "instagram" | "facebook" | "threads";
+                const selected = selectedAccount?.id === account.id && selectedAccount?.platform === account.platform;
                 return (
                 <button
                   key={`${id}-${account.id}`}
                   type="button"
-                  onClick={() => setPlatform(id)}
+                  onClick={() => {
+                    setPlatform(id);
+                    setSelectedAccount(account);
+                  }}
                   className={`rounded-xl border p-3 text-left transition ${
-                    platform === id
+                    selected
                       ? "border-primary bg-accent-soft text-ink"
                       : "border-borderSoft bg-surface text-mutedText hover:bg-surface"
                   }`}

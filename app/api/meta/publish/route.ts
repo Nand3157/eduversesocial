@@ -106,6 +106,9 @@ export async function POST(request: Request) {
     return NextResponse.json(result);
   } catch (error) {
     const safe = safePublishResponse(error, input.platform);
+    if (safe.errorCode === "META_PERMISSION_ERROR") {
+      safe.message = `${safe.message} Grant publish access (pages_manage_posts for Pages, instagram_content_publish for Instagram) under App Review → Permissions and Features in the Meta developer dashboard, then reconnect the account.`;
+    }
     const status = safe.errorCode === "META_AUTH_ERROR" ? 401 : safe.errorCode === "META_PERMISSION_ERROR" ? 403 : safe.errorCode === "META_RATE_LIMIT" ? 429 : safe.errorCode === "META_INVALID_MEDIA" ? 400 : 502;
     return NextResponse.json(safe, { status });
   }

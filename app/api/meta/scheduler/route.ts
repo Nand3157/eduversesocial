@@ -3,6 +3,7 @@ import { z } from "zod";
 import { processDueMetaPosts } from "@/lib/meta-scheduler";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient, hasServiceConfig } from "@/lib/supabase/service";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 /**
  * Scheduler worker endpoint. Guarded by SCHEDULER_SECRET and executed with a
@@ -12,6 +13,8 @@ import { createServiceClient, hasServiceConfig } from "@/lib/supabase/service";
 export async function POST(request: Request) {
   const secret = process.env.SCHEDULER_SECRET;
   if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  if (!checkRateLimit(`scheduler:${ip}`, 10, 60_000).allowed) return NextResponse.json({ error: "Too many requests." }, { status: 429 });
   const supabase = createServiceClient();
   if (!supabase || !hasServiceConfig()) return NextResponse.json({ error: "Scheduler database access is not configured. Set SUPABASE_SERVICE_ROLE_KEY." }, { status: 503 });
   return NextResponse.json(await processDueMetaPosts(supabase));

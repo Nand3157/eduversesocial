@@ -100,7 +100,7 @@ export class MetaFacebookService {
   posts(pageId: string) {
     return graphRequest<{ data: Array<{ id: string; message?: string; created_time?: string; permalink_url?: string; shares?: { count?: number }; likes?: { summary?: { total_count?: number } }; comments?: { summary?: { total_count?: number } } }> }>(
       "facebook",
-      `${pageId}/posts?fields=id,message,created_time,permalink_url,shares,likes.summary(true),comments.summary(true)`,
+      `${pageId}/posts?fields=id,message,created_time,permalink_url,shares`,
       this.token
     );
   }

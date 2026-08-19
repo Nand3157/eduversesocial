@@ -245,7 +245,10 @@ async function readAnalyticsCache(supabase: SupabaseClient, accountId: string | 
     .eq("social_account_id", accountId)
     .eq("metric_date", today)
     .maybeSingle();
-  if (data?.payload && typeof data.payload === "object" && "success" in data.payload) return data.payload as AnalyticsSnapshot;
+  const payload = data?.payload as AnalyticsSnapshot | undefined;
+  // Snapshots that carry an error (e.g. a metric Graph API rejected) are
+  // treated as stale: serving them would replay the failure for a whole day.
+  if (payload && payload.success && !payload.error) return payload;
   return null;
 }
 
@@ -317,19 +320,29 @@ export async function fetchMetaAnalytics(token?: string, bypassCache = false): P
     const pageResults = await Promise.all(stored.filter((row) => row.platform === "facebook" && row.external_id && tokens.has(row.id)).map(async (row) => {
       const pageToken = tokens.get(row.id)!;
       const instagramChildren = stored.filter((child) => child.platform === "instagram" && child.parent_account_id === row.id && child.external_id);
-      const [pageInsights, pagePosts, childResults] = await Promise.all([
-        graphData<InsightRow[]>(pageToken, `${row.external_id!}/insights?metric=page_impressions,page_engaged_users,page_post_engagements&period=day&date_preset=last_28d`).catch((error) => { errors.push(error instanceof Error ? error.message : "Page insights unavailable."); return []; }),
-        graphData<GraphPost[]>(pageToken, `${row.external_id!}/posts?fields=id,message,created_time,permalink_url,shares,likes.summary(true),comments.summary(true)&limit=25`).catch((error) => { errors.push(error instanceof Error ? error.message : "Page posts unavailable."); return []; }),
+      const [pageInsights, pagePosts, pageFans, childResults] = await Promise.all([
+        graphData<InsightRow[]>(pageToken, `${row.external_id!}/insights?metric=page_views_total,page_post_engagements&period=day&date_preset=last_28d`).catch((error) => { errors.push(error instanceof Error ? error.message : "Page insights unavailable."); return []; }),
+        graphData<GraphPost[]>(pageToken, `${row.external_id!}/posts?fields=id,message,created_time,permalink_url,shares&limit=25`).catch((error) => { errors.push(error instanceof Error ? error.message : "Page posts unavailable."); return []; }),
+        graphData<{ fan_count?: number }>(pageToken, `${row.external_id!}?fields=fan_count`).catch((): { fan_count?: number } => ({})),
         Promise.all(instagramChildren.map(async (child) => {
           const childToken = tokens.get(child.id) ?? pageToken;
-          const [insights, media] = await Promise.all([
+          const [insights, media, profile] = await Promise.all([
             graphData<InsightRow[]>(childToken, `${child.external_id!}/insights?metric=reach,accounts_engaged,total_interactions&period=day&date_preset=last_28d`).catch((error) => { errors.push(error instanceof Error ? error.message : "Instagram insights unavailable."); return []; }),
-            graphData<GraphPost[]>(childToken, `${child.external_id!}/media?fields=id,caption,media_type,timestamp,permalink,like_count,comments_count&limit=25`).catch((error) => { errors.push(error instanceof Error ? error.message : "Instagram media unavailable."); return []; })
+            graphData<GraphPost[]>(childToken, `${child.external_id!}/media?fields=id,caption,media_type,timestamp,permalink,like_count,comments_count&limit=25`).catch((error) => { errors.push(error instanceof Error ? error.message : "Instagram media unavailable."); return []; }),
+            graphData<{ followers_count?: number }>(childToken, `${child.external_id!}?fields=followers_count`).catch((): { followers_count?: number } => ({})),
           ]);
-          return { insights, media };
+          return { insights, media, followers: profile.followers_count };
         }))
       ]);
-      return { pageInsights, pagePosts, instagramInsights: childResults.flatMap((result) => result.insights), instagramPosts: childResults.flatMap((result) => result.media) };
+      return {
+        pageInsights,
+        pagePosts,
+        instagramInsights: childResults.flatMap((result) => result.insights),
+        instagramPosts: childResults.flatMap((result) => result.media),
+        pageLabel: row.display_name ?? row.external_id!,
+        fanCount: pageFans.fan_count,
+        instagramFollowers: instagramChildren.map((child, index) => ({ label: child.username ? `@${child.username}` : child.display_name ?? child.external_id!, followers: childResults[index]?.followers })).filter((item): item is { label: string; followers: number } => item.followers !== undefined)
+      };
     }));
 
     const insightGroups = pageResults.flatMap((result) => [
@@ -338,11 +351,13 @@ export async function fetchMetaAnalytics(token?: string, bypassCache = false): P
     ]);
     if (threads) insightGroups.push({ platform: "Threads", rows: [] });
     const allRows = insightGroups.flatMap((group) => group.rows);
-    const reach = sumInsight(allRows, ["page_impressions", "reach"]) + (threads?.reach ?? 0);
+    const reach = sumInsight(allRows, ["page_views_total", "reach"]) + (threads?.reach ?? 0);
     // One metric per platform: page_post_engagements counts every engagement on
     // a Page's posts, total_interactions every interaction on Instagram posts.
-    // page_engaged_users / accounts_engaged count *unique* people who engaged,
-    // so summing both families would roughly double-count the same actions.
+    // accounts_engaged counts *unique* people who engaged, so summing both
+    // families would roughly double-count the same actions. Reach is derived
+    // from page_views_total because page_impressions is rejected for
+    // dev-mode page tokens (Graph API v26 returns "invalid metric").
     const engaged = sumInsight(allRows, ["page_post_engagements", "total_interactions"]) + (threads?.engaged ?? 0);
     const postCount = pageResults.reduce((total, result) => total + result.pagePosts.length + result.instagramPosts.length, 0) + (threads?.postingCount ?? 0);
 
@@ -385,14 +400,14 @@ export async function fetchMetaAnalytics(token?: string, bypassCache = false): P
       return score(b) - score(a);
     })[0];
 
-    const followers = [
-      ...accounts.filter((account) => account.followers !== undefined).map((account) => ({ label: account.handle, followers: account.followers! })),
-      ...(threads?.accounts ?? []).filter((account) => account.followers !== undefined).map((account) => ({ label: account.handle, followers: account.followers! }))
+const followers = [
+      ...pageResults.flatMap((result) => result.fanCount !== undefined ? [{ label: result.pageLabel, followers: result.fanCount }] : []),
+      ...pageResults.flatMap((result) => result.instagramFollowers),
+      ...(threads?.followers ? [{ label: "Threads", followers: threads.followers }] : [])
     ];
-    if (threads?.followers) followers.push({ label: "Threads", followers: threads.followers });
 
     const metrics = [
-      { label: "Reach (28d)", value: reach, suffix: "", detail: "Live Meta Graph data" },
+      { label: "Views (28d)", value: reach, suffix: "", detail: "Live Meta Graph data" },
       { label: "Engagement (28d)", value: engaged, suffix: "", detail: "Live Meta Graph data" },
       { label: "Published posts", value: postCount, suffix: "", detail: "Returned by Meta" },
       { label: "Engagement rate", value: reach ? Number(((engaged / reach) * 100).toFixed(1)) : 0, suffix: "%", detail: "Calculated from Meta data" }

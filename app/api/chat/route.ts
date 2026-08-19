@@ -10,7 +10,10 @@ export const runtime = "nodejs";
 const messageSchema = z.object({
   role: z.enum(["user", "assistant"]),
   content: z.string().trim().min(1).max(8_000),
-  image: z.string().optional()
+  // Attachments arrive as base64 data URLs. The cap keeps image payloads
+  // within a few MB so a malicious client cannot burn unbounded provider
+  // spend or DB storage.
+  image: z.string().startsWith("data:").max(4_000_000).optional()
 });
 const requestSchema = z.object({ conversationId: z.string().uuid().optional(), messages: z.array(messageSchema).min(1).max(20) });
 type ChatMessage = z.infer<typeof messageSchema>;
@@ -175,7 +178,10 @@ export async function POST(request: Request) {
     const candidate = geminiStream(parsed.data.messages, workspaceContext);
     stream = withFirstChunk(await candidate.next(), candidate);
   } catch (error) {
-    return Response.json({ error: error instanceof Error ? error.message : "Gemini 3.5 Flash is unavailable." }, { status: 503 });
+    // Only pass through errors we deliberately raised (e.g. "API key is not
+    // configured"); never echo provider internals or stack traces to clients.
+    const message = error instanceof Error && error.message.startsWith("Gemini API key") ? error.message : "The AI provider is unavailable. Check server configuration.";
+    return Response.json({ error: message }, { status: 503 });
   }
 
   const encoder = new TextEncoder();

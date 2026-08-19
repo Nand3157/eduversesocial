@@ -97,6 +97,10 @@ export async function processDueMetaPosts(supabase: SupabaseClient, limit = 20) 
       };
       const result = await publishToPlatform(payload, token);
       if (!result.success) throw new MetaError("META_API_ERROR", result.message);
+      // The status guard keeps every terminal transition owned by the worker
+      // that holds the PUBLISHING claim. Without it, a retry/failure write from
+      // a slower worker could overwrite a row another worker already moved to
+      // PUBLISHED, resurrecting it as SCHEDULED and publishing it twice.
       await supabase
         .from("scheduled_posts")
         .update({
@@ -106,7 +110,8 @@ export async function processDueMetaPosts(supabase: SupabaseClient, limit = 20) 
           external_url: result.url || null,
           updated_at: new Date().toISOString()
         })
-        .eq("id", row.id);
+        .eq("id", row.id)
+        .eq("status", "PUBLISHING");
       await supabase.from("publishing_attempts").insert({
         scheduled_post_id: row.id,
         attempt: attemptNumber,
@@ -123,9 +128,10 @@ export async function processDueMetaPosts(supabase: SupabaseClient, limit = 20) 
         await supabase
           .from("scheduled_posts")
           .update({ status: "SCHEDULED", scheduled_at: new Date(Date.now() + delayMs).toISOString(), updated_at: new Date().toISOString() })
-          .eq("id", row.id);
+          .eq("id", row.id)
+          .eq("status", "PUBLISHING");
       } else {
-        await supabase.from("scheduled_posts").update({ status: "FAILED", error: metaError.message, updated_at: new Date().toISOString() }).eq("id", row.id);
+        await supabase.from("scheduled_posts").update({ status: "FAILED", error: metaError.message, updated_at: new Date().toISOString() }).eq("id", row.id).eq("status", "PUBLISHING");
       }
       await supabase.from("publishing_attempts").insert({
         scheduled_post_id: row.id,

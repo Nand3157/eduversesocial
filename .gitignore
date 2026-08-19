@@ -141,3 +141,7 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# macOS archive metadata (unzipped .zip artifacts, not part of the app)
+__MACOSX/
+._*

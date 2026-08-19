@@ -7,8 +7,10 @@ import { useAnalytics } from "@/components/dashboard/analytics-context";
 const tooltipStyle = { background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 12, color: "var(--ink)", boxShadow: "var(--shadow-lift)", fontVariantNumeric: "tabular-nums" };
 const axisTick = { fill: "var(--faint)", fontSize: 12, fontVariantNumeric: "tabular-nums" } as const;
 
-function ChartState({ loading, message = "Connect Meta to load live analytics." }: { loading: boolean; message?: string }) {
-  return <div className="grid h-[220px] place-items-center rounded-xl border border-dashed border-borderSoft bg-surface/50 px-6 text-center text-xs leading-relaxed text-mutedText">{loading ? "Loading live Meta analytics…" : message}</div>;
+function ChartState({ loading, message }: { loading: boolean; message?: string }) {
+  const { data } = useAnalytics();
+  const fallback = data?.live ? "Meta returned no data for the connected accounts in the last 28 days." : "Connect Meta to load live analytics.";
+  return <div className="grid h-[220px] place-items-center rounded-xl border border-dashed border-borderSoft bg-surface/50 px-6 text-center text-xs leading-relaxed text-mutedText">{loading ? "Loading live Meta analytics…" : (message ?? fallback)}</div>;
 }
 
 export function EngagementChartCard() {
