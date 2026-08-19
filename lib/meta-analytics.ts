@@ -323,13 +323,16 @@ export async function fetchMetaAnalytics(token?: string, bypassCache = false): P
       const [pageInsights, pagePosts, pageFans, childResults] = await Promise.all([
         graphData<InsightRow[]>(pageToken, `${row.external_id!}/insights?metric=page_views_total,page_post_engagements&period=day&date_preset=last_28d`).catch((error) => { errors.push(error instanceof Error ? error.message : "Page insights unavailable."); return []; }),
         graphData<GraphPost[]>(pageToken, `${row.external_id!}/posts?fields=id,message,created_time,permalink_url,shares&limit=25`).catch((error) => { errors.push(error instanceof Error ? error.message : "Page posts unavailable."); return []; }),
-        graphData<{ fan_count?: number }>(pageToken, `${row.external_id!}?fields=fan_count`).catch((): { fan_count?: number } => ({})),
+        // Profile fields (fan_count, followers_count) return a flat object,
+        // not a {data: [...]} envelope — graphData unwraps the envelope, so
+        // these must go through graphRequest directly.
+        graphRequest<{ fan_count?: number }>("facebook", `${row.external_id!}?fields=fan_count`, pageToken).catch((): { fan_count?: number } => ({})),
         Promise.all(instagramChildren.map(async (child) => {
           const childToken = tokens.get(child.id) ?? pageToken;
           const [insights, media, profile] = await Promise.all([
             graphData<InsightRow[]>(childToken, `${child.external_id!}/insights?metric=reach,accounts_engaged,total_interactions&period=day&date_preset=last_28d`).catch((error) => { errors.push(error instanceof Error ? error.message : "Instagram insights unavailable."); return []; }),
             graphData<GraphPost[]>(childToken, `${child.external_id!}/media?fields=id,caption,media_type,timestamp,permalink,like_count,comments_count&limit=25`).catch((error) => { errors.push(error instanceof Error ? error.message : "Instagram media unavailable."); return []; }),
-            graphData<{ followers_count?: number }>(childToken, `${child.external_id!}?fields=followers_count`).catch((): { followers_count?: number } => ({})),
+            graphRequest<{ followers_count?: number }>("facebook", `${child.external_id!}?fields=followers_count`, childToken).catch((): { followers_count?: number } => ({})),
           ]);
           return { insights, media, followers: profile.followers_count };
         }))

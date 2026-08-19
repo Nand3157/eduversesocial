@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Send, Wand2, X, CheckCircle2 } from "lucide-react";
+import { Send, Wand2, X, CheckCircle2, Loader2 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { MetaAccount } from "@/lib/meta-api";
 import { EASE_OUT } from "@/components/motion-variants";
@@ -20,6 +20,8 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess }: MetaPublisher
   const [mediaUrls, setMediaUrls] = useState("");
   const [scheduleDate, setScheduleDate] = useState("");
   const [publishing, setPublishing] = useState(false);
+  const [generatingHook, setGeneratingHook] = useState(false);
+  const [hookError, setHookError] = useState<string | null>(null);
   const [publishedResult, setPublishedResult] = useState<string | null>(null);
   const [connectedAccounts, setConnectedAccounts] = useState<MetaAccount[]>([]);
   const [celebrateKey, setCelebrateKey] = useState(0);
@@ -42,10 +44,33 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess }: MetaPublisher
 
   if (!isOpen) return null;
 
-  const handleGenerateAICaption = () => {
-    setCaption(
-      "Stop wasting 10 hours a week on manual posting 💡 Here are 5 AI automations top creators use to repurpose content across Instagram, Facebook, and Threads effortlessly. Save this post for your next content batching day!"
-    );
+  const handleGenerateAICaption = async () => {
+    setGeneratingHook(true);
+    setHookError(null);
+    try {
+      const res = await fetch("/api/meta/hook", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          platform,
+          mediaType,
+          caption,
+          mediaUrls: mediaUrls.split(/[\n,]/).map((url) => url.trim()).filter(Boolean),
+          accountName: selectedAccount?.name,
+          accountHandle: selectedAccount?.handle
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.caption) {
+        setCaption(data.caption);
+      } else {
+        setHookError(data.message || "Could not generate a hook.");
+      }
+    } catch {
+      setHookError("Could not reach the hook generator.");
+    } finally {
+      setGeneratingHook(false);
+    }
   };
 
   const handlePublish = async (e: React.FormEvent) => {
@@ -198,10 +223,11 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess }: MetaPublisher
               <button
                 type="button"
                 onClick={handleGenerateAICaption}
-                className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:text-primary-strong transition"
+                disabled={generatingHook}
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:text-primary-strong transition disabled:opacity-50"
               >
-                <Wand2 className="h-3 w-3" />
-                AI Hook Generator
+                {generatingHook ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />}
+                {generatingHook ? "Generating..." : "AI Hook Generator"}
               </button>
             </div>
             <textarea
@@ -210,6 +236,7 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess }: MetaPublisher
               onChange={(e) => setCaption(e.target.value)}
               className="w-full rounded-xl border border-borderSoft bg-surface p-3 text-xs text-ink placeholder:text-faintText outline-none focus:border-primary transition"
             />
+            {hookError && <p className="mt-1 text-[11px] text-danger">{hookError}</p>}
           </div>
 
           {/* Hashtags Preview */}
