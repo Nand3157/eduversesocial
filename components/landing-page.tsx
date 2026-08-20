@@ -594,7 +594,7 @@ export function LandingPage() {
               </Button>
               <Button
                 onClick={() => setConnectModalOpen(true)}
-                className="border border-background/20 bg-transparent px-6 py-3 text-sm text-background hover:bg-background/10"
+                className="border border-primary/50 bg-primary/10 px-6 py-3 text-sm text-primary hover:bg-primary/20 hover:border-primary"
               >
                 Connect Meta
               </Button>
