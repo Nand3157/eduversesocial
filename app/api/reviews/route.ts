@@ -42,7 +42,7 @@ export async function POST(request: Request) {
 
   const { data: { user } } = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
   const clientKey = user?.id ?? request.headers.get("x-forwarded-for") ?? "anonymous";
-  if (!checkRateLimit(`review:${clientKey}`, 5, 60_000).allowed) {
+  if (!(await checkRateLimit(`review:${clientKey}`, 5, 60_000)).allowed) {
     return NextResponse.json({ error: "Too many submissions. Try again in a minute." }, { status: 429 });
   }
 
@@ -55,6 +55,9 @@ export async function POST(request: Request) {
     content,
     status: "pending"
   });
-  if (error) return NextResponse.json({ error: "Could not save the review." }, { status: 500 });
+  if (error) {
+    logger.error("review_insert_failed", { reason: error.message });
+    return NextResponse.json({ error: "Could not save the review." }, { status: 500 });
+  }
   return NextResponse.json({ success: true, message: "Review submitted. It will appear here once approved." });
 }

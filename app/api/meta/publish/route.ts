@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { decrypt } from "@/lib/crypto";
 import { publishToPlatform, safePublishResponse } from "@/lib/social-publisher";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 import type { MetaPostPayload } from "@/lib/meta-api";
 
 const schema = z.object({
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ success: false, errorCode: "META_AUTH_ERROR", message: "Sign in required." }, { status: 401 });
 
-  const rate = checkRateLimit(`publish:${user.id}`, 20, 60_000);
+  const rate = await checkRateLimit(`publish:${user.id}`, 20, 60_000);
   if (!rate.allowed) return NextResponse.json({ success: false, errorCode: "META_RATE_LIMIT", message: "Too many publish requests. Try again shortly." }, { status: 429 });
 
   const { data: member } = await supabase.from("workspace_members").select("workspace_id").eq("user_id", user.id).limit(1).maybeSingle();
@@ -89,7 +90,10 @@ export async function POST(request: Request) {
       const { data: existing } = await supabase.from("scheduled_posts").select("id").eq("idempotency_key", idempotencyKey).maybeSingle();
       if (existing) return NextResponse.json({ success: true, platform: input.platform, postId: existing.id, url: null, publishedAt: null, status: "SCHEDULED" });
     }
-    if (error) return NextResponse.json({ success: false, errorCode: "META_API_ERROR", message: "Could not schedule post." }, { status: 500 });
+    if (error) {
+      logger.error("schedule_insert_failed", { userId: user.id, platform: input.platform, reason: error.message });
+      return NextResponse.json({ success: false, errorCode: "META_API_ERROR", message: "Could not schedule post." }, { status: 500 });
+    }
     return NextResponse.json({ success: true, platform: input.platform, postId: post.id, url: null, publishedAt: null, status: "SCHEDULED" });
   }
 
@@ -106,6 +110,7 @@ export async function POST(request: Request) {
     return NextResponse.json(result);
   } catch (error) {
     const safe = safePublishResponse(error, input.platform);
+    logger.error("publish_failed", { userId: user.id, platform: input.platform, errorCode: safe.errorCode });
     if (safe.errorCode === "META_PERMISSION_ERROR") {
       safe.message = `${safe.message} Grant publish access (pages_manage_posts for Pages, instagram_content_publish for Instagram) under App Review → Permissions and Features in the Meta developer dashboard, then reconnect the account.`;
     }

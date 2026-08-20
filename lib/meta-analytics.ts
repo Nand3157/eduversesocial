@@ -4,6 +4,7 @@ import { graphRequest, ThreadsService } from "@/lib/meta-api";
 import { createClient } from "@/lib/supabase/server";
 import { decrypt } from "@/lib/crypto";
 import { mapLimit } from "@/lib/async";
+import { logger } from "@/lib/logger";
 
 export type AnalyticsPost = {
   platform: string;
@@ -294,7 +295,9 @@ export async function fetchMetaAnalytics(token?: string, bypassCache = false): P
       tokens.set(row.id, decrypt(row.encrypted_token));
     } catch {
       // Unreadable token: the account is skipped below instead of failing the
-      // whole snapshot.
+      // whole snapshot. A spike here is itself a security signal (wrong or
+      // rotated ENCRYPTION_KEY), so record it.
+      logger.warn("analytics_token_decrypt_skipped", { accountId: row.id, platform: row.platform });
     }
   }
   if (!isTokenConfigured(token) && tokens.size === 0) return emptyAnalytics("Connect Meta to load live analytics.");
@@ -447,6 +450,7 @@ const followers = [
     if (supabase) await writeAnalyticsCache(supabase, cacheAccountId, snapshot);
     return snapshot;
   } catch (error) {
+    logger.error("meta_analytics_failed", { reason: error instanceof Error ? error.message : "unknown" });
     return emptyAnalytics(error instanceof Error ? error.message : "Unable to load Meta analytics.");
   }
 }

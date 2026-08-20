@@ -4,6 +4,7 @@ import { META_APP_ID, META_APP_SECRET, META_GRAPH_VERSION, META_REDIRECT_URI } f
 import { createClient } from "@/lib/supabase/server";
 import { encrypt } from "@/lib/crypto";
 import { MetaFacebookService } from "@/lib/meta-api";
+import { logger } from "@/lib/logger";
 export async function GET(request: Request) {
   const url = new URL(request.url); const jar = await cookies(); const state = url.searchParams.get("state"); const expected = jar.get("meta_oauth_state")?.value;
   const fail = (code: string) => NextResponse.redirect(new URL(`/dashboard/settings?meta=${code}`, request.url));
@@ -25,5 +26,8 @@ export async function GET(request: Request) {
       if (page.instagram_business_account && pageRow) await supabase.from("social_accounts").upsert({ workspace_id: member.workspace_id, platform: "instagram", handle: page.instagram_business_account.username || page.instagram_business_account.id, external_id: page.instagram_business_account.id, display_name: page.instagram_business_account.name || page.instagram_business_account.username || page.name, username: page.instagram_business_account.username, avatar_url: page.instagram_business_account.profile_picture_url, parent_account_id: pageRow.id, encrypted_token: encrypt(page.access_token), token_expires_at: null, scopes: [], status: "active" }, { onConflict: "workspace_id,platform,external_id" });
     }
     const response = NextResponse.redirect(new URL("/dashboard/settings?meta=connected", request.url)); response.cookies.delete("meta_oauth_state"); return response;
-  } catch { return fail("connection_failed"); }
+  } catch (error) {
+    logger.error("meta_oauth_callback_failed", { reason: error instanceof Error ? error.message : "unknown" });
+    return fail("connection_failed");
+  }
 }

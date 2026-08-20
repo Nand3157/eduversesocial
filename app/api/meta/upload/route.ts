@@ -19,6 +19,19 @@ const MIME_EXT: Record<string, string> = {
   "image/gif": "gif"
 };
 
+// The data-URL MIME header is client-declared, so verify the actual bytes
+// before storing: a mismatch would let HTML or scripts land in the public
+// bucket disguised as an image.
+function sniffImageMime(buffer: Buffer): string | null {
+  if (buffer.length < 12) return null;
+  if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47) return "image/png";
+  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return "image/jpeg";
+  if (buffer.subarray(0, 4).toString("latin1") === "RIFF" && buffer.subarray(8, 12).toString("latin1") === "WEBP") return "image/webp";
+  const gifHeader = buffer.subarray(0, 6).toString("latin1");
+  if (gifHeader === "GIF89a" || gifHeader === "GIF87a") return "image/gif";
+  return null;
+}
+
 export async function POST(request: Request) {
   const parsed = uploadSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ success: false, message: "Invalid image payload." }, { status: 400 });
@@ -28,7 +41,7 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ success: false, message: "Sign in required." }, { status: 401 });
 
-  const rate = checkRateLimit(`upload:${user.id}`, 30, 60_000);
+  const rate = await checkRateLimit(`upload:${user.id}`, 30, 60_000);
   if (!rate.allowed) return NextResponse.json({ success: false, message: "Too many uploads. Try again shortly." }, { status: 429 });
 
   const match = parsed.data.image.match(/^data:([^;]+);base64,(.*)$/);
@@ -40,6 +53,10 @@ export async function POST(request: Request) {
   const buffer = Buffer.from(match[2], "base64");
   if (!buffer.length || buffer.length > 4 * 1024 * 1024) {
     return NextResponse.json({ success: false, message: "Image must be under 4 MB." }, { status: 400 });
+  }
+  const sniffedMime = sniffImageMime(buffer);
+  if (!sniffedMime || sniffedMime !== mime) {
+    return NextResponse.json({ success: false, message: "File content does not match a supported image type." }, { status: 400 });
   }
 
   const path = `uploads/${user.id}/${randomUUID()}.${ext}`;

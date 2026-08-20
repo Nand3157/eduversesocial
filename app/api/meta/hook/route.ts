@@ -3,6 +3,7 @@ import { z } from "zod";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { assertHttpsMedia } from "@/lib/meta-api";
+import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
@@ -81,7 +82,7 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
   if (!user) return Response.json({ success: false, errorCode: "META_AUTH_ERROR", message: "Sign in required." }, { status: 401 });
 
-  if (!checkRateLimit(`hook:${user.id}`, 15, 60_000).allowed) {
+  if (!(await checkRateLimit(`hook:${user.id}`, 15, 60_000)).allowed) {
     return Response.json({ success: false, errorCode: "META_RATE_LIMIT", message: "Too many requests. Try again shortly." }, { status: 429 });
   }
 
@@ -137,7 +138,8 @@ Hard constraints (non-negotiable):
     const text = result.text?.trim();
     if (!text) throw new Error("EMPTY_RESPONSE");
     return Response.json({ success: true, caption: singleSentence(text) });
-  } catch {
+  } catch (error) {
+    logger.error("hook_generation_failed", { reason: error instanceof Error ? error.message : "unknown" });
     return Response.json({ success: false, errorCode: "META_API_ERROR", message: "The AI hook generator is unavailable. Check server configuration." }, { status: 503 });
   }
 }

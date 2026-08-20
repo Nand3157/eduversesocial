@@ -2,17 +2,38 @@
 
 import { z } from "zod";
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 const credentialsSchema = z.object({ email: z.string().trim().email("Enter a valid email address"), password: z.string().min(8, "Use at least 8 characters") });
 const emailSchema = z.object({ email: z.string().trim().email("Enter a valid email address") });
 const nameSchema = z.string().trim().min(1, "Enter your name").max(120).optional();
 export type AuthResult = { error?: string; message?: string };
 
+async function clientIp(): Promise<string> {
+  try {
+    const h = await headers();
+    return h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  } catch {
+    return "unknown";
+  }
+}
+
+// Generic text on every throttle path: never reveal whether the account exists.
+const RATE_LIMITED = "Too many attempts. Please try again later.";
+
 export async function signIn(_: AuthResult, formData: FormData): Promise<AuthResult> {
   const parsed = credentialsSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message };
+  // Per-IP throttles credential spraying; the per-email key slows targeted
+  // brute force even when it comes from rotating IP pools.
+  const ip = await clientIp();
+  const emailKey = parsed.data.email.toLowerCase();
+  if (!(await checkRateLimit(`login:ip:${ip}`, 10, 5 * 60_000)).allowed ||
+      !(await checkRateLimit(`login:email:${emailKey}`, 5, 15 * 60_000)).allowed) {
+    return { error: RATE_LIMITED };
+  }
   const supabase = await createClient();
   if (!supabase) return { error: "Supabase is not configured. Add the environment variables to enable authentication." };
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
@@ -36,6 +57,9 @@ export async function signIn(_: AuthResult, formData: FormData): Promise<AuthRes
 export async function signUp(_: AuthResult, formData: FormData): Promise<AuthResult> {
   const parsed = credentialsSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message };
+  if (!(await checkRateLimit(`signup:ip:${await clientIp()}`, 10, 60 * 60_000)).allowed) {
+    return { error: RATE_LIMITED };
+  }
   const name = nameSchema.safeParse(formData.get("name") ?? undefined);
   const supabase = await createClient();
   if (!supabase) return { error: "Supabase is not configured. Add the environment variables to enable authentication." };
@@ -50,6 +74,14 @@ export async function signUp(_: AuthResult, formData: FormData): Promise<AuthRes
 export async function requestPasswordReset(_: AuthResult, formData: FormData): Promise<AuthResult> {
   const parsed = emailSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message };
+  // Reset endpoints double as email-bombing vectors, so throttle both the
+  // source IP and the targeted mailbox.
+  const ip = await clientIp();
+  const emailKey = parsed.data.email.toLowerCase();
+  if (!(await checkRateLimit(`pwreset:ip:${ip}`, 5, 60 * 60_000)).allowed ||
+      !(await checkRateLimit(`pwreset:email:${emailKey}`, 3, 60 * 60_000)).allowed) {
+    return { error: RATE_LIMITED };
+  }
   const supabase = await createClient();
   if (!supabase) return { error: "Supabase is not configured. Add the environment variables to enable authentication." };
   const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, { redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/auth/callback?next=/reset-password` });

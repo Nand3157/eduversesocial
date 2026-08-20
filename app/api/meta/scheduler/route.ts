@@ -1,24 +1,33 @@
 import { NextResponse } from "next/server";
+import { timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { processDueMetaPosts } from "@/lib/meta-scheduler";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient, hasServiceConfig } from "@/lib/supabase/service";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 
 /**
  * Scheduler worker endpoint. Guarded by SCHEDULER_SECRET and executed with a
  * service-role client because cron requests carry no user session and row-level
  * security would otherwise block every read and write. Vercel Cron injects
  * `Authorization: Bearer $CRON_SECRET` automatically, so CRON_SECRET is
- * accepted as an alias for SCHEDULER_SECRET. The secret is optional: when
- * unset, the endpoint is open (the per-IP rate limit below is the only guard),
- * which lets a Hobby-plan app run without extra configuration.
+ * accepted as an alias for SCHEDULER_SECRET. The endpoint fails closed: when
+ * neither secret is configured it refuses to run instead of serving
+ * service-role work to unauthenticated callers.
  */
 export async function POST(request: Request) {
   const secret = process.env.SCHEDULER_SECRET ?? process.env.CRON_SECRET;
-  if (secret && request.headers.get("authorization") !== `Bearer ${secret}`) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!secret) {
+    logger.error("scheduler_secret_missing");
+    return NextResponse.json({ error: "Scheduler is not configured." }, { status: 503 });
+  }
+  // Timing-safe compare so the guard cannot be probed byte-by-byte via timing.
+  const expected = Buffer.from(`Bearer ${secret}`);
+  const received = Buffer.from(request.headers.get("authorization") ?? "");
+  if (expected.length !== received.length || !timingSafeEqual(expected, received)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  if (!checkRateLimit(`scheduler:${ip}`, 10, 60_000).allowed) return NextResponse.json({ error: "Too many requests." }, { status: 429 });
+  if (!(await checkRateLimit(`scheduler:${ip}`, 10, 60_000)).allowed) return NextResponse.json({ error: "Too many requests." }, { status: 429 });
   const supabase = createServiceClient();
   if (!supabase || !hasServiceConfig()) return NextResponse.json({ error: "Scheduler database access is not configured. Set SUPABASE_SERVICE_ROLE_KEY." }, { status: 503 });
   return NextResponse.json(await processDueMetaPosts(supabase));

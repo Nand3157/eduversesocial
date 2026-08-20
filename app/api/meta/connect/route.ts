@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 
 const EXPIRING_SOON_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -10,7 +11,7 @@ export async function GET() {
   if (!supabase) return NextResponse.json({ success: false, errorCode: "META_AUTH_ERROR", message: "Authentication is not configured.", accounts: [] }, { status: 401 });
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ success: false, errorCode: "META_AUTH_ERROR", message: "Sign in required.", accounts: [] }, { status: 401 });
-  if (!checkRateLimit(`connect:get:${user.id}`, 30, 60_000).allowed) return NextResponse.json({ success: false, errorCode: "META_RATE_LIMIT", message: "Too many requests. Try again shortly.", accounts: [] }, { status: 429 });
+  if (!(await checkRateLimit(`connect:get:${user.id}`, 30, 60_000)).allowed) return NextResponse.json({ success: false, errorCode: "META_RATE_LIMIT", message: "Too many requests. Try again shortly.", accounts: [] }, { status: 429 });
   const { data: member } = await supabase.from("workspace_members").select("workspace_id").eq("user_id", user.id).limit(1).maybeSingle();
   if (!member) return NextResponse.json({ success: true, accounts: [] });
 
@@ -57,7 +58,7 @@ export async function DELETE(request: Request) {
   if (!supabase) return NextResponse.json({ success: false, errorCode: "META_AUTH_ERROR", message: "Authentication is not configured." }, { status: 401 });
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ success: false, errorCode: "META_AUTH_ERROR", message: "Sign in required." }, { status: 401 });
-  if (!checkRateLimit(`connect:delete:${user.id}`, 20, 60_000).allowed) return NextResponse.json({ success: false, errorCode: "META_RATE_LIMIT", message: "Too many requests. Try again shortly." }, { status: 429 });
+  if (!(await checkRateLimit(`connect:delete:${user.id}`, 20, 60_000)).allowed) return NextResponse.json({ success: false, errorCode: "META_RATE_LIMIT", message: "Too many requests. Try again shortly." }, { status: 429 });
   const { data: member } = await supabase.from("workspace_members").select("workspace_id").eq("user_id", user.id).limit(1).maybeSingle();
   if (!member) return NextResponse.json({ success: false, errorCode: "META_ACCOUNT_ERROR", message: "Workspace unavailable." }, { status: 403 });
 
@@ -69,6 +70,9 @@ export async function DELETE(request: Request) {
     : { workspace_id: member.workspace_id, platform: parsed.data.platform };
 
   const { error } = await supabase.from("social_accounts").update({ status: "disconnected", encrypted_token: null }).match(filter);
-  if (error) return NextResponse.json({ success: false, errorCode: "META_API_ERROR", message: "Could not disconnect the account." }, { status: 500 });
+  if (error) {
+    logger.error("account_disconnect_failed", { reason: error.message });
+    return NextResponse.json({ success: false, errorCode: "META_API_ERROR", message: "Could not disconnect the account." }, { status: 500 });
+  }
   return NextResponse.json({ success: true });
 }
