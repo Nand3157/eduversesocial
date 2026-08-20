@@ -4,6 +4,7 @@ import { getWorkspaceContext, EDUVERSE_SYSTEM_PROMPT } from "@/lib/ai/eduverse-p
 import { fetchMetaAnalytics } from "@/lib/meta-analytics";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
+import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
@@ -141,7 +142,8 @@ export async function GET(request: Request) {
     if (!target) return Response.json({ error: "Conversation not found." }, { status: 404 });
     const { data: messages } = await supabase.from("chat_messages").select("role,content,image").eq("conversation_id", target.id).order("created_at", { ascending: true }).limit(50);
     return Response.json({ conversations, conversationId: target.id, messages: messages ?? [] }, { headers: { "Cache-Control": "no-store" } });
-  } catch {
+  } catch (error) {
+    logger.error("chat_history_load_failed", { reason: error instanceof Error ? error.message : "unknown" });
     return Response.json({ conversations: [], messages: [] });
   }
 }
@@ -153,7 +155,7 @@ export async function POST(request: Request) {
   const { data: { user } } = supabase ? await supabase.auth.getUser().catch(() => ({ data: { user: null } })) : { data: { user: null } };
   if (supabase && !user) return Response.json({ error: "Unauthorized." }, { status: 401 });
   const rateKey = user?.id ?? request.headers.get("x-forwarded-for") ?? "local-demo";
-  if (!checkRateLimit(`chat:${rateKey}`, 60, 60_000).allowed) return Response.json({ error: "Too many requests. Please try again in a minute." }, { status: 429 });
+  if (!(await checkRateLimit(`chat:${rateKey}`, 60, 60_000)).allowed) return Response.json({ error: "Too many requests. Please try again in a minute." }, { status: 429 });
 
   let conversationId: string | undefined;
   let persistenceUnavailable = false;
@@ -165,7 +167,8 @@ export async function POST(request: Request) {
     else try {
       conversationId = await getOrCreateConversation(supabase, workspaceId, user.id, parsed.data.conversationId, latest.content);
       await supabase.from("chat_messages").insert({ conversation_id: conversationId, role: "user", content: latest.content, image: latest.image ?? null });
-    } catch {
+    } catch (error) {
+      logger.warn("chat_persistence_unavailable", { userId: user.id, reason: error instanceof Error ? error.message : "unknown" });
       conversationId = undefined;
       persistenceUnavailable = true;
     }
@@ -197,12 +200,13 @@ export async function POST(request: Request) {
           try {
             await supabase.from("chat_messages").insert({ conversation_id: conversationId, role: "assistant", content: answer.trim() });
             await supabase.from("chat_conversations").update({ updated_at: new Date().toISOString() }).eq("id", conversationId);
-          } catch {
-            // Ignore optional DB persistence error
+          } catch (error) {
+            logger.warn("chat_answer_persist_failed", { conversationId, reason: error instanceof Error ? error.message : "unknown" });
           }
         }
         controller.close();
-      } catch {
+      } catch (error) {
+        logger.error("chat_stream_failed", { reason: error instanceof Error ? error.message : "unknown" });
         controller.error(new Error("The AI provider stream could not complete."));
       }
     }
@@ -214,7 +218,6 @@ export async function POST(request: Request) {
       "Cache-Control": "no-store",
       "X-Content-Type-Options": "nosniff",
       "X-AI-Provider": provider,
-      "X-AI-Model": GEMINI_MODEL,
       "X-Chat-Persistence": persistenceUnavailable ? "unavailable" : "saved",
       ...(conversationId ? { "X-Conversation-ID": conversationId } : {})
     }

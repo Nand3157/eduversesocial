@@ -12,28 +12,11 @@ const securityHeaders = [
   { key: "Cross-Origin-Resource-Policy", value: "same-origin" }
 ];
 
-// Production-only headers: HSTS and a CSP. Next.js hydration relies on inline
-// scripts/styles, so script-src/style-src keep 'unsafe-inline'; the CSP still
-// blocks remote script/style/frame injection and locks data egress to the
-// known Supabase and Meta endpoints.
+// Production-only headers: HSTS. The Content-Security-Policy is issued per
+// request with a fresh nonce by proxy.ts (static CSP here could not carry a
+// nonce, which would force keeping 'unsafe-inline' for scripts).
 const productionHeaders = [
-  { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
-  {
-    key: "Content-Security-Policy",
-    value: [
-      "default-src 'self'",
-      "base-uri 'self'",
-      "object-src 'none'",
-      "frame-ancestors 'none'",
-      "form-action 'self'",
-      "script-src 'self' 'unsafe-inline'",
-      "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https://graph.facebook.com https://graph.threads.net https://*.fbcdn.net https://*.cdninstagram.com https://lookaside.fbsbx.com",
-      "font-src 'self' data:",
-      "connect-src 'self' https://*.supabase.co https://graph.facebook.com https://graph.threads.net https://threads.net",
-      "upgrade-insecure-requests"
-    ].join("; ")
-  }
+  { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" }
 ];
 
 const nextConfig = {
