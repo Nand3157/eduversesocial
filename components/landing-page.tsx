@@ -462,32 +462,6 @@ export function LandingPage() {
                   {feature.title}
                 </h3>
                 <p className="mt-2.5 text-sm leading-6 text-mutedText">{feature.description}</p>
-                <AnimatePresence initial={false}>
-                  {activeFeature === index && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0, y: 5 }}
-                      animate={{ opacity: 1, height: "auto", y: 0 }}
-                      exit={{ opacity: 0, height: 0, y: 5 }}
-                      className="mt-5 overflow-hidden border-t border-borderSoft pt-4"
-                    >
-                      <div className="flex items-center justify-between text-[11px] font-mono text-mutedText">
-                        <span>Meta data status</span>
-                        <span className="text-mutedText">Connect account to begin</span>
-                      </div>
-                      <div className="mt-2 flex h-1.5 gap-1 overflow-hidden rounded-full bg-surface">
-                        {[0, 1, 2, 3, 4, 5, 6].map((bar) => (
-                          <motion.span
-                            key={bar}
-                            initial={{ scaleY: 0.25, opacity: 0.35 }}
-                            animate={{ scaleY: 0.65 + ((bar + index) % 3) * 0.16, opacity: 1 }}
-                            transition={{ delay: bar * 0.035, duration: 0.35, ease: EASE }}
-                            className="min-w-0 flex-1 origin-bottom rounded-full bg-primary"
-                          />
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </motion.div>
             ))}
           </motion.div>
@@ -518,15 +492,25 @@ export function LandingPage() {
             viewport={{ once: true, amount: 0.1 }}
           >
             {reviewsLoading ? (
-              <div className="flex items-center gap-2 text-xs text-mutedText">
+              <motion.div
+                variants={staggerItem}
+                whileHover={{ scale: 1.02, boxShadow: "0 20px 40px -12px var(--accent-strong)" }}
+                transition={{ duration: 0.2 }}
+                className="col-span-full flex items-center gap-2 rounded-2xl border border-dashed border-borderSoft bg-surface p-6 text-center text-xs text-mutedText hover:border-primary/50 hover:bg-surface/50"
+              >
                 <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading reviews…
-              </div>
+              </motion.div>
             ) : reviews.length === 0 ? (
-              <div className="col-span-full rounded-2xl border border-dashed border-borderSoft bg-surface p-10 text-center">
+              <motion.div
+                variants={staggerItem}
+                whileHover={{ scale: 1.02, boxShadow: "0 20px 40px -12px var(--accent-strong)" }}
+                transition={{ duration: 0.2 }}
+                className="col-span-full rounded-2xl border border-dashed border-borderSoft bg-surface p-10 text-center hover:border-primary/50 hover:bg-surface/50"
+              >
                 <Star className="mx-auto h-6 w-6 text-faintText" />
                 <h3 className="mt-4 font-heading text-lg font-medium text-ink">No reviews yet.</h3>
                 <p className="mt-1.5 text-sm text-mutedText">Be the first to leave one — tell us how EduVerse is working for you.</p>
-              </div>
+              </motion.div>
             ) : (
               reviews.map((review) => (
                 <TiltCard
