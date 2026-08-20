@@ -2,7 +2,7 @@
 
 import { Moon, Sun } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/components/providers/theme-provider";
 import { Button } from "@/components/ui/button";
 import { EASE_OUT } from "@/components/motion-variants";
 

@@ -108,7 +108,7 @@ export function AppShell({ children, email, profile }: { children: React.ReactNo
             <Link
               className={cn(
                 "relative flex min-h-10 items-center gap-3 rounded-full px-3.5 text-sm font-medium transition-colors duration-150",
-                active ? "text-background" : "text-mutedText hover:text-ink"
+                active ? "text-white" : "text-mutedText hover:text-ink"
               )}
               href={href}
               key={href}
@@ -118,7 +118,7 @@ export function AppShell({ children, email, profile }: { children: React.ReactNo
               {active && (
                 <motion.span
                   aria-hidden="true"
-                  className="-z-10 absolute inset-0 rounded-full bg-ink"
+                  className="absolute inset-0 rounded-full bg-primary"
                   layoutId={pillLayoutId}
                   transition={SPRING_SOFT}
                 />
@@ -132,7 +132,7 @@ export function AppShell({ children, email, profile }: { children: React.ReactNo
               >
                 <Icon className="h-4 w-4" />
               </motion.span>
-              <span className={cn("overflow-hidden transition-[clip-path,opacity] duration-300 ease-out", collapsed ? "clip-path-[inset(0_100%_0_0)] opacity-0" : "clip-path-[inset(0_0_0_0)] opacity-100")}>{label}</span>
+              <span className={cn("relative z-10 overflow-hidden transition-[clip-path,opacity] duration-300 ease-out", collapsed ? "clip-path-[inset(0_100%_0_0)] opacity-0" : "clip-path-[inset(0_0_0_0)] opacity-100")}>{label}</span>
             </Link>
           );
         })}
