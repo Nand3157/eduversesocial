@@ -86,24 +86,3 @@ export const features = [
     description: "Schedule & publish directly via official Meta Graph API after verified account connection."
   }
 ];
-
-export const testimonials = [
-  {
-    quote:
-      "EduVerse turned our Instagram strategy from random posting to a predictable engine. The Meta Graph API integration is flawless.",
-    name: "Elena Rostova",
-    role: "Head of Growth, Apex Media"
-  },
-  {
-    quote:
-      "The memory panel is the killer feature. Our team can trace why the AI recommends a specific carousel angle before we schedule.",
-    name: "Marcus Vance",
-    role: "Creative Director, Craft & Co"
-  },
-  {
-    quote:
-      "Finally a unified workspace that bridges real-time Meta telemetry with generative strategy. Worth 10 ordinary tools.",
-    name: "Sarah Lin",
-    role: "Founder, ScalePulse"
-  }
-];

@@ -1,14 +1,14 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { ArrowRight, Check, Lock, Menu, MessageCircle, ShieldCheck, Sparkles, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowRight, Check, Loader2, Lock, Menu, MessageCircle, ShieldCheck, Sparkles, Star, X } from "lucide-react";
 import { AnimatePresence, motion, useMotionValueEvent, useScroll, useTransform } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { features, testimonials, platformLogos } from "@/data/mock";
+import { features, platformLogos } from "@/data/mock";
 import { MetaConnectModal } from "@/components/meta/meta-connect-modal";
 import { ScrollProgress } from "@/components/ui/scroll-progress";
 import { ThemeToggle } from "@/components/providers/theme-toggle";
@@ -22,6 +22,25 @@ import {
 } from "@/components/motion-variants";
 
 const EASE = EASE_OUT;
+
+type Review = {
+  id: string;
+  name: string;
+  role: string | null;
+  rating: number;
+  content: string;
+  created_at: string;
+};
+
+function ReviewStars({ rating, className }: { rating: number; className?: string }) {
+  return (
+    <span className={cn("inline-flex items-center gap-0.5", className)} aria-label={`${rating} out of 5 stars`}>
+      {[1, 2, 3, 4, 5].map((star) => (
+        <Star key={star} className={cn("h-3.5 w-3.5", star <= rating ? "fill-primary text-primary" : "text-faintText")} />
+      ))}
+    </span>
+  );
+}
 
 function Wordmark({ className }: { className?: string }) {
   return (
@@ -43,6 +62,12 @@ export function LandingPage() {
   const [feedback, setFeedback] = useState("");
   const [feedbackRating, setFeedbackRating] = useState(5);
   const [feedbackSent, setFeedbackSent] = useState(false);
+  const [feedbackError, setFeedbackError] = useState<string | null>(null);
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+  const [reviewerName, setReviewerName] = useState("");
+  const [reviewerRole, setReviewerRole] = useState("");
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pageRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLElement>(null);
@@ -57,12 +82,45 @@ export function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
   useMotionValueEvent(scrollY, "change", (latest) => setScrolled(latest > 24));
 
-  const handleFeedbackSubmit = (event: React.FormEvent) => {
+  const handleFeedbackSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!feedback.trim()) return;
-    setFeedbackSent(true);
-    setFeedback("");
+    if (!feedback.trim() || !reviewerName.trim()) return;
+    setFeedbackSubmitting(true);
+    setFeedbackError(null);
+    try {
+      const res = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: reviewerName.trim(),
+          role: reviewerRole.trim() || undefined,
+          rating: feedbackRating,
+          content: feedback.trim()
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setFeedbackSent(true);
+        setFeedback("");
+        setReviewerName("");
+        setReviewerRole("");
+      } else {
+        setFeedbackError(data.error || "Could not submit the review.");
+      }
+    } catch {
+      setFeedbackError("Could not reach the review service.");
+    } finally {
+      setFeedbackSubmitting(false);
+    }
   };
+
+  useEffect(() => {
+    fetch("/api/reviews", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : { reviews: [] }))
+      .then((data) => setReviews((data.reviews ?? []) as Review[]))
+      .catch(() => setReviews([]))
+      .finally(() => setReviewsLoading(false));
+  }, []);
 
   const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
     const element = pageRef.current;
@@ -124,7 +182,7 @@ export function LandingPage() {
                 {[
                   ["How it works", "telemetry"],
                   ["Features", "features"],
-                  ["Feedback", "feedback"]
+                  ["Reviews", "feedback"]
                 ].map(([label, id]) => (
                   <button
                     className="block w-full rounded-xl px-3 py-3 text-left text-sm font-medium text-ink transition hover:bg-surface"
@@ -435,13 +493,21 @@ export function LandingPage() {
           </motion.div>
         </section>
 
-        {/* Testimonials */}
+        {/* Reviews */}
         <section className="mx-auto max-w-6xl px-5 py-24 sm:px-8 lg:py-32">
-          <motion.div {...fadeUp} className="max-w-2xl">
-            <p className="font-mono text-xs uppercase tracking-[0.22em] text-primary">Proof</p>
-            <h2 className="mt-4 text-balance font-display text-4xl font-medium leading-[1.08] tracking-tight text-ink sm:text-5xl">
-              Loved by people who post every single day.
-            </h2>
+          <motion.div {...fadeUp} className="flex max-w-2xl flex-wrap items-end justify-between gap-6">
+            <div>
+              <p className="font-mono text-xs uppercase tracking-[0.22em] text-primary">Proof</p>
+              <h2 className="mt-4 text-balance font-display text-4xl font-medium leading-[1.08] tracking-tight text-ink sm:text-5xl">
+                Loved by people who post every single day.
+              </h2>
+            </div>
+            {reviews.length > 0 && (
+              <p className="text-sm text-mutedText">
+                {reviews.length} review{reviews.length === 1 ? "" : "s"} ·{" "}
+                {(reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1)} average
+              </p>
+            )}
           </motion.div>
 
           <motion.div
@@ -451,46 +517,61 @@ export function LandingPage() {
             whileInView="show"
             viewport={{ once: true, amount: 0.1 }}
           >
-            {testimonials.map((t) => (
-              <TiltCard
-                key={t.name}
-                variants={staggerItem}
-                tiltLimit={9}
-                scale={1.02}
-                className="rounded-2xl border border-borderSoft bg-card p-6 shadow-glass transition-shadow duration-300 hover:shadow-glow"
-              >
-                <figure className="flex h-full flex-col justify-between">
-                  <blockquote className="text-pretty text-sm leading-7 text-ink">
-                    <motion.span animate={{ y: [0, -3, 0] }} transition={{ duration: 2.8, repeat: Infinity, delay: 0.25 }} className="inline-block font-display text-2xl text-primary">“</motion.span>
-                    {t.quote}
-                  </blockquote>
-                  <figcaption className="mt-6 flex items-center gap-3 border-t border-borderSoft pt-4">
-                    <motion.span
-                      whileTap={{ scale: 0.9 }}
-                      className="grid h-9 w-9 place-items-center rounded-full bg-surface text-xs font-semibold text-primary"
-                    >
-                      {t.name.split(" ").map((n) => n[0]).join("")}
-                    </motion.span>
-                    <div>
-                      <p className="text-sm font-semibold text-ink">{t.name}</p>
-                      <p className="text-xs text-mutedText">{t.role}</p>
-                    </div>
-                  </figcaption>
-                </figure>
-              </TiltCard>
-            ))}
+            {reviewsLoading ? (
+              <div className="flex items-center gap-2 text-xs text-mutedText">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading reviews…
+              </div>
+            ) : reviews.length === 0 ? (
+              <div className="col-span-full rounded-2xl border border-dashed border-borderSoft bg-surface p-10 text-center">
+                <Star className="mx-auto h-6 w-6 text-faintText" />
+                <h3 className="mt-4 font-heading text-lg font-medium text-ink">No reviews yet.</h3>
+                <p className="mt-1.5 text-sm text-mutedText">Be the first to leave one — tell us how EduVerse is working for you.</p>
+              </div>
+            ) : (
+              reviews.map((review) => (
+                <TiltCard
+                  key={review.id}
+                  variants={staggerItem}
+                  tiltLimit={9}
+                  scale={1.02}
+                  className="rounded-2xl border border-borderSoft bg-card p-6 shadow-glass transition-shadow duration-300 hover:shadow-glow"
+                >
+                  <figure className="flex h-full flex-col justify-between">
+                    <blockquote className="text-pretty text-sm leading-7 text-ink">
+                      <motion.span animate={{ y: [0, -3, 0] }} transition={{ duration: 2.8, repeat: Infinity, delay: 0.25 }} className="inline-block font-display text-2xl text-primary">“</motion.span>
+                      {review.content}
+                    </blockquote>
+                    <figcaption className="mt-6 border-t border-borderSoft pt-4">
+                      <ReviewStars rating={review.rating} />
+                      <div className="mt-3 flex items-center gap-3">
+                        <motion.span
+                          whileTap={{ scale: 0.9 }}
+                          className="grid h-9 w-9 place-items-center rounded-full bg-surface text-xs font-semibold text-primary"
+                        >
+                          {review.name.split(" ").map((n) => n[0]).join("")}
+                        </motion.span>
+                        <div>
+                          <p className="text-sm font-semibold text-ink">{review.name}</p>
+                          {review.role && <p className="text-xs text-mutedText">{review.role}</p>}
+                        </div>
+                      </div>
+                    </figcaption>
+                  </figure>
+                </TiltCard>
+              ))
+            )}
           </motion.div>
         </section>
 
         <section id="feedback" className="scroll-mt-24 border-y border-borderSoft bg-surface/50 px-5 py-24 sm:px-8 lg:py-28">
           <motion.div {...fadeUp} className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
             <div>
-              <p className="font-mono text-xs uppercase tracking-[0.22em] text-primary">Feedback</p>
+              <p className="font-mono text-xs uppercase tracking-[0.22em] text-primary">Leave a review</p>
               <h2 className="mt-4 font-display text-4xl font-medium leading-[1.08] tracking-tight text-ink sm:text-5xl">Help shape EduVerse.</h2>
-              <p className="mt-4 max-w-md text-sm leading-6 text-mutedText">Tell us what feels useful, confusing, or missing. Your feedback helps improve the product before you connect live accounts.</p>
+              <p className="mt-4 max-w-md text-sm leading-6 text-mutedText">Used EduVerse? Tell us what feels useful, confusing, or missing. Real reviews are stored and shown above once approved.</p>
             </div>
             <Card className="p-6">
-              {feedbackSent ? <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="grid min-h-48 place-items-center text-center"><div><span className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-success/15 text-success"><Check className="h-5 w-5" /></span><h3 className="mt-4 font-heading text-xl font-medium text-ink">Thanks for the feedback.</h3><p className="mt-2 text-sm text-mutedText">Feedback saved for this session.</p><Button className="mt-5" size="sm" variant="secondary" onClick={() => setFeedbackSent(false)}>Send another</Button></div></motion.div> : <form onSubmit={handleFeedbackSubmit} className="space-y-5"><div><label className="text-sm font-medium text-ink">How is EduVerse feeling?</label><div className="mt-3 flex flex-wrap gap-2" role="radiogroup" aria-label="Feedback rating">{[1, 2, 3, 4, 5].map((rating) => <button key={rating} type="button" aria-label={`${rating} out of 5`} aria-pressed={feedbackRating === rating} onClick={() => setFeedbackRating(rating)} className={`grid h-10 w-10 place-items-center rounded-full border text-sm transition ${feedbackRating === rating ? "border-primary bg-primary text-background" : "border-borderSoft bg-surface text-mutedText hover:border-primary/50"}`}>{rating}</button>)}</div></div><textarea value={feedback} onChange={(event) => setFeedback(event.target.value)} required rows={4} placeholder="What should we improve?" className="w-full resize-none rounded-xl border border-borderSoft bg-surface p-3 text-sm text-ink outline-none transition placeholder:text-faintText focus:border-primary" /><div className="flex items-center justify-between gap-3"><span className="text-xs text-mutedText">Rating: {feedbackRating}/5</span><Button type="submit" className="bg-ink text-background hover:bg-ink/90"><MessageCircle className="h-4 w-4" />Send feedback</Button></div></form>}
+              {feedbackSent ? <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="grid min-h-48 place-items-center text-center"><div><span className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-success/15 text-success"><Check className="h-5 w-5" /></span><h3 className="mt-4 font-heading text-xl font-medium text-ink">Review submitted.</h3><p className="mt-2 text-sm text-mutedText">Your review was saved and will appear here once approved.</p><Button className="mt-5" size="sm" variant="secondary" onClick={() => setFeedbackSent(false)}>Write another</Button></div></motion.div> : <form onSubmit={handleFeedbackSubmit} className="space-y-5"><div className="grid gap-3 sm:grid-cols-2"><div><label className="text-sm font-medium text-ink">Your name</label><input value={reviewerName} onChange={(event) => setReviewerName(event.target.value)} required maxLength={80} placeholder="e.g. Priya Sharma" className="mt-2 w-full rounded-xl border border-borderSoft bg-surface p-3 text-sm text-ink outline-none transition placeholder:text-faintText focus:border-primary" /></div><div><label className="text-sm font-medium text-ink">Role <span className="text-xs text-mutedText">(optional)</span></label><input value={reviewerRole} onChange={(event) => setReviewerRole(event.target.value)} maxLength={120} placeholder="e.g. Social Media Manager" className="mt-2 w-full rounded-xl border border-borderSoft bg-surface p-3 text-sm text-ink outline-none transition placeholder:text-faintText focus:border-primary" /></div></div><div><label className="text-sm font-medium text-ink">How is EduVerse feeling?</label><div className="mt-3 flex flex-wrap gap-2" role="radiogroup" aria-label="Review rating">{[1, 2, 3, 4, 5].map((rating) => <button key={rating} type="button" aria-label={`${rating} out of 5`} aria-pressed={feedbackRating === rating} onClick={() => setFeedbackRating(rating)} className={`grid h-10 w-10 place-items-center rounded-full border text-sm transition ${feedbackRating === rating ? "border-primary bg-primary text-background" : "border-borderSoft bg-surface text-mutedText hover:border-primary/50"}`}>{rating}</button>)}</div></div><div><label className="text-sm font-medium text-ink">Your review</label><textarea value={feedback} onChange={(event) => setFeedback(event.target.value)} required rows={4} maxLength={800} placeholder="What has your experience been like so far?" className="mt-2 w-full resize-none rounded-xl border border-borderSoft bg-surface p-3 text-sm text-ink outline-none transition placeholder:text-faintText focus:border-primary" /></div>{feedbackError && <p className="text-xs text-danger">{feedbackError}</p>}<div className="flex items-center justify-between gap-3"><span className="text-xs text-mutedText">Rating: {feedbackRating}/5</span><Button type="submit" disabled={feedbackSubmitting} className="bg-ink text-background hover:bg-ink/90"><MessageCircle className="h-4 w-4" />{feedbackSubmitting ? "Submitting…" : "Submit review"}</Button></div></form>}
             </Card>
           </motion.div>
         </section>
