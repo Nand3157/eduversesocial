@@ -76,7 +76,7 @@ export function TiltCard({
       transition={spring}
       variants={variants}
       whileHover={reduceMotion ? undefined : { scale }}
-      className={cn("relative will-change-transform", className)}
+      className={cn("relative will-change-transform rounded-2xl", className)}
     >
       {children}
       {spotlight && (
@@ -94,7 +94,7 @@ export function TiltCard({
               top: spotY,
               x: "-50%",
               y: "-50%",
-              background: "radial-gradient(circle, rgba(255,255,255,0.16) 0%, transparent 45%)"
+              background: "radial-gradient(circle, rgba(255,255,255,0.07) 0%, transparent 45%)"
             }}
           />
         </motion.div>

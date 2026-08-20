@@ -73,10 +73,10 @@ export function PostTable() {
           </thead>
           <tbody>
             <AnimatePresence mode="popLayout" initial={false}>
-              {items.map((post) => (
+              {items.map((post, index) => (
                 <motion.tr
                   className="bg-surface text-mutedText transition-colors duration-150 hover:bg-borderSoft/60"
-                  key={post.post}
+                  key={[post.platform, post.post, post.date, post.likes, post.comments, post.shares, post.reach, index].join("\u0000")}
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -6 }}
