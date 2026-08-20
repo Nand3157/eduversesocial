@@ -25,13 +25,21 @@ export function MetaConnectModal({ isOpen, onClose, onConnected }: MetaConnectMo
   const [connectedList, setConnectedList] = useState<MetaAccount[]>([]);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [authRequired, setAuthRequired] = useState(false);
 
   const loadAccounts = useCallback(async () => {
     setLoadingAccounts(true);
     setErrorMessage(null);
+    setAuthRequired(false);
     try {
       const response = await fetch("/api/meta/connect", { cache: "no-store" });
       const data = await response.json();
+      if (response.status === 401) {
+        setAuthRequired(true);
+        setErrorMessage(null);
+        setConnectedList([]);
+        return;
+      }
       setConnectedList(data.accounts ?? []);
       if (!response.ok && data.error) setErrorMessage(data.error);
     } catch {
@@ -57,6 +65,10 @@ export function MetaConnectModal({ isOpen, onClose, onConnected }: MetaConnectMo
   if (!isOpen) return null;
 
   const startConnect = (kind: "facebook" | "threads") => {
+    if (authRequired) {
+      window.location.assign("/login?next=/dashboard/settings");
+      return;
+    }
     setConnecting(kind);
     setSuccessMessage(null);
     setErrorMessage(null);
@@ -115,19 +127,34 @@ export function MetaConnectModal({ isOpen, onClose, onConnected }: MetaConnectMo
             </p>
           </div>
 
+          {authRequired && (
+            <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-xs leading-relaxed text-amber-700 dark:text-amber-300">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <div className="space-y-2">
+                <p className="font-semibold">Sign in required</p>
+                <p className="text-amber-700/80 dark:text-amber-300/80">You need to be logged in to connect Meta accounts. Sign in first, then return here to connect.</p>
+                <a href="/login?next=/dashboard/settings" className="inline-flex items-center justify-center rounded-lg bg-ink px-4 py-2 text-xs font-semibold text-background hover:bg-ink/90">
+                  Go to login
+                </a>
+              </div>
+            </div>
+          )}
+
           <div className="grid gap-2 sm:grid-cols-2">
             <button
               onClick={() => startConnect("facebook")}
-              disabled={connecting !== null}
+              disabled={connecting !== null || authRequired}
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-ink px-4 py-2.5 text-xs font-semibold text-background transition hover:bg-ink/90 disabled:opacity-50"
+              title={authRequired ? "Sign in required" : undefined}
             >
               {connecting === "facebook" ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
               {connecting === "facebook" ? "Opening Meta…" : "Connect Facebook & Instagram"}
             </button>
             <button
               onClick={() => startConnect("threads")}
-              disabled={connecting !== null}
+              disabled={connecting !== null || authRequired}
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-borderSoft bg-surface px-4 py-2.5 text-xs font-semibold text-ink transition hover:bg-white/10 disabled:opacity-50"
+              title={authRequired ? "Sign in required" : undefined}
             >
               {connecting === "threads" ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
               {connecting === "threads" ? "Opening Threads…" : "Connect Threads"}
@@ -135,7 +162,7 @@ export function MetaConnectModal({ isOpen, onClose, onConnected }: MetaConnectMo
           </div>
 
           {successMessage && <div className="rounded-lg border border-success/25 bg-success/10 p-3 text-xs text-success">{successMessage}</div>}
-          {errorMessage && (
+          {errorMessage && !authRequired && (
             <div className="flex items-start gap-2 rounded-lg border border-danger/25 bg-danger/10 p-3 text-xs text-danger">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>{errorMessage}</span>

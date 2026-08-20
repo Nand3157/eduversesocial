@@ -58,6 +58,24 @@ function Wordmark({ className }: { className?: string }) {
 export function LandingPage() {
   const router = useRouter();
   const [connectModalOpen, setConnectModalOpen] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(false);
+
+  const handleConnectClick = async () => {
+    if (checkingAuth) return;
+    setCheckingAuth(true);
+    try {
+      const response = await fetch("/api/meta/connect", { cache: "no-store" });
+      if (response.status === 401) {
+        router.push("/login?next=/dashboard/settings");
+        return;
+      }
+    } catch {
+      // fall through to modal — server will redirect if needed
+    } finally {
+      setCheckingAuth(false);
+    }
+    setConnectModalOpen(true);
+  };
   const [activeFeature, setActiveFeature] = useState(0);
   const [feedback, setFeedback] = useState("");
   const [feedbackRating, setFeedbackRating] = useState(5);
@@ -577,10 +595,11 @@ export function LandingPage() {
                 <ArrowRight className="h-4 w-4" />
               </Button>
               <Button
-                onClick={() => setConnectModalOpen(true)}
-                className="border-2 border-primary bg-primary/15 px-6 py-3 text-sm font-medium text-primary hover:bg-primary/25 hover:border-primary hover:shadow-glow transition-all"
+                onClick={handleConnectClick}
+                disabled={checkingAuth}
+                className="border-2 border-primary bg-primary/15 px-6 py-3 text-sm font-medium text-primary hover:bg-primary/25 hover:border-primary hover:shadow-glow transition-all disabled:opacity-50"
               >
-                Connect Meta
+                {checkingAuth ? "Checking…" : "Connect Meta"}
               </Button>
             </div>
           </motion.div>

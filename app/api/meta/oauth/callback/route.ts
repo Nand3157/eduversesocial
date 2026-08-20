@@ -13,14 +13,28 @@ export async function GET(request: Request) {
   try {
     const tokenUrl = new URL(`https://graph.facebook.com/${META_GRAPH_VERSION}/oauth/access_token`); tokenUrl.searchParams.set("client_id", META_APP_ID); tokenUrl.searchParams.set("client_secret", META_APP_SECRET); tokenUrl.searchParams.set("redirect_uri", META_REDIRECT_URI); tokenUrl.searchParams.set("code", code);
     const tokenResponse = await fetch(tokenUrl, { cache: "no-store", signal: AbortSignal.timeout(15_000) }); const token = await tokenResponse.json() as { access_token?: string; expires_in?: number }; if (!tokenResponse.ok || !token.access_token) return fail("code_invalid");
+    // Exchange short-lived user token (1-2h) for long-lived (60d). Page tokens
+    // derived from a long-lived user token are themselves long-lived/indefinite,
+    // so this eliminates the daily mail/phone re-verify in Dev Mode.
+    let userToken = token.access_token;
+    try {
+      const llUrl = new URL(`https://graph.facebook.com/${META_GRAPH_VERSION}/oauth/access_token`);
+      llUrl.searchParams.set("grant_type", "fb_exchange_token");
+      llUrl.searchParams.set("client_id", META_APP_ID);
+      llUrl.searchParams.set("client_secret", META_APP_SECRET);
+      llUrl.searchParams.set("fb_exchange_token", token.access_token);
+      const llRes = await fetch(llUrl, { cache: "no-store", signal: AbortSignal.timeout(15_000) });
+      const llJson = (await llRes.json()) as { access_token?: string; expires_in?: number };
+      if (llRes.ok && llJson.access_token) userToken = llJson.access_token;
+    } catch {
+      // keep short-lived token as fallback
+    }
     const supabase = await createClient(); const { data: { user } } = supabase ? await supabase.auth.getUser() : { data: { user: null } }; if (!supabase || !user) return fail("not_authenticated");
     const { data: member } = await supabase.from("workspace_members").select("workspace_id").eq("user_id", user.id).limit(1).maybeSingle(); if (!member) return fail("workspace_missing");
-    const pages = await new MetaFacebookService(token.access_token).pages();
-    // The code exchange yields a short-lived *user* token; `expires_in` here
-    // reflects that hours-long lifetime, not the ~2-month page token that is
-    // actually stored. Storing it would wrongly mark accounts expired within
-    // hours, so page-token expiry is left unknown (null): publish failures
-    // surface a reconnection prompt instead.
+    const pages = await new MetaFacebookService(userToken).pages();
+    // Page tokens from a long-lived user token are long-lived/indefinite, so
+    // token_expires_at is left null. Re-auth is needed only every ~60d or on
+    // password/deauth.
     for (const page of pages.data || []) {
       const { data: pageRow } = await supabase.from("social_accounts").upsert({ workspace_id: member.workspace_id, platform: "facebook", handle: page.name, external_id: page.id, display_name: page.name, encrypted_token: encrypt(page.access_token), token_expires_at: null, scopes: [], status: "active" }, { onConflict: "workspace_id,platform,external_id" }).select("id").single();
       if (page.instagram_business_account && pageRow) await supabase.from("social_accounts").upsert({ workspace_id: member.workspace_id, platform: "instagram", handle: page.instagram_business_account.username || page.instagram_business_account.id, external_id: page.instagram_business_account.id, display_name: page.instagram_business_account.name || page.instagram_business_account.username || page.name, username: page.instagram_business_account.username, avatar_url: page.instagram_business_account.profile_picture_url, parent_account_id: pageRow.id, encrypted_token: encrypt(page.access_token), token_expires_at: null, scopes: [], status: "active" }, { onConflict: "workspace_id,platform,external_id" });
