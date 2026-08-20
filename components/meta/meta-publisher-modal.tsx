@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Send, Wand2, X, CheckCircle2, Loader2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Send, Wand2, X, CheckCircle2, Loader2, ImagePlus, Trash2 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { MetaAccount } from "@/lib/meta-api";
 import { EASE_OUT } from "@/components/motion-variants";
@@ -12,12 +12,19 @@ interface MetaPublisherModalProps {
   onSuccess?: () => void;
 }
 
+type UploadedMedia = { url: string; preview: string };
+
+const MAX_UPLOAD_MB = 4;
+const MAX_UPLOADS = 4;
+
 export function MetaPublisherModal({ isOpen, onClose, onSuccess }: MetaPublisherModalProps) {
   const [platform, setPlatform] = useState<"instagram" | "facebook" | "threads">("instagram");
   const [selectedAccount, setSelectedAccount] = useState<MetaAccount | null>(null);
   const [mediaType, setMediaType] = useState<"CAROUSEL" | "IMAGE" | "VIDEO" | "TEXT">("CAROUSEL");
   const [caption, setCaption] = useState("5 AI automations creators use weekly to save 10 hours 🚀 swipe to see the exact prompts!");
   const [mediaUrls, setMediaUrls] = useState("");
+  const [uploadedMedia, setUploadedMedia] = useState<UploadedMedia[]>([]);
+  const [uploading, setUploading] = useState(false);
   const [scheduleDate, setScheduleDate] = useState("");
   const [publishing, setPublishing] = useState(false);
   const [generatingHook, setGeneratingHook] = useState(false);
@@ -25,6 +32,7 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess }: MetaPublisher
   const [publishedResult, setPublishedResult] = useState<string | null>(null);
   const [connectedAccounts, setConnectedAccounts] = useState<MetaAccount[]>([]);
   const [celebrateKey, setCelebrateKey] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -44,6 +52,45 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess }: MetaPublisher
 
   if (!isOpen) return null;
 
+  const typedUrls = () => mediaUrls.split(/[\n,]/).map((url) => url.trim()).filter(Boolean);
+  const allMediaUrls = () => [...uploadedMedia.map((media) => media.url), ...typedUrls()];
+
+  const handleUpload = async (file: File) => {
+    if (uploading) return;
+    if (file.size > MAX_UPLOAD_MB * 1024 * 1024) {
+      setHookError(`Image must be under ${MAX_UPLOAD_MB} MB.`);
+      return;
+    }
+    if (uploadedMedia.length >= MAX_UPLOADS) {
+      setHookError(`Up to ${MAX_UPLOADS} images can be uploaded.`);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = reader.result as string;
+      setUploading(true);
+      setHookError(null);
+      try {
+        const res = await fetch("/api/meta/upload", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image: dataUrl })
+        });
+        const data = await res.json();
+        if (res.ok && data.url) {
+          setUploadedMedia((current) => [...current, { url: data.url, preview: dataUrl }]);
+        } else {
+          setHookError(data.message || "Could not upload the image.");
+        }
+      } catch {
+        setHookError("Could not reach the upload service.");
+      } finally {
+        setUploading(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleGenerateAICaption = async () => {
     setGeneratingHook(true);
     setHookError(null);
@@ -55,7 +102,10 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess }: MetaPublisher
           platform,
           mediaType,
           caption,
-          mediaUrls: mediaUrls.split(/[\n,]/).map((url) => url.trim()).filter(Boolean),
+          mediaUrls: allMediaUrls(),
+          // Send the original base64 data so the model can actually see the
+          // uploaded images; capped at 4 to keep the request within bounds.
+          images: uploadedMedia.slice(0, MAX_UPLOADS).map((media) => media.preview),
           accountName: selectedAccount?.name,
           accountHandle: selectedAccount?.handle
         })
@@ -82,10 +132,7 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess }: MetaPublisher
     setPublishing(true);
     setPublishedResult(null);
 
-    const parsedMediaUrls = mediaUrls
-      .split(/[\n,]/)
-      .map((url) => url.trim())
-      .filter(Boolean);
+    const parsedMediaUrls = allMediaUrls();
 
     try {
       const res = await fetch("/api/meta/publish", {
@@ -199,20 +246,66 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess }: MetaPublisher
             </div>
           </div>
 
-          {/* Media URLs */}
+          {/* Media */}
           {mediaType !== "TEXT" && (
             <div>
               <label className="block text-xs font-medium text-mutedText mb-2">
-                Media URLs {mediaType === "CAROUSEL" ? "(2+ public HTTPS image links, one per line)" : "(public HTTPS image or video link)"}
+                Media — upload images or paste public HTTPS links
               </label>
+
+              {/* Uploaded image previews */}
+              {uploadedMedia.length > 0 && (
+                <div className="mb-2 flex flex-wrap gap-2">
+                  {uploadedMedia.map((media, index) => (
+                    <div key={media.url} className="group relative h-16 w-16 overflow-hidden rounded-xl border border-borderSoft bg-surface">
+                      {/* eslint-disable-next-line @next/next/no-img-element -- base64 data URL preview, not an optimized remote asset */}
+                      <img src={media.preview} alt={`Uploaded media ${index + 1}`} className="h-full w-full object-cover" />
+                      <button
+                        type="button"
+                        aria-label={`Remove uploaded image ${index + 1}`}
+                        onClick={() => setUploadedMedia((current) => current.filter((_, i) => i !== index))}
+                        className="absolute right-0.5 top-0.5 grid h-5 w-5 place-items-center rounded-full bg-background/80 text-danger opacity-0 transition group-hover:opacity-100 hover:bg-background"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Upload control */}
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading || uploadedMedia.length >= MAX_UPLOADS}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-borderSoft bg-surface px-3 py-2 text-xs font-semibold text-primary hover:border-primary disabled:opacity-50 transition"
+                >
+                  {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImagePlus className="h-3.5 w-3.5" />}
+                  {uploading ? "Uploading..." : `Upload image (${uploadedMedia.length}/${MAX_UPLOADS})`}
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleUpload(file);
+                    e.target.value = "";
+                  }}
+                />
+              </div>
+
+              {/* URL input */}
               <textarea
                 rows={2}
                 value={mediaUrls}
                 onChange={(e) => setMediaUrls(e.target.value)}
-                placeholder="https://example.com/media/image-1.jpg&#10;https://example.com/media/image-2.jpg"
-                className="w-full rounded-xl border border-borderSoft bg-surface p-3 text-xs text-ink placeholder:text-faintText outline-none focus:border-primary transition"
+                placeholder="Or paste links — one per line:&#10;https://example.com/media/image-1.jpg"
+                className="mt-2 w-full rounded-xl border border-borderSoft bg-surface p-3 text-xs text-ink placeholder:text-faintText outline-none focus:border-primary transition"
               />
-              <p className="mt-1 text-[10px] text-faintText">Instagram and media posts are rejected without at least one URL. Links must be publicly reachable over HTTPS.</p>
+              <p className="mt-1 text-[10px] text-faintText">Uploaded images are stored securely and become public HTTPS links. Instagram and media posts are rejected without at least one media item.</p>
             </div>
           )}
 
@@ -236,6 +329,7 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess }: MetaPublisher
               onChange={(e) => setCaption(e.target.value)}
               className="w-full rounded-xl border border-borderSoft bg-surface p-3 text-xs text-ink placeholder:text-faintText outline-none focus:border-primary transition"
             />
+            <p className="mt-1 text-[10px] text-faintText">The hook generator reads your uploaded images and linked pages to craft a single-sentence hook.</p>
             {hookError && <p className="mt-1 text-[11px] text-danger">{hookError}</p>}
           </div>
 
@@ -256,7 +350,7 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess }: MetaPublisher
           )}
 
           <div className="flex items-center justify-between border-t border-borderSoft pt-4">
-            <span className="text-[11px] text-mutedText">Publish now or schedule. Media URLs must be public HTTPS links.</span>
+            <span className="text-[11px] text-mutedText">Publish now or schedule. Media must be public HTTPS links or uploaded images.</span>
             <div className="flex gap-2">
               <button
                 type="button"

@@ -41,6 +41,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       // Storage unavailable (private mode): fall through to system preference.
     }
     const initial: Theme = stored === "light" || stored === "dark" || stored === "system" ? stored : "system";
+    // One-time sync from an external source (localStorage) on mount. The
+    // server and first client render both resolve to "dark" (matching the
+    // head script), so this only updates state after hydration — no mismatch.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setThemeState(initial);
     setResolvedTheme(initial === "system" ? (systemPrefersDark() ? "dark" : "light") : initial);
   }, []);
