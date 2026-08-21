@@ -13,7 +13,8 @@ const schema = z.object({
   caption: z.string().trim().min(1).max(2200),
   mediaUrls: z.array(z.string().url()).max(10).optional(),
   scheduledTime: z.string().optional(),
-  targetAccountId: z.string().min(1)
+  targetAccountId: z.string().min(1),
+  hashtags: z.array(z.string().regex(/^#[^\s#]{1,30}$/)).max(8).optional()
 });
 
 /**
@@ -53,6 +54,8 @@ export async function POST(request: Request) {
   if (!member) return NextResponse.json({ success: false, errorCode: "META_ACCOUNT_ERROR", message: "Workspace unavailable." }, { status: 403 });
 
   const input = parsed.data;
+  // Append hashtags to caption if supplied (space-separated, trimmed to 2200)
+  const finalCaption = input.hashtags?.length ? `${input.caption.trim()} ${input.hashtags.join(" ")}`.slice(0, 2200) : input.caption;
   const { data: account } = await supabase
     .from("social_accounts")
     .select("id,external_id,platform,encrypted_token,token_expires_at,status")
@@ -70,7 +73,7 @@ export async function POST(request: Request) {
     const scheduled = new Date(input.scheduledTime);
     if (Number.isNaN(scheduled.getTime())) return NextResponse.json({ success: false, errorCode: "META_INVALID_MEDIA", message: "Scheduled time is not a valid date." }, { status: 400 });
     if (scheduled.getTime() <= Date.now()) return NextResponse.json({ success: false, errorCode: "META_INVALID_MEDIA", message: "Scheduled time must be in the future." }, { status: 400 });
-    const idempotencyKey = `${user.id}:${input.platform}:${input.targetAccountId}:${scheduled.toISOString()}:${input.caption}`;
+    const idempotencyKey = `${user.id}:${input.platform}:${input.targetAccountId}:${scheduled.toISOString()}:${finalCaption}`;
     const { data: post, error } = await supabase
       .from("scheduled_posts")
       .insert({
@@ -78,7 +81,7 @@ export async function POST(request: Request) {
         user_id: user.id,
         platform: input.platform,
         account_id: account.id,
-        content: input.caption,
+        content: finalCaption,
         media: input.mediaUrls || [],
         scheduled_at: scheduled.toISOString(),
         status: "SCHEDULED",
@@ -102,7 +105,7 @@ export async function POST(request: Request) {
     const payload: MetaPostPayload = {
       platform: input.platform,
       mediaType: input.mediaType,
-      caption: input.caption,
+      caption: finalCaption,
       mediaUrls: input.mediaUrls || [],
       targetAccountId: account.external_id
     };

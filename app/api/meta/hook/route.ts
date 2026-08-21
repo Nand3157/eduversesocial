@@ -10,15 +10,13 @@ export const runtime = "nodejs";
 const hookSchema = z.object({
   platform: z.enum(["instagram", "facebook", "threads"]),
   mediaType: z.enum(["CAROUSEL", "IMAGE", "VIDEO", "TEXT"]),
-  // The draft caption the user already typed; treated as the topic to build on
-  // when present, otherwise the model invents the angle from the media.
   caption: z.string().trim().max(2200).optional(),
   mediaUrls: z.array(z.string().url().max(400)).max(10).optional(),
-  // Uploaded images arrive as base64 data URLs so the model can actually see
-  // the visuals, not just their hosts. Capped like chat attachments.
   images: z.array(z.string().startsWith("data:").max(4_000_000)).max(4).optional(),
   accountName: z.string().trim().max(120).optional(),
-  accountHandle: z.string().trim().max(120).optional()
+  accountHandle: z.string().trim().max(120).optional(),
+  variations: z.number().int().min(1).max(3).optional(),
+  tone: z.enum(["professional", "witty", "bold"]).optional()
 });
 
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash";
@@ -91,8 +89,10 @@ export async function POST(request: Request) {
     return Response.json({ success: false, errorCode: "META_API_ERROR", message: "Gemini API key is not configured." }, { status: 503 });
   }
 
-  const { platform, mediaType, caption, mediaUrls, images, accountName, accountHandle } = parsed.data;
+  const { platform, mediaType, caption, mediaUrls, images, accountName, accountHandle, variations: reqVariations, tone } = parsed.data;
+  const variations = reqVariations ?? 3;
 
+  const toneHint = tone ? `TONE OVERRIDE: ${tone.toUpperCase()} — ${tone === "professional" ? "clear, credible, benefit-led" : tone === "witty" ? "light, clever, contrast-driven" : "confident, direct, curiosity-gap"}` : "";
   // Build the visual/text context: uploaded images first (the model sees them
   // directly), then every pasted link is fetched and read server-side.
   const parts: ContentPart[] = [];
@@ -107,22 +107,24 @@ export async function POST(request: Request) {
     ? `LINKED CONTENT READ FROM THE URLS:\n${readableLinks.join("\n---\n")}`
     : "no readable link content — write from the uploaded images";
 
-  const prompt = `Write exactly ONE sentence that opens this post: a scroll-stopping hook line.
+  const prompt = `Write exactly ${variations} scroll-stopping hook lines for this post. Each hook is ONE sentence.
 
 TARGET PLATFORM: ${PLATFORM_HINTS[platform]}
 FORMAT: ${FORMAT_HINTS[mediaType]}
+${toneHint}
 ${imageCount > 0 ? `UPLOADED IMAGES ATTACHED TO THIS REQUEST: ${imageCount} image(s) — actually look at their visual content and reference the most striking detail.` : ""}
 MEDIA SOURCES: ${mediaSummary}
 ${accountName ? `ACCOUNT: ${accountName}${accountHandle ? ` (${accountHandle})` : ""}` : ""}
 ${caption ? `DRAFT / TOPIC TO BUILD ON: "${caption}"` : "No draft supplied — invent a compelling angle from the images and links."}
 
 Hard constraints (non-negotiable):
-- Output exactly ONE sentence. No second sentence, no call to action, no hashtags, no emoji run, no line breaks.
-- Keep it under 40 words so it fits the platform's short-caption limit.
-- Match the platform's tone above.
-- Base the hook on what you actually see in the images and read from the links.
+- Output exactly ${variations} sentences, each on its own line, numbered 1. 2. 3.
+- Each sentence: single sentence only, no second sentence, no CTA, no hashtags, no emoji run.
+- Keep each under 40 words.
+- Match the platform's tone above${tone ? " and the tone override" : ""}.
+- Base hooks on what you actually see in images and read from links.
 - Do not invent statistics, follower counts, or results.
-- Return ONLY the hook sentence. No quotes around it, no markdown, no headings, no bullet points.`;
+- Return ONLY the numbered hook lines. No intro, no quotes, no markdown, no bullet points beyond the numbers.`;
 
   try {
     const client = new GoogleGenAI({ apiKey });
@@ -130,14 +132,18 @@ Hard constraints (non-negotiable):
       model: GEMINI_MODEL,
       contents: [{ role: "user", parts: [...parts, { text: prompt }] }],
       config: {
-        systemInstruction: "You are a senior social media copywriter. You write one powerful scroll-stopping hook sentence at a time and never fabricate facts or metrics.",
-        temperature: 0.7,
-        maxOutputTokens: 200
+        systemInstruction: "You are a senior social media copywriter. You write powerful scroll-stopping hook sentences, numbered, and never fabricate facts or metrics.",
+        temperature: 0.85,
+        maxOutputTokens: 400
       }
     });
     const text = result.text?.trim();
     if (!text) throw new Error("EMPTY_RESPONSE");
-    return Response.json({ success: true, caption: singleSentence(text) });
+    const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean).map((l) => l.replace(/^\d+[\.\)]\s*/, "").trim()).filter(Boolean);
+    const captions = lines.slice(0, variations).map(singleSentence).filter(Boolean);
+    if (captions.length === 0) throw new Error("EMPTY_RESPONSE");
+    if (captions.length === 1) return Response.json({ success: true, caption: captions[0], captions });
+    return Response.json({ success: true, caption: captions[0], captions });
   } catch (error) {
     logger.error("hook_generation_failed", { reason: error instanceof Error ? error.message : "unknown" });
     return Response.json({ success: false, errorCode: "META_API_ERROR", message: "The AI hook generator is unavailable. Check server configuration." }, { status: 503 });

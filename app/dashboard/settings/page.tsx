@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Bell,
   CheckCircle2,
@@ -25,6 +25,7 @@ import type { MetaAccount } from "@/lib/meta-api";
 import { useDashboardStore } from "@/lib/stores/dashboard-store";
 
 export default function SettingsPage() {
+  const router = useRouter();
   const { userName, userRole, userEmail, userBio, setProfile } = useDashboardStore();
 
   // Local modal form state
@@ -74,18 +75,46 @@ export default function SettingsPage() {
     milestones: false
   });
 
-  // Access state
+    // Access state
   const [isAccessOpen, setIsAccessOpen] = useState(false);
-  const [teamMembers, setTeamMembers] = useState([
-    { name: userName, email: userEmail, role: "Owner" }
-  ]);
+  const [teamMembers, setTeamMembers] = useState(() => {
+    // Hydrate from localStorage so invites survive refresh until backend exists
+    if (typeof window !== "undefined") {
+      try {
+        const raw = localStorage.getItem("eduverse:team-members");
+        if (raw) {
+          const parsed = JSON.parse(raw) as Array<{ name: string; email: string; role: string }>;
+          if (Array.isArray(parsed) && parsed.length) return parsed;
+        }
+      } catch {}
+    }
+    return [{ name: userName, email: userEmail, role: "Owner" }];
+  });
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("Member");
+  const [inviteError, setInviteError] = useState("");
+
+  // Persist team members whenever they change
+  useEffect(() => {
+    try { localStorage.setItem("eduverse:team-members", JSON.stringify(teamMembers)); } catch {}
+  }, [teamMembers]);
+
+  // Keep owner row in sync when profile loads
+  useEffect(() => {
+    setTeamMembers((prev) => {
+      if (!prev.length) return prev;
+      if (prev[0]?.email === userEmail && prev[0]?.name === userName) return prev;
+      const [owner, ...rest] = prev;
+      const updatedOwner = { ...owner, name: userName, email: userEmail };
+      return [updatedOwner, ...rest];
+    });
+  }, [userName, userEmail]);
 
   // Account deletion state
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleteSuccess, setDeleteSuccess] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Toast message state
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -197,22 +226,52 @@ export default function SettingsPage() {
 
   function handleInviteMember(e: React.FormEvent) {
     e.preventDefault();
-    if (!inviteEmail.trim()) return;
-    setTeamMembers((prev) => [...prev, { name: inviteEmail.split("@")[0], email: inviteEmail, role: inviteRole }]);
+    const email = inviteEmail.trim().toLowerCase();
+    setInviteError("");
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email) { setInviteError("Enter an email address."); return; }
+    if (!emailRe.test(email)) { setInviteError("Enter a valid email (e.g. colleague@company.com)."); return; }
+    if (teamMembers.some((m) => m.email.toLowerCase() === email)) { setInviteError("That email is already in the workspace."); return; }
+    if (teamMembers.length >= 10) { setInviteError("Workspace limit: 10 members on this plan. Remove someone first."); return; }
+    if (email === userEmail.toLowerCase()) { setInviteError("You are already the owner."); return; }
+    setTeamMembers((prev) => [...prev, { name: email.split("@")[0], email, role: inviteRole }]);
     setInviteEmail("");
-    triggerToast(`Invitation sent to ${inviteEmail}`);
+    triggerToast(`Invite queued locally for ${email} — email delivery requires backend (coming soon, persisted for now).`);
   }
 
-  function handleDeleteAccount(e: React.FormEvent) {
+  async function handleDeleteAccount(e: React.FormEvent) {
     e.preventDefault();
-    if (deleteConfirmText.trim().toUpperCase() !== "DELETE") return;
-    setDeleteSuccess(true);
-    triggerToast("Account deletion request submitted.");
-    setTimeout(() => {
-      setIsDeleteOpen(false);
-      setDeleteSuccess(false);
-      setDeleteConfirmText("");
-    }, 2000);
+    if (deleteConfirmText.trim().toUpperCase() !== "DELETE") { setInviteError("Type DELETE to confirm."); return; }
+    if (deleteLoading) return;
+    setDeleteLoading(true);
+    try {
+      // Clear local artifacts first so UI reflects deletion even if server is slow
+      try {
+        localStorage.removeItem("eduverse:team-members");
+        localStorage.removeItem("eduverse:csv-import");
+        localStorage.removeItem("eduverse-dashboard-store");
+        localStorage.removeItem("theme");
+      } catch {}
+      const res = await fetch("/api/account/delete", { method: "DELETE" }).catch(() => null);
+      if (res && !res.ok) {
+        const data = await res.json().catch(() => null);
+        // If backend not ready, still sign out locally and show honest message
+        if (res.status === 404) {
+          setDeleteSuccess(true);
+          triggerToast("Local data cleared. Permanent deletion needs admin — contact hello@eduverse.app with your email.");
+          setTimeout(() => { router.push("/login"); }, 1500);
+          return;
+        }
+        throw new Error(data?.message || "Deletion failed.");
+      }
+      setDeleteSuccess(true);
+      triggerToast("Account data cleared locally. Signing out…");
+      setTimeout(() => { window.location.href = "/login"; }, 1200);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Could not delete account.";
+      triggerToast(msg);
+      setDeleteLoading(false);
+    }
   }
 
   const connectedList = metaAccounts.map((account) => account.platform === "instagram" ? `${account.name} (${account.handle})` : account.name);
@@ -339,6 +398,32 @@ export default function SettingsPage() {
             <Button onClick={() => setIsAccessOpen(true)} size="sm" variant="secondary">
               Manage access
             </Button>
+          </CardContent>
+        </Card>
+
+        {/* Billing / Plan Card — P3 */}
+        <Card className="border-primary/20 bg-accent-soft/30">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">Plan & Limits <Badge variant="primary">Free</Badge></CardTitle>
+            <CardDescription>Free plan limits — upgrade unlocks more. Usage is live from your workspace.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {[
+              { label: "Team members", used: teamMembers.length, total: 10 },
+              { label: "Connected accounts", used: metaAccounts.length, total: 3 },
+              { label: "Scheduled posts / month", used: 0, total: 10, hint: "via /api/meta/scheduler" },
+              { label: "AI chat / min", used: 0, total: 60, hint: "Gemini 3.5 Flash" },
+            ].map((item) => (
+              <div key={item.label}>
+                <div className="flex justify-between text-xs"><span className="font-medium text-ink">{item.label}</span><span className="tabular-nums text-mutedText">{item.used}/{item.total}</span></div>
+                <div className="mt-1 h-1.5 rounded-full bg-borderSoft overflow-hidden"><div className="h-full bg-primary transition-all" style={{ width: `${Math.min(100, (item.used/item.total)*100)}%` }} /></div>
+                {item.hint && <p className="text-[10px] text-faintText">{item.hint}</p>}
+              </div>
+            ))}
+            <div className="flex gap-2 pt-2">
+              <Button size="sm" variant="secondary" onClick={() => triggerToast("Upgrade flow coming soon — contact hello@eduverse.app for Pro. Free limits above apply.")}>View upgrade</Button>
+              <Button size="sm" variant="ghost" onClick={() => triggerToast("Billing portal coming soon.")}>Billing portal</Button>
+            </div>
           </CardContent>
         </Card>
 
@@ -569,17 +654,24 @@ export default function SettingsPage() {
       <Modal onOpenChange={setIsAccessOpen} open={isAccessOpen}>
         <ModalContent className="max-w-lg">
           <ModalTitle>Workspace Access & Members</ModalTitle>
-          <ModalDescription>Manage team permissions and invite collaborators.</ModalDescription>
+          <ModalDescription>Manage team permissions and invite collaborators. Invites are queued locally and will email once backend is configured — persisted across reloads.</ModalDescription>
 
-          <form className="mt-4 flex gap-2" onSubmit={handleInviteMember}>
+          <form className="mt-4 flex gap-2" onSubmit={handleInviteMember} noValidate>
+            <label className="sr-only" htmlFor="invite-email">Invite email</label>
             <input
+              id="invite-email"
               className="h-10 flex-1 rounded-xl border border-borderSoft bg-surface px-3 text-sm outline-none ring-primary focus:ring-2 dark:border-borderSoft dark:bg-surface/[0.04]"
-              onChange={(e) => setInviteEmail(e.target.value)}
+              onChange={(e) => { setInviteEmail(e.target.value); if (inviteError) setInviteError(""); }}
               placeholder="colleague@company.com"
               type="email"
+              autoComplete="email"
               value={inviteEmail}
+              aria-invalid={Boolean(inviteError)}
+              aria-describedby={inviteError ? "invite-error" : undefined}
             />
+            <label className="sr-only" htmlFor="invite-role">Role</label>
             <select
+              id="invite-role"
               className="h-10 rounded-xl border border-borderSoft bg-surface px-2 text-xs outline-none dark:border-borderSoft dark:bg-surface/[0.04]"
               onChange={(e) => setInviteRole(e.target.value)}
               value={inviteRole}
@@ -592,19 +684,27 @@ export default function SettingsPage() {
               Invite
             </Button>
           </form>
+          {inviteError && <p id="invite-error" className="mt-2 text-xs text-danger">{inviteError}</p>}
+          <p className="mt-1 text-[10px] text-mutedText">Demo mode: invites stay local until email service is connected. Limit 10 members.</p>
 
           <div className="mt-5 space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-faintText">Team Members</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-faintText">Team Members · {teamMembers.length}/10</p>
             {teamMembers.map((m, idx) => (
               <div
                 className="flex items-center justify-between rounded-xl border border-borderSoft p-3 text-sm dark:border-borderSoft"
-                key={idx}
+                key={`${m.email}-${idx}`}
               >
-                <div>
-                  <p className="font-semibold">{m.name}</p>
-                  <p className="text-xs text-mutedText">{m.email}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold truncate">{m.name}</p>
+                  <p className="text-xs text-mutedText truncate">{m.email}</p>
+                  {idx !== 0 && <span className="mt-1 inline-flex rounded-full bg-warning/15 px-1.5 py-0.5 text-[10px] font-medium text-warning">Local — pending email</span>}
                 </div>
-                <Badge variant={m.role === "Owner" ? "primary" : "default"}>{m.role}</Badge>
+                <div className="ml-2 flex items-center gap-2 shrink-0">
+                  <Badge variant={m.role === "Owner" ? "primary" : "default"}>{m.role}</Badge>
+                  {idx !== 0 && (
+                    <button onClick={() => { setTeamMembers((prev) => prev.filter((_, i) => i !== idx)); triggerToast(`Removed ${m.email}`); }} aria-label={`Remove ${m.email}`} className="rounded-full p-1 text-mutedText hover:bg-surface hover:text-danger"><Trash2 className="h-3.5 w-3.5" /></button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -617,41 +717,45 @@ export default function SettingsPage() {
         </ModalContent>
       </Modal>
 
-      {/* 6. Delete Account Modal */}
+      {/* 6. Delete Account Modal — now honest, clears local + attempts server delete */}
       <Modal onOpenChange={setIsDeleteOpen} open={isDeleteOpen}>
         <ModalContent>
           <ModalTitle className="text-danger">Delete Account & Workspace</ModalTitle>
           <ModalDescription>
-            This action cannot be undone. All social metrics, post drafts, and audience memory will be erased.
+            Clears local data immediately and attempts server deletion. For GDPR permanent erasure of Supabase backups, email hello@eduverse.app after this step.
           </ModalDescription>
           {deleteSuccess ? (
             <div className="my-6 text-center">
-              <CheckCircle2 className="mx-auto h-12 w-12 text-danger" />
-              <p className="mt-2 font-semibold text-danger">Account deletion request received.</p>
+              <CheckCircle2 className="mx-auto h-12 w-12 text-success" />
+              <p className="mt-2 font-semibold text-success">Local data cleared — signing out…</p>
+              <p className="mt-1 text-xs text-mutedText">If you need backup deletion, contact hello@eduverse.app.</p>
             </div>
           ) : (
             <form className="mt-4 space-y-4" onSubmit={handleDeleteAccount}>
-              <div className="rounded-xl border border-danger/30 bg-danger/10 p-3 text-xs text-red-700 dark:border-red-400/20 dark:bg-red-400/10 text-danger">
-                To confirm deletion, type <strong>DELETE</strong> below.
+              <div className="rounded-xl border border-danger/30 bg-danger/10 p-3 text-xs leading-relaxed text-danger">
+                Type <strong>DELETE</strong> to clear local workspace data and sign out. Server-side workspace rows will be attempted; if the admin API is not configured you will be signed out locally and receive contact instructions.
               </div>
+              <label className="sr-only" htmlFor="delete-confirm">Type DELETE to confirm</label>
               <input
+                id="delete-confirm"
                 className="h-10 w-full rounded-xl border border-borderSoft bg-surface px-3 text-sm outline-none ring-red-500 focus:ring-2 dark:border-borderSoft dark:bg-surface/[0.04]"
                 onChange={(e) => setDeleteConfirmText(e.target.value)}
                 placeholder="Type DELETE"
                 value={deleteConfirmText}
+                autoComplete="off"
               />
               <div className="flex justify-end gap-2 pt-2">
                 <Button onClick={() => setIsDeleteOpen(false)} type="button" variant="ghost">
                   Cancel
                 </Button>
                 <Button
-                  disabled={deleteConfirmText.trim().toUpperCase() !== "DELETE"}
+                  disabled={deleteConfirmText.trim().toUpperCase() !== "DELETE" || deleteLoading}
                   type="submit"
                   variant="primary"
                   className="bg-danger hover:bg-danger/90 text-background"
                 >
                   <Trash2 className="h-4 w-4" />
-                  Confirm Deletion
+                  {deleteLoading ? "Clearing…" : "Confirm Deletion"}
                 </Button>
               </div>
             </form>

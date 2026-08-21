@@ -40,9 +40,12 @@ const nextConfig = {
       { protocol: "https", hostname: "graph.threads.net" },
       { protocol: "https", hostname: "**.fbcdn.net" },
       { protocol: "https", hostname: "**.cdninstagram.com" },
-      { protocol: "https", hostname: "lookaside.fbsbx.com" }
+      { protocol: "https", hostname: "lookaside.fbsbx.com" },
+      { protocol: "https", hostname: "**.supabase.co" }
     ]
-  }
+  },
+  // Exclude docs-only folder from output tracing
+  outputFileTracingExcludes: { "*": ["./css-dev-skills/**/*", "./tests/**/*"] }
 };
 
 export default nextConfig;

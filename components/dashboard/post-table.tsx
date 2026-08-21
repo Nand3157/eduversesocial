@@ -1,28 +1,63 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowUpDown, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAnalytics } from "@/components/dashboard/analytics-context";
 
-const statusVariant: Record<string, "primary" | "success" | "warning"> = {
+const statusVariant: Record<string, "primary" | "success" | "warning" | "default"> = {
   "High intent": "primary",
   Trending: "success",
   Learning: "warning",
   Viral: "success",
-  Live: "success"
+  Live: "success",
+  Draft: "default"
 };
 
-export function PostTable() {
+type CsvRow = { platform: string; content: string; date: string };
+
+export function PostTable({ csvRows }: { csvRows?: CsvRow[] }) {
   const { data, loading } = useAnalytics();
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<"post" | "likes">("post");
   const [page, setPage] = useState(1);
+  const [localCsvRows, setLocalCsvRows] = useState<CsvRow[]>(() => csvRows ?? []);
+
+  useEffect(() => {
+    if (csvRows) setLocalCsvRows(csvRows);
+  }, [csvRows]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("eduverse:csv-import");
+      if (raw && !csvRows) {
+        const parsed = JSON.parse(raw) as { rows: CsvRow[] };
+        if (parsed?.rows?.length) setLocalCsvRows(parsed.rows);
+      }
+    } catch {}
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<CsvRow[]>).detail;
+      if (Array.isArray(detail)) setLocalCsvRows(detail);
+    };
+    window.addEventListener("eduverse:csv-imported", handler as EventListener);
+    return () => window.removeEventListener("eduverse:csv-imported", handler as EventListener);
+  }, [csvRows]);
 
   const filtered = useMemo(() => {
     const recentPosts = data?.recentPosts ?? [];
+    const csvPosts = localCsvRows.map((r) => ({
+      platform: r.platform === "instagram" ? "Instagram Business" : r.platform === "threads" ? "Threads" : "Facebook Pages",
+      post: r.content,
+      date: r.date,
+      likes: "—",
+      comments: "—",
+      shares: "—",
+      reach: "—",
+      status: "Draft" as const,
+    }));
+    const allPosts = [...csvPosts, ...recentPosts];
     // Expand compact counts ("42.8K" → 42_800) so mixed numeric and
     // abbreviated values sort correctly against each other.
     const likes = (value: string) => {
@@ -31,10 +66,10 @@ export function PostTable() {
       if (value.includes("K")) return numeric * 1_000;
       return numeric || 0;
     };
-    return recentPosts
+    return allPosts
       .filter((post) => `${post.platform} ${post.post}`.toLowerCase().includes(query.toLowerCase()))
       .sort((a, b) => (sort === "post" ? a.post.localeCompare(b.post) : likes(b.likes) - likes(a.likes)));
-  }, [data, query, sort]);
+  }, [data, query, sort, localCsvRows]);
 
   const items = filtered.slice((page - 1) * 3, page * 3);
   const totalPages = Math.max(1, Math.ceil(filtered.length / 3));
@@ -43,8 +78,11 @@ export function PostTable() {
     <div>
       <div className="mb-4 flex flex-col gap-3 sm:flex-row">
         <label className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-faintText" />
+          <span className="sr-only">Search content</span>
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-faintText" aria-hidden="true" />
           <input
+            id="content-search"
+            aria-label="Search content"
             className="h-10 w-full rounded-full border border-borderSoft bg-surface pl-10 pr-3 text-sm text-ink outline-none transition placeholder:text-faintText focus:border-primary"
             onChange={(event) => {
               setQuery(event.target.value);
@@ -54,11 +92,17 @@ export function PostTable() {
             value={query}
           />
         </label>
-        <Button onClick={() => setSort(sort === "post" ? "likes" : "post")} size="sm" variant="secondary">
+        <Button onClick={() => setSort(sort === "post" ? "likes" : "post")} size="sm" variant="secondary" aria-label={`Sort by ${sort === "post" ? "content" : "likes"}`}>
           <ArrowUpDown className="h-3.5 w-3.5" />
           Sort: {sort === "post" ? "Content" : "Likes"}
         </Button>
       </div>
+      {localCsvRows.length > 0 && (
+        <div className="mb-3 flex items-center justify-between rounded-xl border border-primary/20 bg-accent-soft px-3 py-2 text-xs">
+          <span className="text-primary font-medium">{localCsvRows.length} CSV rows kept locally (Draft) — not yet published to Meta</span>
+          <button onClick={() => { setLocalCsvRows([]); try { localStorage.removeItem("eduverse:csv-import"); } catch {} }} className="text-mutedText hover:text-ink underline decoration-dotted">Clear</button>
+        </div>
+      )}
 
       {loading ? <div className="rounded-xl border border-dashed border-borderSoft bg-surface/50 p-8 text-center text-xs text-mutedText">Loading live Meta posts…</div> : filtered.length === 0 ? <div className="rounded-xl border border-dashed border-borderSoft bg-surface/50 p-8 text-center text-xs leading-relaxed text-mutedText">No live Meta posts returned yet. Connect a Meta account with post read permissions to populate this library.</div> : <div className="overflow-x-auto">
         <table className="w-full min-w-[800px] border-separate border-spacing-y-2 text-left text-sm">

@@ -64,6 +64,9 @@ export default async function RootLayout({
   document.documentElement.classList.toggle("dark", dark);
 })();`}
         </Script>
+        <Script id="sw-register" strategy="afterInteractive" nonce={nonce}>
+          {`if ('serviceWorker' in navigator) { window.addEventListener('load', function() { navigator.serviceWorker.register('/sw.js').catch(function(){}) }); }`}
+        </Script>
       </head>
       <body className={`${sans.variable} ${display.variable} ${mono.variable}`}>
         <ThemeProvider>

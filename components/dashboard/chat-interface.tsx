@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SPRING_SOFT } from "@/components/motion-variants";
+import { useAnalytics } from "@/components/dashboard/analytics-context";
 
 type Message = {
   role: "assistant" | "user";
@@ -162,6 +163,7 @@ const FormattedMarkdown = React.memo(function FormattedMarkdown({ content }: { c
 });
 
 export function ChatInterface() {
+  const { data: analytics } = useAnalytics();
   const [messages, setMessages] = useState<Message[]>([welcome]);
   const [conversationId, setConversationId] = useState<string>();
   const [input, setInput] = useState("");
@@ -170,6 +172,7 @@ export function ChatInterface() {
   const [activeProvider, setActiveProvider] = useState<string>("Gemini 3.5 Flash");
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loadingConversation, setLoadingConversation] = useState(false);
+  const [showSources, setShowSources] = useState<Record<number, boolean>>({});
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -482,7 +485,32 @@ export function ChatInterface() {
                   {message.role === "user" ? (
                     <span className="whitespace-pre-wrap">{message.content}</span>
                   ) : (
-                    <FormattedMarkdown content={message.content} />
+                    <>
+                      <FormattedMarkdown content={message.content} />
+                      {/* Citations / provenance — grounded in live analytics, never invented */}
+                      {message.content && (
+                        <div className="mt-3 border-t border-borderSoft pt-2">
+                          <button onClick={() => setShowSources((s) => ({ ...s, [index]: !s[index] }))} className="text-[10px] font-semibold uppercase tracking-wider text-primary hover:text-primary-strong flex items-center gap-1">
+                            <Cpu className="h-3 w-3" /> {showSources[index] ? "Hide sources" : "Show sources"} · {analytics?.live ? `${analytics.accounts.length} accounts · ${analytics.recentPosts.length} posts` : "no live data — connect Meta"}
+                          </button>
+                          {showSources[index] && (
+                            <div className="mt-2 space-y-1.5 rounded-xl bg-card border border-borderSoft p-2.5">
+                              <p className="text-[10px] font-semibold uppercase tracking-wider text-faintText">Grounded in</p>
+                              {analytics?.live ? (
+                                <>
+                                  {(analytics?.memoryItems ?? []).slice(0, 2).map((m, i) => <p key={i} className="text-xs leading-5 text-mutedText">• {m}</p>)}
+                                  {(analytics?.metrics ?? []).slice(0, 2).map((m) => <p key={m.label} className="text-xs text-mutedText">• {m.label}: {m.value}{m.suffix} — {m.detail}</p>)}
+                                  {analytics?.recentPosts?.[0] && <p className="text-xs text-mutedText">• Top post: “{(analytics.recentPosts[0].post || "").slice(0, 80)}…”</p>}
+                                </>
+                              ) : (
+                                <p className="text-xs leading-5 text-mutedText">No live Meta data yet. Connect an account to ground answers in Graph API — otherwise the assistant works off general best practices only.</p>
+                              )}
+                              <p className="text-[10px] text-faintText">Sources are live Meta Graph API only. <button onClick={() => { const q = encodeURIComponent("Explain postingData and engagementData from my analytics in plain English with next steps."); setInput(decodeURIComponent(q)); textareaRef.current?.focus(); }} className="underline decoration-dotted hover:text-ink">Explain my charts</button> • <button onClick={() => setShowSources((s) => ({ ...s, [index]: false }))} className="underline decoration-dotted">Close</button></p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </motion.div>

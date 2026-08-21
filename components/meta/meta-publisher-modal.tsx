@@ -10,14 +10,17 @@ interface MetaPublisherModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  initialCaption?: string;
+  initialPlatform?: "instagram" | "facebook" | "threads";
 }
 
 type UploadedMedia = { url: string; preview: string };
 
 const MAX_UPLOAD_MB = 4;
 const MAX_UPLOADS = 4;
+const DEFAULT_HASHTAGS = ["#AI", "#Automation", "#CreatorEconomy", "#EduVerse"];
 
-export function MetaPublisherModal({ isOpen, onClose, onSuccess }: MetaPublisherModalProps) {
+export function MetaPublisherModal({ isOpen, onClose, onSuccess, initialCaption, initialPlatform }: MetaPublisherModalProps) {
   const [platform, setPlatform] = useState<"instagram" | "facebook" | "threads">("instagram");
   const [selectedAccount, setSelectedAccount] = useState<MetaAccount | null>(null);
   const [mediaType, setMediaType] = useState<"CAROUSEL" | "IMAGE" | "VIDEO" | "TEXT">("CAROUSEL");
@@ -29,10 +32,18 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess }: MetaPublisher
   const [publishing, setPublishing] = useState(false);
   const [generatingHook, setGeneratingHook] = useState(false);
   const [hookError, setHookError] = useState<string | null>(null);
+  const [hookSuggestions, setHookSuggestions] = useState<string[]>([]);
   const [publishedResult, setPublishedResult] = useState<string | null>(null);
   const [connectedAccounts, setConnectedAccounts] = useState<MetaAccount[]>([]);
   const [celebrateKey, setCelebrateKey] = useState(0);
+  const [hashtags, setHashtags] = useState<string[]>(DEFAULT_HASHTAGS);
+  const [hashtagInput, setHashtagInput] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isOpen && initialCaption) setCaption(initialCaption);
+    if (isOpen && initialPlatform) setPlatform(initialPlatform);
+  }, [isOpen, initialCaption, initialPlatform]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -94,6 +105,7 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess }: MetaPublisher
   const handleGenerateAICaption = async () => {
     setGeneratingHook(true);
     setHookError(null);
+    setHookSuggestions([]);
     try {
       const res = await fetch("/api/meta/hook", {
         method: "POST",
@@ -103,16 +115,23 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess }: MetaPublisher
           mediaType,
           caption,
           mediaUrls: allMediaUrls(),
-          // Send the original base64 data so the model can actually see the
-          // uploaded images; capped at 4 to keep the request within bounds.
           images: uploadedMedia.slice(0, MAX_UPLOADS).map((media) => media.preview),
           accountName: selectedAccount?.name,
-          accountHandle: selectedAccount?.handle
+          accountHandle: selectedAccount?.handle,
+          variations: 3
         })
       });
       const data = await res.json();
-      if (res.ok && data.caption) {
-        setCaption(data.caption);
+      if (res.ok) {
+        if (Array.isArray(data.captions) && data.captions.length) {
+          setHookSuggestions(data.captions as string[]);
+          setCaption(data.captions[0] as string);
+        } else if (data.caption) {
+          setCaption(data.caption);
+          setHookSuggestions([data.caption]);
+        } else {
+          setHookError("No hook returned.");
+        }
       } else {
         setHookError(data.message || "Could not generate a hook.");
       }
@@ -122,6 +141,20 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess }: MetaPublisher
       setGeneratingHook(false);
     }
   };
+
+  const addHashtag = () => {
+    let tag = hashtagInput.trim();
+    if (!tag) return;
+    if (!tag.startsWith("#")) tag = `#${tag}`;
+    tag = tag.replace(/\s+/g, "");
+    if (tag.length < 2 || tag.length > 30) { setHookError("Hashtag must be 2–30 chars."); return; }
+    if (hashtags.includes(tag)) { setHashtagInput(""); return; }
+    if (hashtags.length >= 8) { setHookError("Up to 8 hashtags."); return; }
+    setHashtags((h) => [...h, tag]);
+    setHashtagInput("");
+    setHookError(null);
+  };
+  const removeHashtag = (tag: string) => setHashtags((h) => h.filter((t) => t !== tag));
 
   const handlePublish = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,7 +179,7 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess }: MetaPublisher
           // datetime-local is the user's local time; convert to UTC ISO so the
           // server schedules the same instant regardless of its own timezone.
           scheduledTime: scheduleDate ? new Date(scheduleDate).toISOString() : undefined,
-          hashtags: ["#AI", "#Automation", "#CreatorEconomy", "#EduVerse"]
+          hashtags
         })
       });
 
@@ -167,9 +200,9 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess }: MetaPublisher
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/70 backdrop-blur-sm transition-opacity">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/70 backdrop-blur-sm transition-opacity" role="dialog" aria-modal="true" aria-label="Meta Post Publisher" onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}>
       <CelebrationBurst trigger={celebrateKey} />
-      <div className="relative w-full max-w-2xl overflow-hidden rounded-2xl border border-borderSoft bg-card p-6 shadow-glass">
+      <div className="relative w-full max-w-2xl overflow-hidden rounded-2xl border border-borderSoft bg-card p-6 shadow-glass max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between border-b border-borderSoft pb-4">
           <div className="flex items-center gap-3">
             <span className="grid h-10 w-10 place-items-center rounded-xl bg-accent-soft text-primary">
@@ -312,7 +345,7 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess }: MetaPublisher
           {/* Caption & AI Hook */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-medium text-mutedText">Post Caption & Hook</label>
+              <label htmlFor="publisher-caption" className="text-xs font-medium text-mutedText">Post Caption & Hook</label>
               <button
                 type="button"
                 onClick={handleGenerateAICaption}
@@ -320,26 +353,52 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess }: MetaPublisher
                 className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:text-primary-strong transition disabled:opacity-50"
               >
                 {generatingHook ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />}
-                {generatingHook ? "Generating..." : "AI Hook Generator"}
+                {generatingHook ? "Generating..." : "AI Hook Generator (3 variations)"}
               </button>
             </div>
             <textarea
+              id="publisher-caption"
               rows={4}
               value={caption}
               onChange={(e) => setCaption(e.target.value)}
+              maxLength={2200}
               className="w-full rounded-xl border border-borderSoft bg-surface p-3 text-xs text-ink placeholder:text-faintText outline-none focus:border-primary transition"
+              placeholder="Write your caption — AI will create 3 hook variations from it"
             />
-            <p className="mt-1 text-[10px] text-faintText">The hook generator reads your uploaded images and linked pages to craft a single-sentence hook.</p>
+            <div className="mt-1 flex justify-between text-[10px] text-faintText">
+              <span>The hook generator reads your images and links to craft single-sentence hooks.</span>
+              <span className={caption.length > 2000 ? "text-warning" : ""}>{caption.length}/2200</span>
+            </div>
+            {hookSuggestions.length > 0 && (
+              <div className="mt-2 space-y-1.5">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-primary">AI suggestions — click to use:</p>
+                {hookSuggestions.map((s, i) => (
+                  <button key={i} type="button" onClick={() => setCaption(s)} className="w-full rounded-xl border border-primary/20 bg-accent-soft px-3 py-2 text-left text-xs leading-relaxed text-ink hover:border-primary hover:bg-accent-soft transition">
+                    <span className="mr-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-background">{i+1}</span>{s}
+                  </button>
+                ))}
+              </div>
+            )}
             {hookError && <p className="mt-1 text-[11px] text-danger">{hookError}</p>}
           </div>
 
-          {/* Hashtags Preview */}
-          <div className="flex flex-wrap gap-1.5">
-            {["#AI", "#Automation", "#CreatorEconomy", "#EduVerse"].map((tag) => (
-              <span key={tag} className="rounded-md border border-borderSoft bg-surface px-2 py-0.5 text-[10px] font-mono text-mutedText">
-                {tag}
-              </span>
-            ))}
+          {/* Hashtags - now editable */}
+          <div>
+            <label className="block text-xs font-medium text-mutedText mb-2">Hashtags — editable ({hashtags.length}/8)</label>
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {hashtags.map((tag) => (
+                <span key={tag} className="inline-flex items-center gap-1 rounded-md border border-borderSoft bg-surface px-2 py-0.5 text-[10px] font-mono text-mutedText">
+                  {tag}
+                  <button type="button" onClick={() => removeHashtag(tag)} aria-label={`Remove ${tag}`} className="ml-0.5 rounded-full p-0.5 hover:bg-borderSoft hover:text-ink"><X className="h-3 w-3" /></button>
+                </span>
+              ))}
+              {hashtags.length === 0 && <span className="text-[10px] text-faintText italic">No hashtags — add one below</span>}
+            </div>
+            <div className="flex gap-2">
+              <input value={hashtagInput} onChange={(e) => setHashtagInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addHashtag(); }}} placeholder="Add #hashtag and press Enter" className="h-8 flex-1 rounded-xl border border-borderSoft bg-surface px-3 text-xs outline-none focus:border-primary" maxLength={30} />
+              <button type="button" onClick={addHashtag} className="rounded-xl border border-borderSoft bg-surface px-3 py-1.5 text-xs font-semibold hover:border-primary hover:text-primary">Add</button>
+              {hashtags.length > 0 && <button type="button" onClick={() => setHashtags([])} className="rounded-xl px-2 py-1.5 text-xs text-mutedText hover:text-danger">Clear</button>}
+            </div>
           </div>
 
           {publishedResult && (
