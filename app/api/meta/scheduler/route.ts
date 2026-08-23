@@ -51,6 +51,9 @@ export async function PATCH(request: Request) {
   if (!supabase) return NextResponse.json({ success: false, errorCode: "META_AUTH_ERROR", message: "Authentication is not configured." }, { status: 401 });
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ success: false, errorCode: "META_AUTH_ERROR", message: "Sign in required." }, { status: 401 });
+  if (!(await checkRateLimit(`scheduler-patch:${user.id}`, 20, 60_000)).allowed) {
+    return NextResponse.json({ success: false, errorCode: "META_RATE_LIMIT", message: "Too many requests. Try again shortly." }, { status: 429 });
+  }
 
   const { data: post } = await supabase
     .from("scheduled_posts")

@@ -30,8 +30,8 @@ export async function GET() {
 }
 
 /**
- * POST — anyone may submit a review; it is stored as 'approved' so it shows on
- * the landing page immediately. Rate limited per IP to slow spam.
+ * POST — anyone may submit a review; it is stored as 'pending' for moderation
+ * before it ever appears publicly. Rate limited per IP/user to slow spam.
  */
 export async function POST(request: Request) {
   const parsed = reviewSchema.safeParse(await request.json().catch(() => null));
@@ -55,13 +55,13 @@ export async function POST(request: Request) {
       role: role?.trim() ? role.trim() : null,
       rating,
       content,
-      status: "approved"
+      status: "pending"
     })
-    .select("id,name,role,rating,content,created_at")
+    .select("id")
     .single();
   if (error || !data) {
     logger.error("review_insert_failed", { reason: error?.message });
     return NextResponse.json({ error: "Could not save the review." }, { status: 500 });
   }
-  return NextResponse.json({ success: true, review: data });
+  return NextResponse.json({ success: true, message: "Thanks for your review! It will appear after moderation." });
 }

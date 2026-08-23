@@ -77,7 +77,7 @@ Live analytics (no mocks), encrypted Meta publishing, idempotent scheduling, and
 
 ### 7. Landing, Reviews & PWA
 
-- Parallax hero, marquee brand logos, 6-card feature grid, tilt-card review wall, inline feedback form (`POST /api/reviews`, 5/min, Zod, auto `approved`).
+- Parallax hero, marquee brand logos, 6-card feature grid, tilt-card review wall, inline feedback form (`POST /api/reviews`, 5/min, Zod, moderated `pending` → `approved`).
 - `sitemap.ts`, `robots.ts`, `manifest.ts`, `opengraph-image.tsx`, Organization JSON-LD (`SoftwareApplication`), offline page, `sw.js` registration.
 
 ### 8. Dashboard Pages
@@ -178,7 +178,7 @@ Browser ──► proxy.ts (CSP nonce + Supabase session refresh + /dashboard gu
 │   └── stores/dashboard-store.ts
 ├── supabase/
 │   ├── config.toml
-│   └── migrations/               # 10 migrations (see Database section)
+│   └── migrations/               # 11 migrations (see Database section)
 ├── data/mock.ts                  # Landing static data (platform logos, features)
 ├── public/  sw.js  icons
 ├── proxy.ts                      # Middleware: CSP + session + markdown negotiation
@@ -321,7 +321,8 @@ Supabase Postgres with **RLS on every table** + `is_workspace_member(uuid)` / `w
 | `20250820000000_post_media_bucket` | Storage bucket `post-media` (public read, owner-scoped write) |
 | `20250821000000_reviews` | `reviews` (pending/approved/rejected) |
 | `20250822000000_performance_and_rls_fixes` | Indexes + tighter storage insert policy (`foldername(name)[1] = auth.uid()`) |
-| `20250823000000_reviews_auto_publish` | Allow direct `approved` insert for immediate UX |
+| `20250823000000_reviews_auto_publish` | Allow direct `approved` insert for immediate UX (superseded) |
+| `20250824000000_reviews_require_moderation` | Revert to `pending`-only inserts — reviews require moderation before public display |
 
 ```bash
 npm run db:new -- <migration-name>  # create new migration
@@ -340,16 +341,16 @@ Single source `lib/agentic/site.ts` + `lib/agentic/api-catalog.ts` drives all ag
 | `GET /api/health` | Zero-auth liveness probe |
 | `GET /api/ai/status` | AI provider + model |
 | `GET /api/reviews` | 24 approved reviews |
-| `POST /api/reviews` | Submit review (Zod, 5/min) |
+| `POST /api/reviews` | Submit review for moderation (`pending`, Zod, 5/min) |
 | `GET /api/chat` | List conversations / load history (`?conversationId`, `?list=1`) |
 | `POST /api/chat` | Streaming Gemini chat (60/min, image ≤ 4 MB) |
 | `GET /api/meta/connect` | Connected accounts |
 | `DELETE /api/meta/connect` | Disconnect account |
-| `GET /api/meta/analytics?refresh=1` | Live analytics snapshot (30/min IP) |
+| `GET /api/meta/analytics?refresh=1` | Live analytics snapshot — requires auth (30/min per user) |
 | `POST /api/meta/publish` | Immediate or scheduled publish |
 | `POST /api/meta/upload` | Media upload → Supabase Storage |
 | `POST /api/meta/scheduler` | Cron tick (Bearer `SCHEDULER_SECRET`) |
-| `PATCH /api/meta/scheduler` | Cancel / reschedule (user auth) |
+| `PATCH /api/meta/scheduler` | Cancel / reschedule (user auth, 20/min) |
 | `GET /openapi.json` / `GET /api/openapi.yaml` | OpenAPI 3.1 spec (12+ operations) |
 | `GET /api/tools.json` | LLM function-calling catalog |
 | `GET /.well-known/mcp` | Model Context Protocol |

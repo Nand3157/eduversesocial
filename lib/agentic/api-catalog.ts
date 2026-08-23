@@ -96,7 +96,7 @@ export const API_OPERATIONS: ApiOperation[] = [
     operationId: "createReview",
     summary: "Submit a customer review",
     description:
-      "Publishes a customer review immediately. Rate limited to 5 submissions per minute per client.",
+      "Submits a customer review for moderation. Reviews are stored as pending and appear only after approval. Rate limited to 5 submissions per minute per client.",
     tag: "Reviews",
     scopes: ["write:reviews"],
     requestBody: {
@@ -114,7 +114,7 @@ export const API_OPERATIONS: ApiOperation[] = [
       example: { name: "Ada Lovelace", role: "Growth lead", rating: 5, content: "The posting windows are uncannily accurate." }
     },
     responses: {
-      "200": { description: "Review published." },
+      "200": { description: "Review submitted for moderation." },
       "400": { description: "Validation failed (missing/oversized fields)." },
       ...RATE_LIMITED,
       "503": { description: "Review storage unavailable." }
