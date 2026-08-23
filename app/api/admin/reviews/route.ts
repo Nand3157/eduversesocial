@@ -7,9 +7,17 @@ import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
-// Owner-only moderation. Set the allowed address via env ADMIN_EMAIL or
-// REVIEW_ADMIN_EMAIL in Vercel (never hardcode it in the repo).
-const REVIEW_ADMIN_EMAIL = (process.env.ADMIN_EMAIL ?? process.env.REVIEW_ADMIN_EMAIL ?? "").toLowerCase().trim();
+// Owner-only moderation. Set the allowed addresses via env ADMIN_EMAIL,
+// REVIEW_ADMIN_EMAIL, ADMIN_EMAILS, or REVIEW_ADMIN_EMAILS in Vercel
+// (comma/semicolon/space separated — never hardcode in the repo).
+// Example: REVIEW_ADMIN_EMAILS="a@example.com, b@example.com"
+function getAdminEmails(): string[] {
+  const raw = (process.env.ADMIN_EMAIL ?? process.env.REVIEW_ADMIN_EMAIL ?? process.env.ADMIN_EMAILS ?? process.env.REVIEW_ADMIN_EMAILS ?? "").trim();
+  return raw
+    .split(/[,;\s]+/)
+    .map((s) => s.toLowerCase().trim())
+    .filter(Boolean);
+}
 
 /**
  * Admin reviews endpoint — owner-only. Requires an authenticated session
@@ -39,13 +47,14 @@ async function requireAuth() {
     data: { user }
   } = await supabase.auth.getUser();
   if (!user) return { error: NextResponse.json({ error: "Sign in required." }, { status: 401 }), user: null as null };
-  if (!REVIEW_ADMIN_EMAIL) {
-    return { error: NextResponse.json({ error: "Review moderation is not configured. Set REVIEW_ADMIN_EMAIL / ADMIN_EMAIL." }, { status: 503 }), user: null as null };
+  const allowed = getAdminEmails();
+  if (allowed.length === 0) {
+    return { error: NextResponse.json({ error: "Review moderation is not configured. Set REVIEW_ADMIN_EMAIL / ADMIN_EMAIL (comma-separated)." }, { status: 503 }), user: null as null };
   }
   const email = (user.email ?? "").toLowerCase().trim();
-  if (email !== REVIEW_ADMIN_EMAIL) {
+  if (!allowed.includes(email)) {
     return {
-      error: NextResponse.json({ error: "Forbidden: review moderation is restricted to the owner account." }, { status: 403 }),
+      error: NextResponse.json({ error: "Forbidden: review moderation is restricted to the owner account(s)." }, { status: 403 }),
       user: null as null
     };
   }
