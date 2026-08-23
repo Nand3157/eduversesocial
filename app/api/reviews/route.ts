@@ -47,19 +47,18 @@ export async function POST(request: Request) {
   }
 
   const { name, role, rating, content } = parsed.data;
-  const { data, error } = await supabase
-    .from("reviews")
-    .insert({
-      user_id: user?.id ?? null,
-      name,
-      role: role?.trim() ? role.trim() : null,
-      rating,
-      content,
-      status: "pending"
-    })
-    .select("id")
-    .single();
-  if (error || !data) {
+  // Use a bare insert (no .select()) — the read RLS only allows `approved` rows,
+  // so a `select` after inserting `pending` would be rejected and surface as a
+  // 500. The insert itself is gated by the `status='pending'` WITH CHECK policy.
+  const { error } = await supabase.from("reviews").insert({
+    user_id: user?.id ?? null,
+    name,
+    role: role?.trim() ? role.trim() : null,
+    rating,
+    content,
+    status: "pending"
+  });
+  if (error) {
     logger.error("review_insert_failed", { reason: error?.message });
     return NextResponse.json({ error: "Could not save the review." }, { status: 500 });
   }

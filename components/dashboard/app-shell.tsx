@@ -14,6 +14,7 @@ import {
   Send,
   Settings,
   Sparkles,
+  Star,
   TableProperties,
   WandSparkles,
   X
@@ -38,6 +39,7 @@ const navigation = [
   ["Content", "/dashboard/content", TableProperties],
   ["Recommendations", "/dashboard/recommendations", WandSparkles],
   ["AI Chat", "/dashboard/chat", Bot],
+  ["Reviews", "/dashboard/reviews", Star],
   ["Notifications", "/dashboard/notifications", Bell],
   ["Settings", "/dashboard/settings", Settings]
 ] as const;
