@@ -1,0 +1,27 @@
+{
+  "name": "@eduverse/cli",
+  "version": "1.0.0",
+  "description": "Official command-line client for the EduVerse API. Lets agents and developers script health checks, review retrieval, and API discovery without writing integration code.",
+  "type": "module",
+  "bin": {
+    "eduverse": "./index.js"
+  },
+  "main": "./index.js",
+  "files": [
+    "index.js",
+    "lib.mjs",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "eduverse",
+    "social-media",
+    "analytics",
+    "cli",
+    "api-client",
+    "agent-tools"
+  ],
+  "license": "MIT"
+}

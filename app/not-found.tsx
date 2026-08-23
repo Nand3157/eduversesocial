@@ -28,6 +28,23 @@ export default function NotFound() {
             </Button>
           </Link>
         </div>
+        <nav aria-label="Recovery resources" className="mx-auto mt-8 max-w-md rounded-2xl border border-borderSoft bg-surface p-5 text-left">
+          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-faintText">For agents and crawlers</p>
+          <ul className="mt-3 space-y-2 text-sm">
+            {[
+              ["Agent guide", "/llms.txt"],
+              ["Site map", "/sitemap.xml"],
+              ["API surface (OpenAPI)", "/openapi.json"],
+              ["Markdown edition", "/md/"]
+            ].map(([label, href]) => (
+              <li key={href}>
+                <a className="text-primary transition-colors hover:text-ink" href={href}>
+                  {label} <span className="font-mono text-xs text-faintText">{href}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
       </div>
     </main>
   );

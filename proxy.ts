@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
+import { VARY_VALUE, isMarkdownNegotiable, wantsMarkdown } from "@/lib/agentic/markdown";
 
 /**
  * Production CSP with a per-request nonce. The nonce lets Next.js bootstrap
@@ -24,7 +25,31 @@ function contentSecurityPolicy(nonce: string) {
   ].join("; ");
 }
 
+function mergeVary(response: NextResponse): NextResponse {
+  const existing = response.headers.get("Vary");
+  if (!existing) {
+    response.headers.set("Vary", VARY_VALUE);
+    return response;
+  }
+  const tokens = new Set(existing.split(",").map((token) => token.trim()).filter(Boolean));
+  for (const token of VARY_VALUE.split(",").map((token) => token.trim())) tokens.add(token);
+  response.headers.set("Vary", [...tokens].join(", "));
+  return response;
+}
+
 export async function proxy(request: NextRequest) {
+  // Agents asking for text/markdown get the markdown edition of the page
+  // (or a real 404 with a markdown recovery body for unknown paths) without
+  // touching session refresh.
+  if (
+    (request.method === "GET" || request.method === "HEAD") &&
+    isMarkdownNegotiable(request.nextUrl.pathname) &&
+    wantsMarkdown(request.headers.get("Accept"))
+  ) {
+    const markdownUrl = new URL(`/md${request.nextUrl.pathname === "/" ? "/" : request.nextUrl.pathname}`, request.url);
+    return mergeVary(NextResponse.rewrite(markdownUrl));
+  }
+
   let requestHeaders: Headers | undefined;
   let csp: string | undefined;
   if (process.env.NODE_ENV === "production") {
@@ -43,10 +68,10 @@ export async function proxy(request: NextRequest) {
     // Preserve the full path AND query string (e.g. ?meta=connected toast
     // params) so the user returns exactly where they were after signing in.
     loginUrl.searchParams.set("next", request.nextUrl.pathname + request.nextUrl.search);
-    return NextResponse.redirect(loginUrl);
+    return mergeVary(NextResponse.redirect(loginUrl));
   }
   if (csp) response.headers.set("Content-Security-Policy", csp);
-  return response;
+  return mergeVary(response);
 }
 
 // Cover every page route while excluding API handlers and static assets,
