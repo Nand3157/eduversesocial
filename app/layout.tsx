@@ -1,29 +1,44 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { headers } from "next/headers";
 import { Fraunces, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import { MotionConfig } from "framer-motion";
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { SITE, buildOrganizationJsonLd } from "@/lib/agentic/site";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "EduVerse — Social intelligence that remembers your audience",
     template: "%s · EduVerse"
   },
-  description:
-    "EduVerse indexes Instagram Reels, Facebook Pages, and Threads engagement callbacks into a persistent audience memory, then shows you exactly what to post and when.",
-  applicationName: "EduVerse",
-  keywords: ["social media analytics", "Meta Graph API", "audience memory", "content scheduling", "Instagram analytics"],
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  alternates: {
+    canonical: "/"
+  },
   openGraph: {
-    title: "EduVerse",
-    description:
-      "Social intelligence that remembers your audience. Post with context, not guesswork.",
+    title: "EduVerse — Social intelligence that remembers your audience",
+    description: SITE_DESCRIPTION,
+    url: "/",
     type: "website",
-    siteName: "EduVerse",
+    siteName: SITE_NAME,
     locale: "en_US"
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "EduVerse — Social intelligence that remembers your audience",
+    description: SITE_DESCRIPTION
   }
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#faf7f0" },
+    { media: "(prefers-color-scheme: dark)", color: "#15120e" }
+  ]
 };
 
 const sans = Space_Grotesk({
@@ -53,9 +68,15 @@ export default async function RootLayout({
   // proxy.ts mints a per-request nonce in production; the inline theme script
   // must carry it to survive the strict CSP.
   const nonce = process.env.NODE_ENV === "production" ? ((await headers()).get("x-nonce") ?? undefined) : undefined;
+  const organizationJsonLd = buildOrganizationJsonLd();
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <script
+          type="application/ld+json"
+          nonce={nonce}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd).replace(/</g, "\\u003c") }}
+        />
         <Script id="theme-init" strategy="beforeInteractive" nonce={nonce}>
           {`(function () {
   var stored = null;

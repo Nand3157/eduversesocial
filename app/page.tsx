@@ -2,11 +2,64 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Mail, Phone, Sparkles } from "lucide-react";
 import { LandingPage } from "@/components/landing-page";
+import { SITE } from "@/lib/agentic/site";
+import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Social intelligence that remembers your audience",
   description:
-    "EduVerse connects your Instagram, Facebook, and Threads accounts and turns real engagement callbacks into a persistent audience memory with precise posting recommendations."
+    "EduVerse connects Instagram, Facebook, and Threads and turns real engagement into persistent audience memory with precise posting recommendations."
+};
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${SITE_URL}/#organization`,
+      name: "EduVerse",
+      url: SITE_URL,
+      logo: `${SITE_URL}/icon-512.png`,
+      email: SITE.email,
+      telephone: SITE.phone,
+      contactPoint: [
+        {
+          "@type": "ContactPoint",
+          contactType: SITE.contactPointType,
+          email: SITE.email,
+          telephone: SITE.phone,
+          availableLanguage: ["English"]
+        }
+      ],
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: SITE.address.streetAddress,
+        addressLocality: SITE.address.addressLocality,
+        addressRegion: SITE.address.addressRegion,
+        postalCode: SITE.address.postalCode,
+        addressCountry: SITE.address.addressCountry
+      }
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${SITE_URL}/#website`,
+      name: "EduVerse",
+      url: SITE_URL,
+      publisher: { "@id": `${SITE_URL}/#organization` }
+    },
+    {
+      "@type": "SoftwareApplication",
+      "@id": `${SITE_URL}/#app`,
+      name: "EduVerse",
+      applicationCategory: "SocialNetworkingApplication",
+      operatingSystem: "Web",
+      description:
+        "Connects Instagram, Facebook, and Threads and turns real engagement into persistent audience memory with precise posting recommendations.",
+      url: SITE_URL,
+      publisher: { "@id": `${SITE_URL}/#organization` },
+      offers: { "@type": "Offer", price: "0", priceCurrency: "USD" }
+    }
+  ]
 };
 
 const productLinks = [
@@ -107,6 +160,10 @@ function Footer() {
 export default function Home() {
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <LandingPage />
       <Footer />
     </>
