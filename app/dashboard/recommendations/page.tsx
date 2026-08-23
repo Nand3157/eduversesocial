@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowRight, CalendarClock, Sparkles, X, Eye, Info, RotateCcw, Send } from "lucide-react";
+import { CalendarClock, Sparkles, X, Eye, Info, RotateCcw, Send } from "lucide-react";
 import { motion } from "framer-motion";
 import { PageHeading } from "@/components/dashboard/page-heading";
 import { useAnalytics } from "@/components/dashboard/analytics-context";

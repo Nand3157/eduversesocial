@@ -24,19 +24,22 @@ export function PostTable({ csvRows }: { csvRows?: CsvRow[] }) {
   const [sort, setSort] = useState<"post" | "likes">("post");
   const [page, setPage] = useState(1);
   const [localCsvRows, setLocalCsvRows] = useState<CsvRow[]>(() => csvRows ?? []);
+  const [lastCsvRows, setLastCsvRows] = useState<CsvRow[] | undefined>(csvRows);
+  if (csvRows && csvRows !== lastCsvRows) {
+    setLastCsvRows(csvRows);
+    setLocalCsvRows(csvRows);
+  }
 
   useEffect(() => {
-    if (csvRows) setLocalCsvRows(csvRows);
-  }, [csvRows]);
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("eduverse:csv-import");
-      if (raw && !csvRows) {
-        const parsed = JSON.parse(raw) as { rows: CsvRow[] };
-        if (parsed?.rows?.length) setLocalCsvRows(parsed.rows);
-      }
-    } catch {}
+    queueMicrotask(() => {
+      try {
+        const raw = localStorage.getItem("eduverse:csv-import");
+        if (raw && !csvRows) {
+          const parsed = JSON.parse(raw) as { rows: CsvRow[] };
+          if (parsed?.rows?.length) setLocalCsvRows(parsed.rows);
+        }
+      } catch {}
+    });
     const handler = (e: Event) => {
       const detail = (e as CustomEvent<CsvRow[]>).detail;
       if (Array.isArray(detail)) setLocalCsvRows(detail);

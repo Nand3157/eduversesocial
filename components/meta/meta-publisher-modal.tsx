@@ -40,10 +40,14 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess, initialCaption,
   const [hashtagInput, setHashtagInput] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (isOpen && initialCaption) setCaption(initialCaption);
-    if (isOpen && initialPlatform) setPlatform(initialPlatform);
-  }, [isOpen, initialCaption, initialPlatform]);
+  const [wasOpen, setWasOpen] = useState(false);
+  if (isOpen && !wasOpen) {
+    setWasOpen(true);
+    if (initialCaption) setCaption(initialCaption);
+    if (initialPlatform) setPlatform(initialPlatform);
+  } else if (!isOpen && wasOpen) {
+    setWasOpen(false);
+  }
 
   useEffect(() => {
     if (!isOpen) return;

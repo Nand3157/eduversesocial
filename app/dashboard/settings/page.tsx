@@ -100,7 +100,9 @@ export default function SettingsPage() {
   }, [teamMembers]);
 
   // Keep owner row in sync when profile loads
-  useEffect(() => {
+  const [syncedProfile, setSyncedProfile] = useState({ name: userName, email: userEmail });
+  if (syncedProfile.name !== userName || syncedProfile.email !== userEmail) {
+    setSyncedProfile({ name: userName, email: userEmail });
     setTeamMembers((prev) => {
       if (!prev.length) return prev;
       if (prev[0]?.email === userEmail && prev[0]?.name === userName) return prev;
@@ -108,7 +110,7 @@ export default function SettingsPage() {
       const updatedOwner = { ...owner, name: userName, email: userEmail };
       return [updatedOwner, ...rest];
     });
-  }, [userName, userEmail]);
+  }
 
   // Account deletion state
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -266,7 +268,7 @@ export default function SettingsPage() {
       }
       setDeleteSuccess(true);
       triggerToast("Account data cleared locally. Signing out…");
-      setTimeout(() => { window.location.href = "/login"; }, 1200);
+      setTimeout(() => { router.push("/login"); }, 1200);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Could not delete account.";
       triggerToast(msg);

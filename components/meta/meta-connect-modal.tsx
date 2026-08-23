@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { AlertCircle, Check, Link2Off, RefreshCw, ShieldCheck, Sparkles, X } from "lucide-react";
 import type { MetaAccount } from "@/lib/meta-api";
 
@@ -20,6 +21,7 @@ const STATUS_META: Record<MetaAccount["status"], { label: string; className: str
 };
 
 export function MetaConnectModal({ isOpen, onClose, onConnected }: MetaConnectModalProps) {
+  const router = useRouter();
   const [connecting, setConnecting] = useState<"facebook" | "threads" | null>(null);
   const [loadingAccounts, setLoadingAccounts] = useState(false);
   const [connectedList, setConnectedList] = useState<MetaAccount[]>([]);
@@ -66,7 +68,7 @@ export function MetaConnectModal({ isOpen, onClose, onConnected }: MetaConnectMo
 
   const startConnect = (kind: "facebook" | "threads") => {
     if (authRequired) {
-      window.location.assign("/login?next=/dashboard/settings");
+      router.push("/login?next=/dashboard/settings");
       return;
     }
     setConnecting(kind);
