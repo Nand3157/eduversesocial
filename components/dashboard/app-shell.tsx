@@ -32,23 +32,30 @@ import { MetaPublisherModal } from "@/components/meta/meta-publisher-modal";
 import { SPRING_SOFT } from "@/components/motion-variants";
 import { AnalyticsProvider } from "@/components/dashboard/analytics-context";
 
-const navigation = [
+const baseNavigation = [
   ["Dashboard", "/dashboard", LayoutDashboard],
   ["Analytics", "/dashboard/analytics", ChartNoAxesCombined],
   ["Memory", "/dashboard/memory", Brain],
   ["Content", "/dashboard/content", TableProperties],
   ["Recommendations", "/dashboard/recommendations", WandSparkles],
   ["AI Chat", "/dashboard/chat", Bot],
-  ["Reviews", "/dashboard/reviews", Star],
   ["Notifications", "/dashboard/notifications", Bell],
   ["Settings", "/dashboard/settings", Settings]
 ] as const;
+
+const reviewNavEntry = ["Reviews", "/dashboard/reviews", Star] as const;
 
 export function AppShell({ children, email, profile }: { children: React.ReactNode; email?: string; profile?: { display_name?: string | null; role?: string | null; bio?: string | null } | null }) {
   const pathname = usePathname();
   const { mobileNavOpen: open, sidebarCollapsed: collapsed, setMobileNavOpen: setOpen, toggleSidebar, userName, userEmail, setProfile } = useDashboardStore();
   const [connectModalOpen, setConnectModalOpen] = useState(false);
   const [publisherModalOpen, setPublisherModalOpen] = useState(false);
+
+  // Reviews moderation is owner-only via the API (REVIEW_ADMIN_EMAIL env).
+  // Keep the nav entry visible for all signed-in users — the page itself
+  // shows a restricted state for non-owners based on the API 403 response,
+  // so no email literal needs to live in client code.
+  const navigation = [...baseNavigation.slice(0, 6), reviewNavEntry, ...baseNavigation.slice(6)] as const;
 
   useEffect(() => {
     if (email) {

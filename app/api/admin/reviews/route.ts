@@ -7,14 +7,20 @@ import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
+// Owner-only moderation. Set the allowed address via env ADMIN_EMAIL or
+// REVIEW_ADMIN_EMAIL in Vercel (never hardcode it in the repo).
+const REVIEW_ADMIN_EMAIL = (process.env.ADMIN_EMAIL ?? process.env.REVIEW_ADMIN_EMAIL ?? "").toLowerCase().trim();
+
 /**
- * Admin reviews endpoint — requires an authenticated session. Uses the
- * service-role client to read/update regardless of the public `reviews` RLS
- * (which only allows `approved` reads and `pending` inserts for anon).
+ * Admin reviews endpoint — owner-only. Requires an authenticated session
+ * matching REVIEW_ADMIN_EMAIL. Uses the service-role client to read/update
+ * regardless of the public `reviews` RLS (which only allows `approved` reads
+ * and `pending` inserts for anon).
  *
  * This is the moderation queue that was requested after switching `POST
  * /api/reviews` to `pending`-only: pending rows are invisible on the landing
- * page until a signed-in user approves them here.
+ * page until the owner approves them here. Non-owner signed-in users receive
+ * 403.
  */
 
 function serviceOr503() {
@@ -33,6 +39,16 @@ async function requireAuth() {
     data: { user }
   } = await supabase.auth.getUser();
   if (!user) return { error: NextResponse.json({ error: "Sign in required." }, { status: 401 }), user: null as null };
+  if (!REVIEW_ADMIN_EMAIL) {
+    return { error: NextResponse.json({ error: "Review moderation is not configured. Set REVIEW_ADMIN_EMAIL / ADMIN_EMAIL." }, { status: 503 }), user: null as null };
+  }
+  const email = (user.email ?? "").toLowerCase().trim();
+  if (email !== REVIEW_ADMIN_EMAIL) {
+    return {
+      error: NextResponse.json({ error: "Forbidden: review moderation is restricted to the owner account." }, { status: 403 }),
+      user: null as null
+    };
+  }
   return { user, error: null as null };
 }
 

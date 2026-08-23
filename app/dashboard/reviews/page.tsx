@@ -2,7 +2,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { CheckCircle2, Clock3, XCircle, Trash2, ShieldCheck, Star, Loader2, RefreshCcw } from "lucide-react";
+import { CheckCircle2, Clock3, XCircle, Trash2, ShieldCheck, Star, Loader2, RefreshCcw, Lock } from "lucide-react";
 import { PageHeading } from "@/components/dashboard/page-heading";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,6 +48,7 @@ export default function ReviewsModerationPage() {
   const [error, setError] = useState<string | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const isForbiddenError = error?.toLowerCase().includes("forbidden") || error?.toLowerCase().includes("restricted");
 
   const fetchReviews = useCallback(async (f: Filter) => {
     setLoading(true);
@@ -70,6 +71,11 @@ export default function ReviewsModerationPage() {
   }, [filter, fetchReviews]);
 
   const mutate = async (id: string, action: "approve" | "reject" | "pending" | "delete") => {
+    if (isForbiddenError) {
+      setToast("Only the owner account can modify reviews.");
+      setTimeout(() => setToast(null), 3000);
+      return;
+    }
     setActionId(id);
     try {
       const res = await fetch("/api/admin/reviews", {
@@ -113,10 +119,28 @@ export default function ReviewsModerationPage() {
   return (
     <div className="space-y-6">
       <PageHeading
-        description="Approve, reject, or delete reviews before they ever appear on the landing page. Pending reviews are invisible publicly."
+        description={
+          isForbiddenError
+            ? "This moderation queue is restricted to the owner account. Sign in as the owner to manage reviews."
+            : "Approve, reject, or delete reviews before they ever appear on the landing page. Pending reviews are invisible publicly."
+        }
         eyebrow="Moderation"
         title="Reviews"
       />
+
+      {isForbiddenError && (
+        <Card className="border-warning/30 bg-warning/10">
+          <CardContent className="flex gap-3 p-5">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-warning/20 text-warning">
+              <Lock className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="font-semibold text-ink">Restricted to owner account</p>
+              <p className="mt-1 text-sm leading-6 text-mutedText">This section and its delete actions are only available to the owner. Sign in with the owner account configured via REVIEW_ADMIN_EMAIL.</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {toast && (
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-ink px-4 py-3 text-sm font-medium text-background shadow-glass">
@@ -202,19 +226,19 @@ export default function ReviewsModerationPage() {
                   </div>
                   <blockquote className="mt-3 text-sm leading-7 text-ink">{r.content}</blockquote>
                   <div className="mt-4 flex flex-wrap gap-2">
-                    <Button size="sm" variant="primary" disabled={!!actionId} onClick={() => mutate(r.id, "approve")} className="bg-success hover:bg-success/90">
+                    <Button size="sm" variant="primary" disabled={!!actionId || isForbiddenError} onClick={() => mutate(r.id, "approve")} className="bg-success hover:bg-success/90" title={isForbiddenError ? "Owner only" : undefined}>
                       {actionId === r.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                       Approve
                     </Button>
-                    <Button size="sm" variant="secondary" disabled={!!actionId} onClick={() => mutate(r.id, "reject")}>
+                    <Button size="sm" variant="secondary" disabled={!!actionId || isForbiddenError} onClick={() => mutate(r.id, "reject")} title={isForbiddenError ? "Owner only" : undefined}>
                       <XCircle className="h-4 w-4" />
                       Reject
                     </Button>
-                    <Button size="sm" variant="ghost" disabled={!!actionId} onClick={() => mutate(r.id, "pending")}>
+                    <Button size="sm" variant="ghost" disabled={!!actionId || isForbiddenError} onClick={() => mutate(r.id, "pending")} title={isForbiddenError ? "Owner only" : undefined}>
                       <Clock3 className="h-4 w-4" />
                       Pending
                     </Button>
-                    <Button size="sm" variant="ghost" disabled={!!actionId} onClick={() => { if (confirm(`Delete review by "${r.name}" permanently?`)) void mutate(r.id, "delete"); }} className="ml-auto text-danger hover:bg-danger/10 hover:text-danger">
+                    <Button size="sm" variant="ghost" disabled={!!actionId || isForbiddenError} onClick={() => { if (confirm(`Delete review by "${r.name}" permanently? This is only allowed for the owner account.`)) void mutate(r.id, "delete"); }} className="ml-auto text-danger hover:bg-danger/10 hover:text-danger" title={isForbiddenError ? "Owner only" : "Permanently delete"}>
                       <Trash2 className="h-4 w-4" />
                       Delete
                     </Button>
