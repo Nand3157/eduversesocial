@@ -30,8 +30,8 @@ export async function GET() {
 }
 
 /**
- * POST — anyone may submit a review, but it is stored as 'pending' and only
- * shows publicly once approved. Rate limited per IP to slow spam.
+ * POST — anyone may submit a review; it is stored as 'approved' so it shows on
+ * the landing page immediately. Rate limited per IP to slow spam.
  */
 export async function POST(request: Request) {
   const parsed = reviewSchema.safeParse(await request.json().catch(() => null));
@@ -47,17 +47,21 @@ export async function POST(request: Request) {
   }
 
   const { name, role, rating, content } = parsed.data;
-  const { error } = await supabase.from("reviews").insert({
-    user_id: user?.id ?? null,
-    name,
-    role: role?.trim() ? role.trim() : null,
-    rating,
-    content,
-    status: "pending"
-  });
-  if (error) {
-    logger.error("review_insert_failed", { reason: error.message });
+  const { data, error } = await supabase
+    .from("reviews")
+    .insert({
+      user_id: user?.id ?? null,
+      name,
+      role: role?.trim() ? role.trim() : null,
+      rating,
+      content,
+      status: "approved"
+    })
+    .select("id,name,role,rating,content,created_at")
+    .single();
+  if (error || !data) {
+    logger.error("review_insert_failed", { reason: error?.message });
     return NextResponse.json({ error: "Could not save the review." }, { status: 500 });
   }
-  return NextResponse.json({ success: true, message: "Review submitted. It will appear here once approved." });
+  return NextResponse.json({ success: true, review: data });
 }

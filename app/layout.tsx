@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { Fraunces, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import { MotionConfig } from "framer-motion";
 import { ThemeProvider } from "@/components/providers/theme-provider";
-import { SITE, buildOrganizationJsonLd } from "@/lib/agentic/site";
+import { buildOrganizationJsonLd } from "@/lib/agentic/site";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 import "./globals.css";
 

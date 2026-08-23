@@ -28,7 +28,7 @@ export const SITE = {
 export const API_SCOPES = {
   "read:health": "Check service health and deployment status without authentication-sensitive data.",
   "read:reviews": "Read approved public customer reviews.",
-  "write:reviews": "Submit new customer reviews (stored pending approval).",
+  "write:reviews": "Submit new customer reviews (published immediately).",
   "invoke:chat": "Send messages to the EduVerse audience-intelligence chat assistant.",
   "meta:read": "Read connected Meta account analytics, insights, and scheduling state.",
   "meta:write": "Connect Meta accounts, upload media, and publish or schedule posts.",

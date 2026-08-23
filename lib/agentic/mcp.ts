@@ -48,7 +48,7 @@ export function mcpToolDefinitions(): McpToolDefinition[] {
       name: "submit_review",
       title: "Submit a review",
       description:
-        "Submit a customer review of EduVerse on behalf of a human user. Stored pending moderation. Rate limited to 5 per minute.",
+        "Submit a customer review of EduVerse on behalf of a human user. Published immediately. Rate limited to 5 per minute.",
       inputSchema: {
         type: "object",
         properties: {
