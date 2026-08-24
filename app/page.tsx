@@ -145,7 +145,7 @@ function Footer() {
           <ul className="mt-4 space-y-2.5 text-sm text-mutedText">
             <li>Official Meta Graph OAuth</li>
             <li>Instagram · Facebook · Threads</li>
-            <li>Your data, retained locally</li>
+            <li>Encrypted, revocable anytime</li>
             <li>
               <Link href="/privacy" className="font-medium text-primary hover:underline">
                 Privacy & Data Security

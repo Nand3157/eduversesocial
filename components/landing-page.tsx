@@ -296,7 +296,7 @@ export function LandingPage() {
                 Start free
                 <ArrowRight className="h-4 w-4" />
               </Button>
-              <Button onClick={() => router.push("/demo")} variant="secondary" className="border-primary/20 bg-card px-6 py-3 text-sm hover:border-primary/40">
+              <Button onClick={() => router.push("/demo")} variant="secondary" className="border-transparent bg-card px-6 py-3 text-sm hover:bg-surface hover:border-transparent">
                 <Eye className="h-4 w-4 text-primary" />
                 Explore Live Demo
               </Button>
@@ -323,21 +323,9 @@ export function LandingPage() {
                 <Check className="h-3.5 w-3.5 text-success" /> Official Meta Graph OAuth
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <Lock className="h-3.5 w-3.5 text-success" /> Your data, retained locally
+                <Lock className="h-3.5 w-3.5 text-success" /> Encrypted, revocable anytime
               </span>
             </motion.div>
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.8, delay: 0.38 }}
-              className="mt-3 text-center text-xs text-mutedText"
-            >
-              Try before you connect —{" "}
-              <a href="/demo" className="font-medium text-primary underline decoration-primary/30 underline-offset-4 hover:decoration-primary">
-                explore the sandbox dashboard
-              </a>{" "}
-              with simulated data. No login required.
-            </motion.p>
           </div>
 
           {/* Hero use-case panel */}
