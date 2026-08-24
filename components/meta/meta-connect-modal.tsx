@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { AlertCircle, Check, Link2Off, RefreshCw, ShieldCheck, Sparkles, X } from "lucide-react";
+import { AlertCircle, Check, Eye, Link2Off, Lock, RefreshCw, ShieldCheck, Sparkles, X } from "lucide-react";
 import type { MetaAccount } from "@/lib/meta-api";
 
 interface MetaConnectModalProps {
@@ -162,6 +162,24 @@ export function MetaConnectModal({ isOpen, onClose, onConnected }: MetaConnectMo
               {connecting === "threads" ? "Opening Threads…" : "Connect Threads"}
             </button>
           </div>
+
+          <div className="flex items-start gap-2 rounded-xl border border-success/20 bg-success/10 px-3.5 py-3">
+            <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" />
+            <p className="text-[11px] leading-relaxed text-mutedText">
+              OAuth opens on <strong className="font-semibold text-ink">Meta&apos;s consent screen</strong> — we request only{" "}
+              <code className="rounded bg-white/60 px-1 py-0.5 text-[10px]">pages_show_list</code> + related scopes. Tokens are{" "}
+              <strong className="font-semibold text-ink">AES-256-GCM encrypted</strong> and scoped to your workspace via RLS.
+              <a href="/privacy" target="_blank" rel="noopener noreferrer" className="ml-1 font-semibold text-success hover:underline">
+                Privacy & Data Security →
+              </a>
+            </p>
+          </div>
+          <a
+            href="/demo"
+            className="flex items-center justify-center gap-1.5 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2.5 text-xs font-medium text-amber-700 transition hover:bg-amber-500/15"
+          >
+            <Eye className="h-3.5 w-3.5" /> Prefer to preview first? Explore Live Demo — no OAuth needed
+          </a>
 
           {successMessage && <div className="rounded-lg border border-success/25 bg-success/10 p-3 text-xs text-success">{successMessage}</div>}
           {errorMessage && !authRequired && (

@@ -353,9 +353,23 @@ export default function SettingsPage() {
                   ? `${connectedList.join(", ")} loaded from Meta Graph API.`
                   : "No Facebook Page or linked Instagram Business account connected."}
               </p>
-              <Button className="mt-4" onClick={() => setIsMetaConnectOpen(true)} size="sm" variant="secondary">
-                Connect Meta accounts
-              </Button>
+              <p className="mt-2 flex items-center gap-1.5 text-[11px] leading-relaxed text-mutedText">
+                <ShieldCheck className="h-3 w-3 text-success" /> Tokens AES-256-GCM encrypted ·{" "}
+                <a href="/privacy" className="font-medium text-primary hover:underline">
+                  Privacy & Data Security
+                </a>
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button onClick={() => setIsMetaConnectOpen(true)} size="sm" variant="secondary">
+                  Connect Meta accounts
+                </Button>
+                <a
+                  href="/privacy#revocation"
+                  className="inline-flex items-center rounded-full border border-borderSoft bg-surface px-3 py-1.5 text-xs font-medium text-mutedText hover:text-ink"
+                >
+                  How to revoke →
+                </a>
+              </div>
             </div>
           </CardContent>
         </Card>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, Check, Loader2, Lock, Menu, MessageCircle, ShieldCheck, Sparkles, Star, X } from "lucide-react";
+import { ArrowRight, Check, Eye, Loader2, Lock, Menu, MessageCircle, ShieldCheck, Sparkles, Star, X } from "lucide-react";
 import { AnimatePresence, motion, useMotionValueEvent, useScroll, useTransform } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -181,6 +181,10 @@ export function LandingPage() {
           <Wordmark />
           <div className="flex items-center gap-2.5">
             <ThemeToggle />
+            <Button onClick={() => router.push("/demo")} size="sm" variant="secondary" className="hidden sm:inline-flex border-amber-500/20 bg-amber-500/10 text-amber-700 hover:bg-amber-500/20">
+              <Eye className="h-3.5 w-3.5" />
+              Live Demo
+            </Button>
             <Button onClick={() => router.push("/login")} size="sm" className="hidden bg-ink text-background hover:bg-ink/90 sm:inline-flex">
               <ScrambleHover>Open dashboard</ScrambleHover>
               <ArrowRight className="h-3.5 w-3.5" />
@@ -211,6 +215,7 @@ export function LandingPage() {
               <div className="space-y-1 px-5 py-4">
                 {[
                   ["How it works", "telemetry"],
+                  ["Try demo", "sandbox"],
                   ["Features", "features"],
                   ["Reviews", "feedback"]
                 ].map(([label, id]) => (
@@ -223,10 +228,19 @@ export function LandingPage() {
                     {label}
                   </button>
                 ))}
-                <Button onClick={() => router.push("/login")} className="mt-2 w-full bg-ink text-background hover:bg-ink/90">
+                <Button onClick={() => router.push("/demo")} className="mt-2 w-full bg-amber-500/15 text-amber-700 border border-amber-500/20 hover:bg-amber-500/25">
+                  <Eye className="h-4 w-4" />
+                  Explore Live Demo
+                </Button>
+                <Button onClick={() => router.push("/login")} className="w-full bg-ink text-background hover:bg-ink/90">
                   Open dashboard
                   <ArrowRight className="h-4 w-4" />
                 </Button>
+                <p className="pt-2 text-center text-xs text-mutedText">
+                  <a href="/privacy" className="font-medium text-primary hover:underline">
+                    Privacy & Data Security
+                  </a>
+                </p>
               </div>
             </motion.div>
           )}
@@ -282,6 +296,10 @@ export function LandingPage() {
                 Start free
                 <ArrowRight className="h-4 w-4" />
               </Button>
+              <Button onClick={() => router.push("/demo")} variant="secondary" className="border-primary/20 bg-card px-6 py-3 text-sm hover:border-primary/40">
+                <Eye className="h-4 w-4 text-primary" />
+                Explore Live Demo
+              </Button>
               <Button
                 onClick={scrollToUseCase}
                 variant="secondary"
@@ -308,6 +326,18 @@ export function LandingPage() {
                 <Lock className="h-3.5 w-3.5 text-success" /> Your data, retained locally
               </span>
             </motion.div>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.38 }}
+              className="mt-3 text-center text-xs text-mutedText"
+            >
+              Try before you connect —{" "}
+              <a href="/demo" className="font-medium text-primary underline decoration-primary/30 underline-offset-4 hover:decoration-primary">
+                explore the sandbox dashboard
+              </a>{" "}
+              with simulated data. No login required.
+            </motion.p>
           </div>
 
           {/* Hero use-case panel */}
@@ -413,6 +443,118 @@ export function LandingPage() {
                 </div>
               </CardContent>
             </Card>
+          </motion.div>
+        </section>
+
+        {/* Interactive Sandbox / Mock Dashboard Preview */}
+        <section id="sandbox" className="mx-auto max-w-6xl scroll-mt-24 px-5 sm:px-8">
+          <motion.div {...fadeUp} className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+            <div>
+              <p className="inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-700">
+                <Eye className="h-3.5 w-3.5" /> Interactive sandbox · no OAuth required
+              </p>
+              <h2 className="mt-4 text-balance font-display text-3xl font-medium leading-[1.08] tracking-tight text-ink sm:text-4xl">
+                Try the dashboard before you connect.
+              </h2>
+              <p className="mt-4 max-w-xl text-sm leading-7 text-mutedText">
+                Full live features need Meta Graph OAuth — which can feel heavy before you&apos;ve seen the product. Jump into a
+                read-only <strong className="font-semibold text-ink">sandbox preview</strong> with simulated Instagram, Facebook, and
+                Threads analytics. No login, no tokens stored.
+              </p>
+              <ul className="mt-5 grid gap-2 text-sm text-mutedText">
+                <li className="flex items-start gap-2">
+                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" /> Real dashboard layout — metrics, charts, recommendations, and post telemetry
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" /> Sample data only — clearly marked “Simulated” so you know what&apos;s real vs preview
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" /> One click to switch to live: create account → Connect Meta on our consent screen
+                </li>
+              </ul>
+              <div className="mt-6 flex flex-wrap items-center gap-3">
+                <Button onClick={() => router.push("/demo")} className="bg-ink px-6 py-3 text-sm text-background hover:bg-ink/90">
+                  <Eye className="h-4 w-4" />
+                  Explore Live Demo
+                </Button>
+                <Button onClick={() => router.push("/signup")} variant="secondary" className="px-6 py-3 text-sm">
+                  Start free — then connect Meta
+                  <ArrowRight className="h-4 w-4 text-primary" />
+                </Button>
+              </div>
+              <p className="mt-3 text-xs text-mutedText">
+                By connecting you agree to our{" "}
+                <a href="/privacy" className="font-medium text-primary underline decoration-primary/30 underline-offset-4 hover:decoration-primary">
+                  Privacy Policy
+                </a>{" "}
+                — tokens are AES-256-GCM encrypted and scoped to your workspace.
+              </p>
+            </div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.6, ease: EASE }}
+              className="relative"
+            >
+              <div className="absolute -inset-4 -z-10 rounded-[28px] bg-gradient-to-br from-amber-500/10 via-accent-soft to-transparent blur-xl" />
+              <Card className="overflow-hidden p-0">
+                <div className="flex items-center justify-between border-b border-borderSoft bg-surface px-4 py-3">
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 rounded-full bg-danger/70" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-warning/70" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-success/70" />
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 text-[11px] font-medium text-amber-700">
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" /> Sandbox — simulated
+                  </span>
+                  <span className="hidden text-[11px] font-mono text-faintText sm:inline">/demo — no login</span>
+                </div>
+                <CardContent className="p-4 sm:p-5">
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { label: "Views (28d)", value: "142.9K" },
+                      { label: "Engagement", value: "18.4K" },
+                      { label: "Posts", value: "47" },
+                    ].map((m) => (
+                      <div key={m.label} className="rounded-xl border border-borderSoft bg-surface px-3 py-3">
+                        <p className="text-[11px] text-mutedText">{m.label}</p>
+                        <p className="mt-1 font-display text-lg font-semibold tracking-tight text-ink">{m.value}</p>
+                        <p className="mt-1 text-[10px] leading-none text-success">Simulated</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-4 rounded-xl border border-borderSoft bg-surface p-3">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-medium text-mutedText">Engagement over time</span>
+                      <span className="font-mono text-[11px] text-success">Sample</span>
+                    </div>
+                    <div className="mt-2 flex h-20 items-end gap-1">
+                      {[35, 48, 42, 58, 72, 61, 82, 71, 90, 77, 96, 86, 104, 98].map((h, i) => (
+                        <div
+                          key={i}
+                          className="flex-1 rounded-t-md bg-primary/70"
+                          style={{ height: `${h}%`, opacity: 0.55 + (i / 14) * 0.45 }}
+                        />
+                      ))}
+                    </div>
+                    <div className="mt-2 flex items-center justify-between text-[11px] text-faintText">
+                      <span>Jul 21 → Aug 7</span>
+                      <span className="inline-flex items-center gap-1">
+                        <span className="h-2 w-2 rounded-full bg-success" /> No login required
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-success/15 bg-success/10 px-3 py-2.5">
+                    <span className="text-xs font-medium text-success">This preview becomes your live dashboard after OAuth.</span>
+                    <a href="/demo" className="text-xs font-semibold text-success hover:underline">
+                      Open sandbox →
+                    </a>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
           </motion.div>
         </section>
 
@@ -599,9 +741,14 @@ export function LandingPage() {
               Ready to stop guessing <em className="italic text-primary">what your audience wants?</em>
             </h2>
             <p className="mx-auto mt-5 max-w-xl text-pretty text-base leading-relaxed text-background/70">
-              Connect your Meta accounts and let EduVerse build the memory that turns posting into a system.
+              Connect your Meta accounts and let EduVerse build the memory that turns posting into a system. Or explore the sandbox first —
+              no OAuth required.
             </p>
             <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
+              <Button onClick={() => router.push("/demo")} variant="secondary" className="bg-background/10 border border-background/15 px-6 py-3 text-sm text-background backdrop-blur hover:bg-background/15">
+                <Eye className="h-4 w-4" />
+                Explore Live Demo
+              </Button>
               <Button onClick={() => router.push("/login")} className="bg-background px-6 py-3 text-sm text-ink hover:bg-background/90">
                 Open the dashboard
                 <ArrowRight className="h-4 w-4" />
@@ -614,6 +761,17 @@ export function LandingPage() {
                 {checkingAuth ? "Checking…" : "Connect Meta"}
               </Button>
             </div>
+            <p className="mx-auto mt-6 max-w-xl text-center text-xs leading-relaxed text-background/60">
+              By connecting Meta you agree to our{" "}
+              <a href="/privacy" className="font-medium text-primary underline decoration-primary/40 underline-offset-4 hover:decoration-primary">
+                Privacy Policy & Data Security
+              </a>{" "}
+              — tokens are AES-256-GCM encrypted, scoped to your workspace via RLS, and revocable anytime in{" "}
+              <a href="/privacy#revocation" className="underline decoration-background/20 underline-offset-4 hover:decoration-background/40">
+                one click
+              </a>
+              .
+            </p>
           </motion.div>
         </section>
       </main>

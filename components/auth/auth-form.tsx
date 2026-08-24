@@ -84,6 +84,21 @@ export function AuthForm({ mode, next }: { mode: Mode; next?: string }) {
         {pending && <Loader2 className="h-4 w-4 animate-spin" />}
         {details.submit}
       </Button>
+      <p className="text-center text-[11px] leading-relaxed text-mutedText">
+        By continuing you agree to our{" "}
+        <Link href="/privacy" className="font-medium text-primary underline decoration-primary/30 underline-offset-4 hover:decoration-primary">
+          Privacy Policy & Data Security
+        </Link>
+        {mode === "signup" ? " — Meta tokens are AES-256-GCM encrypted and revocable anytime." : " — encrypted tokens, workspace-isolated via RLS."}
+      </p>
+      {mode === "signup" && (
+        <Link
+          href="/demo"
+          className="flex items-center justify-center gap-1.5 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2.5 text-xs font-medium text-amber-700 transition hover:bg-amber-500/15"
+        >
+          <Eye className="h-3.5 w-3.5" /> Explore Live Demo — no signup required
+        </Link>
+      )}
       {details.helper && (
         <p className="pt-2 text-center text-sm text-mutedText">
           {details.helper}{" "}

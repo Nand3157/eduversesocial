@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore, useState } from "react";
 import Link from "next/link";
-import { Check, MessageSquareText, Send, Sparkles } from "lucide-react";
+import { Check, Eye, Lock, MessageSquareText, Send, ShieldCheck, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { AudienceGrowthCard, EngagementChartCard, PlatformBreakdownCard, PostingFrequencyCard, SentimentTrendCard } from "@/components/dashboard/lazy-charts";
 import { AnimatedNumber } from "@/components/dashboard/animated-number";
@@ -70,15 +70,40 @@ export function DashboardHome() {
       </div>
 
       {!analyticsLoading && !analytics?.live && (
-        <Card className="border-primary/25 bg-accent-soft">
-          <CardContent className="flex flex-col justify-between gap-4 p-5 sm:flex-row sm:items-center">
-            <div>
-              <p className="font-medium text-ink">Your live analytics workspace is ready.</p>
-              <p className="mt-1 text-sm text-mutedText">Connect a Meta User Access Token to load accounts, posts, reach, and engagement.</p>
-            </div>
-            <Button onClick={() => setConnectModalOpen(true)} className="shrink-0 bg-ink text-background hover:bg-ink/90">Connect Meta</Button>
-          </CardContent>
-        </Card>
+        <div className="space-y-3">
+          <Card className="border-primary/25 bg-accent-soft">
+            <CardContent className="flex flex-col justify-between gap-4 p-5 sm:flex-row sm:items-center">
+              <div>
+                <p className="font-medium text-ink">Your live analytics workspace is ready.</p>
+                <p className="mt-1 text-sm text-mutedText">Connect a Meta User Access Token to load accounts, posts, reach, and engagement.</p>
+                <p className="mt-2 flex items-center gap-1.5 text-[11px] text-mutedText">
+                  <Lock className="h-3 w-3 text-success" /> Tokens AES-256-GCM encrypted ·{" "}
+                  <Link href="/privacy" className="font-medium text-primary hover:underline">
+                    Privacy & Data Security
+                  </Link>
+                </p>
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Button onClick={() => setConnectModalOpen(true)} className="shrink-0 bg-ink text-background hover:bg-ink/90">
+                  Connect Meta
+                </Button>
+                <Link href="/demo">
+                  <Button variant="secondary" size="sm" className="w-full sm:w-auto border-amber-500/20 bg-amber-500/10 text-amber-700 hover:bg-amber-500/15">
+                    <Eye className="h-3.5 w-3.5" /> Explore Live Demo
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+          <div className="flex items-center justify-between rounded-xl border border-borderSoft bg-surface/50 px-4 py-2.5 text-xs">
+            <span className="inline-flex items-center gap-1.5 text-mutedText">
+              <ShieldCheck className="h-3.5 w-3.5 text-success" /> Curious before OAuth? Preview a simulated dashboard with no login.
+            </span>
+            <Link href="/demo" className="font-medium text-primary hover:underline">
+              Open sandbox →
+            </Link>
+          </div>
+        </div>
       )}
 
       <motion.div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" variants={staggerContainer} initial="hidden" animate="show">

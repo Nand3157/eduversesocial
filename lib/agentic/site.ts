@@ -43,8 +43,9 @@ export const ONBOARDING = {
   freeTier: true,
   selfServeSignup: "/signup",
   selfServeKeyGeneration: "Sign in at /signup then create an access token from Dashboard > Settings.",
-  sandboxEnvironment: "The public read-only endpoints (/api/health, GET /api/reviews) are open without credentials for smoke tests.",
-  zeroAuthEndpoints: ["/api/health", "/api/reviews (GET)", "/openapi.json", "/llms.txt", "/.well-known/mcp"],
+  sandboxEnvironment:
+    "Try /demo for a read-only sandbox dashboard with simulated Meta analytics — no login or OAuth required. Public read-only endpoints (/api/health, GET /api/reviews) are also open without credentials for smoke tests.",
+  zeroAuthEndpoints: ["/demo", "/privacy", "/api/health", "/api/reviews (GET)", "/openapi.json", "/llms.txt", "/.well-known/mcp"],
   rateLimits: "Public review submissions: 5 per minute per client. Chat: metered per session. Health: unmetered."
 } as const;
 

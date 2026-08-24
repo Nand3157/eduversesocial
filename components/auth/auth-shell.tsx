@@ -23,6 +23,16 @@ export function AuthShell({ children, title, description }: { children: React.Re
           <h1 className="mt-8 font-heading text-3xl font-medium tracking-tight text-ink">{title}</h1>
           <p className="mt-2 text-sm leading-6 text-mutedText">{description}</p>
           {children}
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3 border-t border-borderSoft pt-4 text-[11px] text-mutedText">
+            <Link href="/privacy" className="font-medium text-primary hover:underline">
+              Privacy & Data Security
+            </Link>
+            <span className="h-3 w-px bg-borderSoft" />
+            <Link href="/demo" className="font-medium text-primary hover:underline">
+              Explore Live Demo
+            </Link>
+            <span className="hidden sm:inline text-faintText">· AES-256-GCM · RLS-isolated</span>
+          </div>
         </section>
       </div>
     </main>

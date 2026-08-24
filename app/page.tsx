@@ -72,6 +72,7 @@ const productLinks = [
 
 const exploreLinks = [
   { label: "How it works", href: "/#telemetry" },
+  { label: "Live Demo", href: "/demo" },
   { label: "Features", href: "/#features" },
   { label: "Sign in", href: "/login" },
   { label: "Create account", href: "/signup" }
@@ -145,13 +146,31 @@ function Footer() {
             <li>Official Meta Graph OAuth</li>
             <li>Instagram · Facebook · Threads</li>
             <li>Your data, retained locally</li>
+            <li>
+              <Link href="/privacy" className="font-medium text-primary hover:underline">
+                Privacy & Data Security
+              </Link>
+            </li>
+            <li>
+              <Link href="/demo" className="font-medium text-primary hover:underline">
+                Explore Live Demo (no login)
+              </Link>
+            </li>
           </ul>
         </div>
       </div>
 
       <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-borderSoft pt-6 text-xs text-mutedText sm:flex-row">
         <p>© {new Date().getFullYear()} EduVerse. All rights reserved.</p>
-        <p className="font-mono">Social intelligence that remembers your audience.</p>
+        <div className="flex flex-wrap items-center gap-4">
+          <Link href="/privacy" className="font-medium text-mutedText hover:text-ink">
+            Privacy Policy
+          </Link>
+          <Link href="/demo" className="font-medium text-mutedText hover:text-ink">
+            Live Demo
+          </Link>
+          <span className="font-mono">Social intelligence that remembers your audience.</span>
+        </div>
       </div>
     </footer>
   );
