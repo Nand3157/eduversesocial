@@ -181,10 +181,6 @@ export function LandingPage() {
           <Wordmark />
           <div className="flex items-center gap-2.5">
             <ThemeToggle />
-            <Button onClick={() => router.push("/demo")} size="sm" variant="secondary" className="hidden sm:inline-flex border-amber-500/20 bg-amber-500/10 text-amber-700 hover:bg-amber-500/20">
-              <Eye className="h-3.5 w-3.5" />
-              Live Demo
-            </Button>
             <Button onClick={() => router.push("/login")} size="sm" className="hidden bg-ink text-background hover:bg-ink/90 sm:inline-flex">
               <ScrambleHover>Open dashboard</ScrambleHover>
               <ArrowRight className="h-3.5 w-3.5" />
@@ -215,7 +211,6 @@ export function LandingPage() {
               <div className="space-y-1 px-5 py-4">
                 {[
                   ["How it works", "telemetry"],
-                  ["Try demo", "sandbox"],
                   ["Features", "features"],
                   ["Reviews", "feedback"]
                 ].map(([label, id]) => (
@@ -228,11 +223,7 @@ export function LandingPage() {
                     {label}
                   </button>
                 ))}
-                <Button onClick={() => router.push("/demo")} className="mt-2 w-full bg-amber-500/15 text-amber-700 border border-amber-500/20 hover:bg-amber-500/25">
-                  <Eye className="h-4 w-4" />
-                  Explore Live Demo
-                </Button>
-                <Button onClick={() => router.push("/login")} className="w-full bg-ink text-background hover:bg-ink/90">
+                <Button onClick={() => router.push("/login")} className="mt-2 w-full bg-ink text-background hover:bg-ink/90">
                   Open dashboard
                   <ArrowRight className="h-4 w-4" />
                 </Button>
@@ -295,10 +286,6 @@ export function LandingPage() {
               <Button onClick={() => router.push("/signup")} className="bg-ink px-6 py-3 text-sm text-background hover:bg-ink/90">
                 Start free
                 <ArrowRight className="h-4 w-4" />
-              </Button>
-              <Button onClick={() => router.push("/demo")} variant="secondary" className="border-transparent bg-card px-6 py-3 text-sm hover:bg-surface hover:border-transparent">
-                <Eye className="h-4 w-4 text-primary" />
-                Explore Live Demo
               </Button>
               <Button
                 onClick={scrollToUseCase}
@@ -552,11 +539,12 @@ export function LandingPage() {
             <p className="text-center font-mono text-[11px] uppercase tracking-[0.22em] text-mutedText">
               One feed across the networks you already post to
             </p>
+            <p className="mt-2 text-center text-[11px] text-faintText">Live via official Meta Graph API — Instagram · Facebook · Threads</p>
             <div className="marquee-mask mt-7">
               <div className="marquee flex w-max items-center">
                 {[0, 1, 2].map((copy) => (
                   <div aria-hidden={copy > 0} className="flex items-center" key={copy}>
-                    {platformLogos.map((plat) => (
+                    {platformLogos.filter((plat) => ["instagram", "facebook", "threads"].includes(plat.slug)).map((plat) => (
                       <div
                         key={`${copy}-${plat.slug}`}
                         className="mx-5 flex items-center gap-2 text-mutedText transition-colors duration-200 hover:text-ink sm:mx-7"
@@ -733,7 +721,7 @@ export function LandingPage() {
               no OAuth required.
             </p>
             <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-              <Button onClick={() => router.push("/demo")} variant="secondary" className="bg-background/10 border border-background/15 px-6 py-3 text-sm text-background backdrop-blur hover:bg-background/15">
+              <Button onClick={() => router.push("/demo")} className="border-2 border-background bg-transparent px-6 py-3 text-sm font-medium text-background hover:bg-background hover:text-ink">
                 <Eye className="h-4 w-4" />
                 Explore Live Demo
               </Button>
