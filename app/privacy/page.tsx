@@ -140,7 +140,7 @@ export default function PrivacyPage() {
             <Section icon={KeyRound} title="How tokens are protected" id="tokens">
               <p>
                 After you approve on Meta, Meta redirects back with a short-lived code. EduVerse exchanges that code server-side for a
-                long-lived (60-day) User Access Token, then immediately enumerates your Pages and linked Instagram Business accounts. Only
+                long-lived (30-day) User Access Token, then immediately enumerates your Pages and linked Instagram Business accounts. Only
                 the resulting <strong className="font-semibold text-ink">page-scoped tokens</strong> are retained.
               </p>
               <ul className="list-disc space-y-2 pl-5">
@@ -168,7 +168,7 @@ export default function PrivacyPage() {
               <p className="rounded-xl border border-success/20 bg-success/10 px-4 py-3 text-xs leading-relaxed">
                 <strong className="text-success">Security posture:</strong> Nonce-based CSP in production (
                 <code className="rounded bg-white/60 px-1 py-0.5">script-src &apos;nonce-…&apos; &apos;strict-dynamic&apos;</code>),
-                HSTS 2 years, X-Frame-Options DENY, COOP/COEP, and a minimal Permissions-Policy. Media URLs for publishing are validated
+                HSTS 30 days, X-Frame-Options DENY, COOP/COEP, and a minimal Permissions-Policy. Media URLs for publishing are validated
                 to be public HTTPS (localhost/private IPs are rejected).
               </p>
             </Section>
@@ -206,7 +206,7 @@ export default function PrivacyPage() {
 
             <Section icon={Clock3} title="Retention & expiry" id="retention">
               <ul className="list-disc space-y-2 pl-5">
-                <li>Page tokens expire after 60 days. EduVerse flags them as “Token expiring soon” 7 days before expiry and “Expired” after.</li>
+                <li>Page tokens expire after 30 days. EduVerse flags them as “Token expiring soon” 7 days before expiry and “Expired” after.</li>
                 <li>Analytics cache is per-day; yesterday&apos;s rows remain readable until superseded but are never used to fabricate metrics.</li>
                 <li>Scheduled posts remain until published/cancelled, then archived with attempts for audit.</li>
               </ul>

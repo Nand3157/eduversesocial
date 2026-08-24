@@ -43,7 +43,7 @@ Live analytics (no mocks), encrypted Meta publishing, idempotent scheduling, and
 | **Facebook + Instagram** | `GET /api/meta/oauth` → `facebook.com/dialog/oauth` | `public_profile, pages_show_list, pages_read_engagement, pages_manage_posts, instagram_basic, instagram_content_publish, instagram_manage_insights` |
 | **Threads** | `GET /api/meta/threads` → `threads.net/oauth/authorize` | `threads_basic, threads_content_publish, threads_manage_insights` |
 
-- Short-lived code → **60-day long-lived token** (`fb_exchange_token`), pages enumerated via `/me/accounts`, Instagram Business accounts linked via `parent_account_id`.
+- Short-lived code → **30-day long-lived token** (`fb_exchange_token`), pages enumerated via `/me/accounts`, Instagram Business accounts linked via `parent_account_id`.
 - Tokens encrypted at rest with **AES-256-GCM** (`iv.tag.ciphertext` base64url, key = `SHA-256(ENCRYPTION_KEY)`).
 - CSRF state via `HttpOnly` `SameSite=Lax` cookies (1800s / 600s).
 
@@ -382,7 +382,7 @@ Security schemes: `sessionCookie` (Supabase Auth), `schedulerSecret` (Bearer), `
 ## Security
 
 - **Token encryption** — AES-256-GCM with random 12-byte IV + auth tag, key derived via `SHA-256(ENCRYPTION_KEY)`.
-- **CSP** — per-request nonce in production (`script-src 'nonce-...' 'strict-dynamic'`), `connect-src` whitelists Supabase + Meta Graph hosts, `X-Frame-Options DENY`, `HSTS` 2 years, `COOP/COEP`, `Permissions-Policy`.
+- **CSP** — per-request nonce in production (`script-src 'nonce-...' 'strict-dynamic'`), `connect-src` whitelists Supabase + Meta Graph hosts, `X-Frame-Options DENY`, `HSTS` 30 days, `COOP/COEP`, `Permissions-Policy`.
 - **Rate limiting** — Upstash Redis (distributed) with in-memory fallback; fixed-window per route (login 10/5min, signup 10/hr, chat 60/min, reviews 5/min, etc.).
 - **RLS** — every user table gated by `is_workspace_member` / `workspace_owner`; `post-media` bucket enforces `foldername(name)[1] = auth.uid()::text`.
 - **SSRF guard** — `assertHttpsMedia` blocks `localhost` / private IPs before calling Meta publish.

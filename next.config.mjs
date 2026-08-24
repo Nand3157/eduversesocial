@@ -16,7 +16,7 @@ const securityHeaders = [
 // request with a fresh nonce by proxy.ts (static CSP here could not carry a
 // nonce, which would force keeping 'unsafe-inline' for scripts).
 const productionHeaders = [
-  { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" }
+  { key: "Strict-Transport-Security", value: "max-age=2592000; includeSubDomains" }
 ];
 
 const nextConfig = {
