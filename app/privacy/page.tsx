@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowLeft, Clock3, Database, Eye, KeyRound, Lock, Mail, ShieldCheck, Trash2, Users } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/providers/theme-toggle";
 import { SITE } from "@/lib/agentic/site";
 
 export const metadata: Metadata = {
@@ -46,6 +47,7 @@ export default function PrivacyPage() {
                 <Eye className="h-3.5 w-3.5" /> Explore demo
               </Button>
             </Link>
+            <ThemeToggle />
             <Link href="/">
               <Button size="sm" variant="ghost">
                 <ArrowLeft className="h-3.5 w-3.5" /> Back to site

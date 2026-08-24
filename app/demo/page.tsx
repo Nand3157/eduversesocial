@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowLeft, Eye, ShieldCheck, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DemoDashboard } from "@/components/demo/demo-dashboard";
+import { ThemeToggle } from "@/components/providers/theme-toggle";
 
 export const metadata: Metadata = {
   title: "Live Demo — Sandbox Dashboard",
@@ -30,6 +31,7 @@ export default function DemoPage() {
             <Link href="/privacy" className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium text-mutedText hover:text-ink">
               <ShieldCheck className="h-3.5 w-3.5 text-success" /> Privacy & Data Security
             </Link>
+            <ThemeToggle />
             <Link href="/">
               <Button size="sm" variant="secondary">
                 <ArrowLeft className="h-3.5 w-3.5" /> Back to site
