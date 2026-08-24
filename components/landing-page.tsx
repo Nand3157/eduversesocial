@@ -447,8 +447,8 @@ export function LandingPage() {
         </section>
 
         {/* Interactive Sandbox / Mock Dashboard Preview */}
-        <section id="sandbox" className="mx-auto max-w-6xl scroll-mt-24 px-5 sm:px-8">
-          <motion.div {...fadeUp} className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+        <section id="sandbox" className="mx-auto max-w-6xl scroll-mt-24 px-5 pb-16 pt-12 sm:px-8 sm:pb-20 sm:pt-16 lg:pb-24 lg:pt-20">
+          <motion.div {...fadeUp} className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start lg:gap-10">
             <div>
               <p className="inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-700">
                 <Eye className="h-3.5 w-3.5" /> Interactive sandbox · no OAuth required
@@ -482,7 +482,7 @@ export function LandingPage() {
                   <ArrowRight className="h-4 w-4 text-primary" />
                 </Button>
               </div>
-              <p className="mt-3 text-xs text-mutedText">
+              <p className="mt-4 text-xs leading-relaxed text-mutedText">
                 By connecting you agree to our{" "}
                 <a href="/privacy" className="font-medium text-primary underline decoration-primary/30 underline-offset-4 hover:decoration-primary">
                   Privacy Policy
@@ -496,10 +496,10 @@ export function LandingPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.2 }}
               transition={{ duration: 0.6, ease: EASE }}
-              className="relative"
+              className="relative self-start lg:sticky lg:top-24"
             >
               <div className="absolute -inset-4 -z-10 rounded-[28px] bg-gradient-to-br from-amber-500/10 via-accent-soft to-transparent blur-xl" />
-              <Card className="overflow-hidden p-0">
+              <Card className="overflow-hidden p-0 shadow-glass">
                 <div className="flex items-center justify-between border-b border-borderSoft bg-surface px-4 py-3">
                   <div className="flex items-center gap-1.5">
                     <span className="h-2.5 w-2.5 rounded-full bg-danger/70" />
