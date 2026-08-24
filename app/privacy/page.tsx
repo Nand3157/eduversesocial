@@ -165,9 +165,9 @@ export default function PrivacyPage() {
                   cookie (1,800s for Facebook/Instagram, 600s for Threads) and verified on callback. Mismatched state is rejected.
                 </li>
               </ul>
-              <p className="rounded-xl border border-success/20 bg-success/10 px-4 py-3 text-xs leading-relaxed">
+              <p className="rounded-xl border border-success/30 bg-success/10 px-4 py-3 text-xs leading-relaxed text-ink">
                 <strong className="text-success">Security posture:</strong> Nonce-based CSP in production (
-                <code className="rounded bg-white/60 px-1 py-0.5">script-src &apos;nonce-…&apos; &apos;strict-dynamic&apos;</code>),
+                <code className="rounded bg-surface border border-borderSoft px-1 py-0.5 font-mono text-[11px] text-ink">script-src &apos;nonce-…&apos; &apos;strict-dynamic&apos;</code>),
                 HSTS 30 days, X-Frame-Options DENY, COOP/COEP, and a minimal Permissions-Policy. Media URLs for publishing are validated
                 to be public HTTPS (localhost/private IPs are rejected).
               </p>

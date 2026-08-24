@@ -165,9 +165,9 @@ export function MetaConnectModal({ isOpen, onClose, onConnected }: MetaConnectMo
 
           <div className="flex items-start gap-2 rounded-xl border border-success/20 bg-success/10 px-3.5 py-3">
             <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" />
-            <p className="text-[11px] leading-relaxed text-mutedText">
+            <p className="text-[11px] leading-relaxed text-ink">
               OAuth opens on <strong className="font-semibold text-ink">Meta&apos;s consent screen</strong> — we request only{" "}
-              <code className="rounded bg-white/60 px-1 py-0.5 text-[10px]">pages_show_list</code> + related scopes. Tokens are{" "}
+              <code className="rounded bg-surface border border-borderSoft px-1 py-0.5 text-[10px] text-ink">pages_show_list</code> + related scopes. Tokens are{" "}
               <strong className="font-semibold text-ink">AES-256-GCM encrypted</strong> and scoped to your workspace via RLS.
               <a href="/privacy" target="_blank" rel="noopener noreferrer" className="ml-1 font-semibold text-success hover:underline">
                 Privacy & Data Security →
