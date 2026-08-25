@@ -87,27 +87,27 @@ const FormattedMarkdown = React.memo(function FormattedMarkdown({ content }: { c
 
     if (trimmed.startsWith("#### ")) {
       elements.push(
-        <h4 key={i} className="mb-1 mt-3 text-xs font-bold text-primary">
+        <p key={i} className="mb-1 mt-3 text-xs font-bold text-primary">
           {formatInline(trimmed.slice(5))}
-        </h4>
+        </p>
       );
       return;
     }
 
     if (trimmed.startsWith("### ")) {
       elements.push(
-        <h3 key={i} className="mb-1.5 mt-3.5 text-xs font-bold uppercase tracking-wider text-primary">
+        <p key={i} className="mb-1.5 mt-3.5 text-xs font-bold uppercase tracking-wider text-primary">
           {formatInline(trimmed.slice(4))}
-        </h3>
+        </p>
       );
       return;
     }
 
     if (trimmed.startsWith("## ")) {
       elements.push(
-        <h2 key={i} className="mb-1 mt-4 text-sm font-bold text-ink">
+        <p key={i} className="mb-1 mt-4 text-sm font-bold text-ink">
           {formatInline(trimmed.slice(3))}
-        </h2>
+        </p>
       );
       return;
     }

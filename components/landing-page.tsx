@@ -323,7 +323,7 @@ export function LandingPage() {
                 <Check className="h-3.5 w-3.5 text-success" /> Official Meta Graph OAuth
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <Lock className="h-3.5 w-3.5 text-success" /> Encrypted, revocable anytime
+                <Lock aria-hidden="true" className="h-3.5 w-3.5 text-success" /> Encrypted, revocable anytime
               </span>
             </motion.div>
           </div>
@@ -439,7 +439,7 @@ export function LandingPage() {
           <motion.div {...fadeUp} className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start lg:gap-10">
             <div>
               <p className="inline-flex items-center gap-2 rounded-full border border-warning/20 bg-warning/10 px-3 py-1 text-xs font-semibold text-warning">
-                <Eye className="h-3.5 w-3.5" /> Interactive sandbox · no OAuth required
+                <Eye aria-hidden="true" className="h-3.5 w-3.5" /> Interactive sandbox · no OAuth required
               </p>
               <h2 className="mt-4 text-balance font-display text-3xl font-medium leading-[1.08] tracking-tight text-ink sm:text-4xl">
                 Try the dashboard before you connect.
@@ -451,10 +451,10 @@ export function LandingPage() {
               </p>
               <ul className="mt-5 grid gap-2 text-sm text-mutedText">
                 <li className="flex items-start gap-2">
-                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" /> Real dashboard layout — metrics, charts, recommendations, and post telemetry
+                  <Check aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-success" /> Real dashboard layout — metrics, charts, recommendations, and post telemetry
                 </li>
                 <li className="flex items-start gap-2">
-                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" /> Sample data only — clearly marked “Simulated” so you know what&apos;s real vs preview
+                  <Check aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-success" /> Sample data only — clearly marked “Simulated” so you know what&apos;s real vs preview
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" /> One click to switch to live: create account → Connect Meta on our consent screen
