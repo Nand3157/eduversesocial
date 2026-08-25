@@ -1,4 +1,5 @@
 import { API_OPERATIONS } from "@/lib/agentic/api-catalog";
+import { FAQS } from "@/lib/agentic/faq";
 import { ONBOARDING, SITE, getBaseUrl } from "@/lib/agentic/site";
 
 export const dynamic = "force-dynamic";
@@ -48,6 +49,29 @@ Do **not** use EduVerse for: cross-posting to non-Meta networks (YouTube/TikTok/
 - Credentials: sign in, then generate tokens from Dashboard > Settings (${ONBOARDING.selfServeKeyGeneration}).
 - Sandbox: the zero-auth endpoints above are open for smoke tests; ${ONBOARDING.sandboxEnvironment}
 - Rate limits: ${ONBOARDING.rateLimits}
+
+## Pricing
+
+EduVerse is **free during early access**. Sign up at ${baseUrl}/signup with no credit card — every current feature is included at $0. A paid Pro tier with higher limits is planned, but nothing is billed today and no payment method is ever requested.
+
+## Cancellation and refunds
+
+Because the product is free during early access there is nothing to cancel and nothing to refund — no card is stored and no auto-renewal exists. Account owners stay in control instead:
+
+- Disconnect Meta accounts anytime from Dashboard > Settings.
+- Revoke authorization directly inside Meta Business settings.
+- Permanently delete the workspace via Settings > Delete account (clears local data immediately, requests server-side erasure).
+- Privacy/deletion requests: email ${SITE.email}.
+
+If a paid plan launches later, its terms will be published before any purchase is possible.
+
+## Support
+
+Email ${SITE.email} — every message gets a personal reply. Phone ${SITE.phone} for privacy, deletion, or escalation requests. An in-product AI assistant (Dashboard > Chat) is available around the clock, grounded in the account's own analytics. Data-access and backup-erasure instructions live on the Privacy & Data Security page at ${baseUrl}/privacy.
+
+## Frequently asked questions
+
+${FAQS.map((faq) => `### ${faq.question}\n\n${faq.answer}`).join("\n\n")}
 
 ## Agent-callable operations
 

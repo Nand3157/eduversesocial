@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Mail, Phone, Sparkles } from "lucide-react";
 import { LandingPage } from "@/components/landing-page";
 import { SITE } from "@/lib/agentic/site";
+import { faqPageJsonLd } from "@/lib/agentic/faq";
 import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -58,7 +59,8 @@ const jsonLd = {
       url: SITE_URL,
       publisher: { "@id": `${SITE_URL}/#organization` },
       offers: { "@type": "Offer", price: "0", priceCurrency: "USD" }
-    }
+    },
+    faqPageJsonLd(SITE_URL)
   ]
 };
 
@@ -75,6 +77,7 @@ const exploreLinks = [
   { label: "How it works", href: "/#telemetry" },
   { label: "Live Demo", href: "/demo" },
   { label: "Features", href: "/#features" },
+  { label: "FAQ", href: "/#faq" },
   { label: "Sign in", href: "/login" },
   { label: "Create account", href: "/signup" }
 ];

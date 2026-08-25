@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { features, platformLogos } from "@/data/mock";
+import { FAQS } from "@/lib/agentic/faq";
 import { MetaConnectModal } from "@/components/meta/meta-connect-modal";
 import { ScrollProgress } from "@/components/ui/scroll-progress";
 import { ThemeToggle } from "@/components/providers/theme-toggle";
@@ -221,6 +222,7 @@ export function LandingPage() {
                 {[
                   ["How it works", "telemetry"],
                   ["Features", "features"],
+                  ["FAQ", "faq"],
                   ["Reviews", "feedback"]
                 ].map(([label, id]) => (
                   <button
@@ -717,6 +719,47 @@ export function LandingPage() {
                 </TiltCard>
               ))
             )}
+          </motion.div>
+        </section>
+
+        {/* FAQ — canonical answers also exposed via FAQPage JSON-LD, llms.txt and /md/faq */}
+        <section id="faq" className="mx-auto max-w-6xl scroll-mt-24 px-5 py-24 sm:px-8 lg:py-32">
+          <motion.div {...fadeUp} className="max-w-2xl">
+            <p className="font-mono text-xs uppercase tracking-[0.22em] text-primary">Answers</p>
+            <h2 className="mt-4 text-balance font-display text-4xl font-medium leading-[1.08] tracking-tight text-ink sm:text-5xl">
+              Pricing, refunds &amp; support — plainly stated.
+            </h2>
+            <p className="mt-5 text-pretty text-base leading-relaxed text-mutedText">
+              The short version: EduVerse is free during early access, nothing is ever charged
+              without notice, and your Meta connection stays revocable in one click.
+            </p>
+          </motion.div>
+
+          <motion.div {...fadeUp} className="mx-auto mt-12 grid max-w-3xl gap-3">
+            {FAQS.map((faq) => (
+              <details
+                key={faq.question}
+                className="group rounded-2xl border border-borderSoft bg-card shadow-glass transition-[border-color] open:border-primary/30"
+              >
+                <summary className="flex min-h-[56px] cursor-pointer list-none touch-manipulation items-center justify-between gap-4 rounded-2xl px-5 py-4 text-sm font-semibold text-ink outline-none transition-[background-color] hover:bg-surface/60 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background [&::-webkit-details-marker]:hidden">
+                  {faq.question}
+                  <span
+                    aria-hidden="true"
+                    className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-borderSoft bg-surface text-mutedText transition-transform duration-200 group-open:rotate-45 group-open:border-primary/40 group-open:text-primary"
+                  >
+                    +
+                  </span>
+                </summary>
+                <p className="px-5 pb-5 text-sm leading-7 text-mutedText">{faq.answer}</p>
+              </details>
+            ))}
+            <p className="mt-2 px-1 text-xs text-faintText">
+              Something else? Email{" "}
+              <a className="font-medium text-primary underline decoration-primary/30 underline-offset-4 hover:decoration-primary" href="mailto:hello@eduverse.app">
+                hello@eduverse.app
+              </a>{" "}
+              — every message gets a personal reply.
+            </p>
           </motion.div>
         </section>
 

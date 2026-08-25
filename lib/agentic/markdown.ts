@@ -42,6 +42,8 @@ export function wantsMarkdown(acceptHeader: string | null | undefined): boolean 
   return false;
 }
 
+import { FAQS } from "@/lib/agentic/faq";
+
 function mdLink(label: string, href: string): string {
   return `- [${label}](${href})`;
 }
@@ -52,6 +54,7 @@ export function siteMapMarkdown(baseUrl: string): string[] {
     "## Site map",
     "",
     mdLink("Home (product overview)", `${baseUrl}/`),
+    mdLink("FAQ (pricing, refunds/cancellation, support)", `${baseUrl}/md/faq`),
     mdLink("Sign up (free tier, self-serve)", `${baseUrl}/signup`),
     mdLink("Dashboard", `${baseUrl}/dashboard`),
     mdLink("OpenAPI specification (JSON)", `${baseUrl}/openapi.json`),
@@ -72,9 +75,20 @@ const PAGE_TITLES: Record<string, { title: string; body: string[] }> = {
       "1. Connect a Meta account once via official Graph OAuth.",
       "2. Real signals — reach, saves, comment sentiment, posting windows — appear in the dashboard.",
       "3. The assistant recommends what to publish next, grounded in live telemetry.",
+      "## Pricing, cancellation & support (short version)",
+      "- Pricing: free during early access; no credit card at signup; a paid Pro tier is planned but nothing is billed today.",
+      "- Cancellation/refunds: nothing to cancel while free — no stored card, no auto-renewal. Disconnect Meta accounts or delete the workspace anytime from Settings.",
+      "- Support: email hello@eduverse.app (every message answered); phone +1-555-012-3456 for privacy/escalation; in-product AI chat available around the clock.",
       "## Best-fit use cases",
       "- Deciding what content to post next on Instagram, Facebook, or Threads.",
       "- Turning raw engagement callbacks into a durable audience memory."
+    ]
+  },
+  "/faq": {
+    title: "EduVerse FAQ — pricing, refunds/cancellation, support, security",
+    body: [
+      "Canonical answers, kept identical to the landing-page FAQ section and the FAQPage JSON-LD.",
+      ...FAQS.flatMap((faq) => [`## ${faq.question}`, "", faq.answer])
     ]
   },
   "/signup": {
