@@ -435,6 +435,105 @@ button {
   }
 }
 
+/* ── Overdrive: cinematic memory field ── */
+@property --field-hue {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 18deg;
+}
+@property --field-glow {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0.55;
+}
+
+.memory-field-wrap {
+  position: absolute;
+  inset: -120px 0 -40px 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  isolation: isolate;
+  /* Stripe mesh fallthrough + Linear depth */
+  background:
+    radial-gradient(820px circle at 22% 18%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 62%),
+    radial-gradient(680px circle at 82% 72%, color-mix(in srgb, var(--warn) 18%, transparent), transparent 58%),
+    radial-gradient(560px circle at 48% 88%, color-mix(in srgb, var(--ok) 14%, transparent), transparent 60%);
+}
+
+.memory-field-wrap canvas {
+  filter: saturate(1.22) contrast(1.14) brightness(1.04);
+  opacity: 1;
+}
+.memory-field-wrap::after {
+  content:"";
+  position:absolute; inset:0;
+  background: linear-gradient(to bottom, transparent 68%, var(--background) 100%);
+  pointer-events:none;
+}
+
+/* Scroll-driven reveals — progressive enhancement, fallback is Framer whileInView */
+@supports (animation-timeline: view()) {
+  .reveal-on-scroll {
+    animation: revealUp linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 28%;
+  }
+  @keyframes revealUp {
+    from { opacity: 0; transform: translateY(18px) scale(0.985); filter: blur(2px); }
+    to   { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+  }
+  .feature-stagger > * {
+    animation: revealUp 0.7s cubic-bezier(0.16,1,0.3,1) both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 22%;
+  }
+  .feature-stagger > *:nth-child(2) { animation-delay: 0.06s; }
+  .feature-stagger > *:nth-child(3) { animation-delay: 0.12s; }
+  .feature-stagger > *:nth-child(4) { animation-delay: 0.18s; }
+  .feature-stagger > *:nth-child(5) { animation-delay: 0.22s; }
+  .feature-stagger > *:nth-child(6) { animation-delay: 0.26s; }
+  /* marquee is not view-timeline; keep linear */
+}
+
+/* ── Overdrive v2 BOLD — glass + gradient headline ── */
+.hero-display em {
+  background: linear-gradient(102deg, var(--accent) 12%, color-mix(in srgb, var(--accent) 88%, var(--warn)) 48%, var(--ok) 92%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 1px 10px color-mix(in srgb, var(--accent) 18%, transparent));
+}
+.hero-mesh-glow {
+  position: absolute;
+  left: 50%; top: -320px;
+  width: 1100px; height: 740px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: -2;
+  background:
+    radial-gradient(640px circle at 50% 38%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 68%),
+    radial-gradient(520px circle at 68% 62%, color-mix(in srgb, var(--warn) 14%, transparent), transparent 64%);
+  filter: blur(2px);
+}
+.glass-card {
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+  backdrop-filter: blur(16px) saturate(1.08);
+  -webkit-backdrop-filter: blur(16px) saturate(1.08);
+  border: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
+  box-shadow: 0 1px 2px rgba(34,27,19,0.06), 0 20px 48px -20px rgba(34,27,19,0.22), inset 0 1px 0 color-mix(in srgb, var(--surface) 90%, transparent);
+}
+.glass-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--line));
+  box-shadow: 0 4px 16px rgba(34,27,19,0.08), 0 28px 64px -24px rgba(34,27,19,0.30), 0 0 0 1px color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+/* Cinematic page transition helpers (View Transitions fallback) */
+::view-transition-old(root) { animation: vt-out 0.22s ease; }
+::view-transition-new(root) { animation: vt-in 0.32s cubic-bezier(0.16,1,0.3,1); }
+@keyframes vt-out { to { opacity: 0; transform: scale(0.98); } }
+@keyframes vt-in { from { opacity: 0; transform: translateY(8px) scale(0.985); } }
+
 /* Reduce motion for vestibular safety */
 @media (prefers-reduced-motion: reduce) {
   *,

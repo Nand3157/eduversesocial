@@ -13,6 +13,7 @@ import { MetaConnectModal } from "@/components/meta/meta-connect-modal";
 import { ScrollProgress } from "@/components/ui/scroll-progress";
 import { ThemeToggle } from "@/components/providers/theme-toggle";
 import { TiltCard } from "@/components/ui/tilt-card";
+import { MemoryField } from "@/components/landing/memory-field";
 import { ScrambleHover } from "@/components/smoothui/scramble-hover";
 import {
   EASE_OUT,
@@ -241,13 +242,13 @@ export function LandingPage() {
 
       <main id="main-content">
         {/* Hero */}
-        <section ref={heroRef} className="relative overflow-hidden px-5 pb-16 pt-20 sm:px-8 sm:pt-28 lg:pb-24">
+        <section ref={heroRef} className="relative overflow-hidden px-5 pb-20 pt-24 sm:px-8 sm:pt-32 lg:pb-28">
           <div className="pointer-events-none absolute inset-0 -z-10 texture-dots opacity-60" />
           <motion.div style={{ x: "-50%", y: heroOrbY, scale: heroOrbScale }} className="pointer-events-none absolute left-1/2 top-[-320px] -z-10 h-[640px] w-[900px]">
             <div className="h-full w-full animate-float rounded-full bg-accent-soft blur-3xl" />
           </motion.div>
 
-          <div className="mx-auto max-w-3xl text-center">
+          <div className="mx-auto max-w-[52rem] text-center">
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
@@ -263,7 +264,7 @@ export function LandingPage() {
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.08, ease: EASE }}
-              className="mt-7 text-balance font-display text-5xl font-medium leading-[1.05] tracking-tight text-ink sm:text-6xl lg:text-7xl"
+              className="hero-display mt-8 text-balance font-display text-[2.9rem] font-[550] leading-[0.98] tracking-[-0.03em] text-ink sm:text-6xl lg:text-[4.85rem]"
             >
               Social intelligence that <em className="italic text-primary">remembers</em> your audience.
             </motion.h1>
@@ -475,7 +476,7 @@ export function LandingPage() {
               className="relative self-start lg:sticky lg:top-24"
             >
               <div className="absolute -inset-4 -z-10 rounded-[28px] bg-gradient-to-br from-warning/10 via-accent-soft to-transparent blur-xl" />
-              <Card className="overflow-hidden p-0 shadow-glass">
+              <Card className="glass-card overflow-hidden p-0 shadow-glass">
                 <div className="flex items-center justify-between border-b border-borderSoft bg-surface px-4 py-3">
                   <div className="flex items-center gap-1.5">
                     <span className="h-2.5 w-2.5 rounded-full bg-danger/70" />
@@ -597,7 +598,7 @@ export function LandingPage() {
                     setActiveFeature(index);
                   }
                 }}
-                className={`interactive-card group rounded-2xl border bg-card p-6 shadow-glass outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                className={`interactive-card glass-card group rounded-2xl border p-6 shadow-glass outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                   activeFeature === index ? "border-primary bg-accent-soft/40 shadow-glow" : "border-borderSoft hover:border-borderSoft/80"
                 }`}
               >
