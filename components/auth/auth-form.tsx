@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { signIn, signUp, requestPasswordReset, updatePassword, type AuthResult } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ const config = {
   reset: { action: updatePassword, submit: "Update password", helper: "", link: "/login", linkLabel: "Back to sign in" }
 } as const;
 
-const inputClass = "mt-2 h-11 w-full rounded-xl border border-borderSoft bg-surface px-3 text-ink outline-none ring-primary transition focus:ring-2";
+const inputClass = "mt-2 h-11 w-full rounded-xl border border-borderSoft bg-surface px-3 text-ink outline-none transition-[border-color,box-shadow] focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/40";
 
 export function AuthForm({ mode, next }: { mode: Mode; next?: string }) {
   const details = config[mode];
@@ -23,12 +23,23 @@ export function AuthForm({ mode, next }: { mode: Mode; next?: string }) {
   const hasPassword = mode === "login" || mode === "signup" || mode === "reset";
   // Only the signup flow asks for a name; sign in stays a two-field form.
   const hasName = mode === "signup";
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Move focus to the first field when the server action reports an error so
+  // keyboard and screen-reader users land directly on what needs fixing.
+  useEffect(() => {
+    if (!state.error) return;
+    const form = formRef.current;
+    if (!form) return;
+    const firstField = form.querySelector<HTMLElement>("input:not([type=hidden])");
+    firstField?.focus();
+  }, [state.error]);
 
   // Optional show/hide for the password field — saves typos, costs nothing.
   const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <form action={formAction} className="mt-7 space-y-4">
+    <form ref={formRef} action={formAction} className="mt-7 space-y-4">
       {next && <input name="next" type="hidden" value={next} />}
       {hasName && (
         <label className="block text-sm font-medium text-mutedText">
@@ -37,7 +48,7 @@ export function AuthForm({ mode, next }: { mode: Mode; next?: string }) {
             autoComplete="name"
             className={inputClass}
             name="name"
-            placeholder="How should we address you?"
+            placeholder="How should we address you?…"
             required
             type="text"
           />
@@ -46,7 +57,7 @@ export function AuthForm({ mode, next }: { mode: Mode; next?: string }) {
       {mode !== "reset" && (
         <label className="block text-sm font-medium text-mutedText">
           Email
-          <input autoComplete="email" className={inputClass} name="email" required type="email" />
+          <input autoCapitalize="none" autoComplete="email" className={inputClass} name="email" required spellCheck={false} type="email" />
         </label>
       )}
       {hasPassword && (
@@ -68,7 +79,7 @@ export function AuthForm({ mode, next }: { mode: Mode; next?: string }) {
               onClick={() => setShowPassword((visible) => !visible)}
               type="button"
             >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              {showPassword ? <EyeOff aria-hidden="true" className="h-4 w-4" /> : <Eye aria-hidden="true" className="h-4 w-4" />}
             </button>
           </span>
         </label>
@@ -78,10 +89,10 @@ export function AuthForm({ mode, next }: { mode: Mode; next?: string }) {
           Forgot password?
         </Link>
       )}
-      {state.error && <p aria-live="polite" className="rounded-xl border border-danger/30 bg-danger/10 p-3 text-sm text-danger">{state.error}</p>}
-      {state.message && <p aria-live="polite" className="rounded-xl border border-success/30 bg-success/10 p-3 text-sm text-success">{state.message}</p>}
+      {state.error && <p role="alert" className="rounded-xl border border-danger/30 bg-danger/10 p-3 text-sm text-danger">{state.error}</p>}
+      {state.message && <p role="status" className="rounded-xl border border-success/30 bg-success/10 p-3 text-sm text-success">{state.message}</p>}
       <Button className="w-full" disabled={pending} type="submit">
-        {pending && <Loader2 className="h-4 w-4 animate-spin" />}
+        {pending && <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />}
         {details.submit}
       </Button>
       <p className="text-center text-[11px] leading-relaxed text-mutedText">
@@ -96,7 +107,7 @@ export function AuthForm({ mode, next }: { mode: Mode; next?: string }) {
           href="/demo"
           className="flex items-center justify-center gap-1.5 rounded-xl border border-warning/20 bg-warning/10 px-3 py-2.5 text-xs font-medium text-warning transition hover:bg-warning/15"
         >
-          <Eye className="h-3.5 w-3.5" /> Explore Live Demo — no signup required
+          <Eye aria-hidden="true" className="h-3.5 w-3.5" /> Explore Live Demo — no signup required
         </Link>
       )}
       {details.helper && (

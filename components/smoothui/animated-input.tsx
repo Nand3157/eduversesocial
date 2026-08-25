@@ -54,7 +54,7 @@ export function AnimatedInput({
       ) : null}
       <input
         aria-label={label}
-        className={`peer h-10 w-full rounded-full border border-borderSoft bg-surface pl-10 pr-4 text-sm text-ink outline-none transition placeholder:text-faintText focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/30 ${inputClassName}`}
+        className={`peer h-10 w-full rounded-full border border-borderSoft bg-surface pl-10 pr-4 text-sm text-ink outline-none transition-[border-color,box-shadow] placeholder:text-faintText focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-50 ${inputClassName}`}
         disabled={disabled}
         id={inputId}
         onBlur={() => setIsFocused(false)}

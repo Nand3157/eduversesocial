@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 
 export default function NotFound() {
   return (
-    <main className="grid min-h-screen place-items-center p-6 text-center">
+    <main id="main-content" className="grid min-h-screen place-items-center p-6 text-center">
       <div>
-        <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-accent-soft text-primary">
+        <span aria-hidden="true" className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-accent-soft text-primary">
           <Compass />
         </span>
         <p className="mt-6 text-sm font-semibold text-primary">404</p>
@@ -18,15 +18,15 @@ export default function NotFound() {
           page.
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-          <Link href="/">
-            <Button>Back home</Button>
-          </Link>
-          <Link href="/dashboard">
-            <Button variant="secondary">
-              <LayoutDashboard className="h-4 w-4" />
+          <Button asChild>
+            <Link href="/">Back home</Link>
+          </Button>
+          <Button asChild variant="secondary">
+            <Link href="/dashboard">
+              <LayoutDashboard className="h-4 w-4" aria-hidden="true" />
               Open dashboard
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
         <nav aria-label="Recovery resources" className="mx-auto mt-8 max-w-md rounded-2xl border border-borderSoft bg-surface p-5 text-left">
           <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-faintText">For agents and crawlers</p>

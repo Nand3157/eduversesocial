@@ -162,7 +162,7 @@ function Footer() {
       </div>
 
       <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-borderSoft pt-6 text-xs text-mutedText sm:flex-row">
-        <p>© {new Date().getFullYear()} EduVerse. All rights reserved.</p>
+        <p>© <CurrentYear /> EduVerse. All rights reserved.</p>
         <div className="flex flex-wrap items-center gap-4">
           <Link href="/privacy" className="font-medium text-mutedText hover:text-ink">
             Privacy Policy
@@ -188,4 +188,10 @@ export default function Home() {
       <Footer />
     </>
   );
+}
+
+// The footer is a server component; without this the copyright year freezes at
+// build time. Renders the request-time year, then corrects on the client.
+function CurrentYear() {
+  return <span suppressHydrationWarning>{new Date().getFullYear()}</span>;
 }

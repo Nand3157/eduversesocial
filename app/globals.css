@@ -79,6 +79,20 @@ button {
   cursor: pointer;
 }
 
+/* Remove the double-tap zoom delay on all tappable controls (touch-action) */
+button,
+a,
+[role="button"],
+[role="radio"],
+input[type="checkbox"],
+input[type="radio"],
+select,
+summary,
+label:has(input) {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
 ::selection {
   background: var(--accent-soft);
   color: var(--ink);
@@ -394,14 +408,16 @@ button {
   transition: transform 150ms ease;
 }
 
-.skip-link:focus {
+.skip-link:focus-visible {
   transform: translateY(0);
 }
 
 /* Higher contrast for low-vision users */
 @media (prefers-contrast: more) {
   :root {
-    --line: var(--border);
+    /* --border was never defined; use a stronger ink-based line so the
+       override actually takes effect. */
+    --line: color-mix(in srgb, var(--ink) 45%, transparent);
     --faint: var(--muted);
   }
 

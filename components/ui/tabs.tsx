@@ -19,7 +19,7 @@ export function TabsTrigger({ className, ...props }: React.ComponentPropsWithout
   return (
     <TabsPrimitive.Trigger
       className={cn(
-        "rounded-full px-3.5 py-1.5 text-xs font-medium text-mutedText transition data-[state=active]:bg-card data-[state=active]:text-ink data-[state=active]:shadow-sm",
+        "touch-manipulation rounded-full px-3.5 py-1.5 text-xs font-medium text-mutedText outline-none transition-[background-color,color,box-shadow] hover:bg-card/70 hover:text-ink focus-visible:ring-2 focus-visible:ring-accent data-[state=active]:bg-card data-[state=active]:text-ink data-[state=active]:shadow-sm",
         className
       )}
       {...props}
@@ -28,5 +28,5 @@ export function TabsTrigger({ className, ...props }: React.ComponentPropsWithout
 }
 
 export function TabsContent({ className, ...props }: React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content>) {
-  return <TabsPrimitive.Content className={cn("outline-none", className)} {...props} />;
+  return <TabsPrimitive.Content className={cn("focus-visible:outline-none", className)} {...props} />;
 }

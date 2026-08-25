@@ -170,7 +170,10 @@ export function ChatInterface() {
   const [input, setInput] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [thinking, setThinking] = useState(false);
-  const [activeProvider, setActiveProvider] = useState<string>("Gemini 3.5 Flash");
+  // Neutral until /api/ai/status confirms the provider — avoids displaying an
+  // unverified product claim if the status check fails.
+  const [activeProvider, setActiveProvider] = useState<string>("AI assistant");
+  const [imageError, setImageError] = useState<string | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loadingConversation, setLoadingConversation] = useState(false);
   const [showSources, setShowSources] = useState<Record<number, boolean>>({});
@@ -239,13 +242,19 @@ export function ChatInterface() {
   }, []);
 
   const prevMessageCountRef = useRef(messages.length);
+  // Autoscroll only when the reader is already near the bottom — scrolling to
+  // the newest message must never yank someone reading earlier history.
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const isNewMessage = messages.length !== prevMessageCountRef.current;
     prevMessageCountRef.current = messages.length;
-    // Smooth-scroll only when a message is added; use the cheap auto scroll for
-    // the frequent content updates during streaming.
+    const container = scrollContainerRef.current;
+    const nearBottom =
+      !container ||
+      container.scrollHeight - container.scrollTop - container.clientHeight < 160;
+    if (!nearBottom && !isNewMessage) return;
     bottomRef.current?.scrollIntoView({ behavior: reduceMotion ? "auto" : isNewMessage ? "smooth" : "auto" });
-  }, [messages]);
+  }, [messages, reduceMotion]);
 
   useEffect(() => {
     const el = textareaRef.current;
@@ -254,11 +263,23 @@ export function ChatInterface() {
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   }, [input]);
 
+  // Clear any pending stream render when the component unmounts mid-stream so
+  // setMessages never fires after navigation away.
+  useEffect(() => {
+    return () => {
+      if (streamTimerRef.current) {
+        clearTimeout(streamTimerRef.current);
+        streamTimerRef.current = null;
+      }
+    };
+  }, []);
+
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    setImageError(null);
     if (file.size > 4 * 1024 * 1024) {
-      alert("Image must be under 4 MB.");
+      setImageError("Image must be under 4 MB — choose a smaller file.");
       return;
     }
     const reader = new FileReader();
@@ -269,10 +290,13 @@ export function ChatInterface() {
 
   function removeImage() {
     setImagePreview(null);
+    setImageError(null);
   }
 
   function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === "Enter" && !e.shiftKey) {
+    // Ignore Enter during IME composition (candidate selection) so Japanese,
+    // Korean and Chinese input does not send the message prematurely.
+    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
       if (!thinking && (input.trim() || imagePreview)) {
         handleSubmit();
@@ -306,12 +330,12 @@ export function ChatInterface() {
 
       if (!response.ok || !response.body) {
         const payload = await response.json().catch(() => null);
-        throw new Error(payload?.error ?? "Unable to generate a response.");
+        throw new Error(payload?.error ?? "Unable to generate a response. Check your connection and try again.");
       }
 
       const providerHeader = response.headers.get("X-AI-Provider");
       const modelHeader = response.headers.get("X-AI-Model");
-      if (providerHeader === "gemini" || modelHeader) setActiveProvider("Gemini 3.5 Flash");
+      if (providerHeader === "gemini" || modelHeader) setActiveProvider(modelHeader ?? "Gemini");
 
       setConversationId(response.headers.get("X-Conversation-ID") ?? conversationId);
 
@@ -348,7 +372,7 @@ export function ChatInterface() {
       }
       renderStream();
 
-      if (!answerRef.current) throw new Error("The AI provider returned an empty response.");
+      if (!answerRef.current) throw new Error("The AI engine returned an empty reply. Rephrase your question and try again.");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to generate a response.";
       if (!switchedAwayRef.current) {
@@ -378,7 +402,7 @@ export function ChatInterface() {
           }}
           size="sm"
         >
-          <Sparkles className="h-4 w-4" />
+          <Sparkles aria-hidden="true" className="h-4 w-4" />
           New conversation
         </Button>
 
@@ -399,7 +423,8 @@ export function ChatInterface() {
                 <li key={conversation.id}>
                   <button
                     onClick={() => openConversation(conversation.id)}
-                    className={`w-full rounded-lg px-2.5 py-2 text-left text-xs transition ${
+                    aria-current={active ? "true" : undefined}
+                    className={`w-full touch-manipulation rounded-lg px-2.5 py-2 text-left text-xs transition focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none ${
                       active ? "bg-ink text-background" : "text-mutedText hover:bg-card hover:text-ink"
                     }`}
                   >
@@ -414,7 +439,7 @@ export function ChatInterface() {
 
         <div className="mt-6 rounded-xl border border-primary/25 bg-accent-soft p-3">
           <div className="flex items-center gap-2 text-xs font-medium text-primary">
-            <Cpu className="h-3.5 w-3.5" />
+            <Cpu aria-hidden="true" className="h-3.5 w-3.5" />
             Active AI engine
           </div>
           <p className="mt-1 text-xs text-mutedText">{activeProvider}</p>
@@ -440,7 +465,7 @@ export function ChatInterface() {
         <div className="border-b border-borderSoft p-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <span className="grid h-9 w-9 place-items-center rounded-full bg-primary text-background">
+              <span aria-hidden="true" className="grid h-9 w-9 place-items-center rounded-full bg-primary text-background">
                 <Bot className="h-4 w-4" />
               </span>
               <div>
@@ -455,7 +480,7 @@ export function ChatInterface() {
         </div>
 
         {/* Messages */}
-        <div className="flex-1 space-y-5 overflow-y-auto p-5">
+        <div ref={scrollContainerRef} role="log" aria-live="polite" aria-label="Conversation messages" className="flex-1 space-y-5 overflow-y-auto overscroll-contain p-5">
           <AnimatePresence initial={false}>
             {messages.map((message, index) => (
               <motion.div
@@ -493,8 +518,8 @@ export function ChatInterface() {
                       {/* Citations / provenance — grounded in live analytics, never invented */}
                       {message.content && (
                         <div className="mt-3 border-t border-borderSoft pt-2">
-                          <button onClick={() => setShowSources((s) => ({ ...s, [index]: !s[index] }))} className="text-[10px] font-semibold uppercase tracking-wider text-primary hover:text-primary-strong flex items-center gap-1">
-                            <Cpu className="h-3 w-3" /> {showSources[index] ? "Hide sources" : "Show sources"} · {analytics?.live ? `${analytics.accounts.length} accounts · ${analytics.recentPosts.length} posts` : "no live data — connect Meta"}
+                          <button onClick={() => setShowSources((s) => ({ ...s, [index]: !s[index] }))} aria-expanded={Boolean(showSources[index])} className="inline-flex min-h-[32px] touch-manipulation items-center gap-1 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary transition hover:text-primary-strong focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none">
+                            <Cpu aria-hidden="true" className="h-3 w-3" /> {showSources[index] ? "Hide sources" : "Show sources"} · {analytics?.live ? `${analytics.accounts.length} accounts · ${analytics.recentPosts.length} posts` : "no live data — connect Meta"}
                           </button>
                           {showSources[index] && (
                             <div className="mt-2 space-y-1.5 rounded-xl bg-card border border-borderSoft p-2.5">
@@ -508,7 +533,7 @@ export function ChatInterface() {
                               ) : (
                                 <p className="text-xs leading-5 text-mutedText">No live Meta data yet. Connect an account to ground answers in Graph API — otherwise the assistant works off general best practices only.</p>
                               )}
-                              <p className="text-[10px] text-faintText">Sources are live Meta Graph API only. <button onClick={() => { const q = encodeURIComponent("Explain postingData and engagementData from my analytics in plain English with next steps."); setInput(decodeURIComponent(q)); textareaRef.current?.focus(); }} className="underline decoration-dotted hover:text-ink">Explain my charts</button> • <button onClick={() => setShowSources((s) => ({ ...s, [index]: false }))} className="underline decoration-dotted">Close</button></p>
+                              <p className="text-[10px] text-faintText">Sources are live Meta Graph API only. <button onClick={() => { const q = encodeURIComponent("Explain postingData and engagementData from my analytics in plain English with next steps."); setInput(decodeURIComponent(q)); textareaRef.current?.focus(); }} className="inline-flex min-h-[32px] items-center underline decoration-dotted hover:text-ink">Explain my charts</button> • <button onClick={() => setShowSources((s) => ({ ...s, [index]: false }))} className="inline-flex min-h-[32px] items-center underline decoration-dotted">Close</button></p>
                             </div>
                           )}
                         </div>
@@ -547,21 +572,26 @@ export function ChatInterface() {
               <div className="relative">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
+                  width={64}
+                  height={64}
                   src={imagePreview}
-                  alt="Preview"
+                  alt="Preview of the image you attached"
                   className="h-16 w-16 rounded-xl border border-borderSoft object-cover"
                 />
                 <button
                   type="button"
                   onClick={removeImage}
                   aria-label="Remove attached image"
-                  className="absolute -right-2 -top-2 grid h-5 w-5 place-items-center rounded-full bg-ink text-background transition hover:bg-danger"
+                  className="absolute -right-2 -top-2 grid h-7 w-7 touch-manipulation place-items-center rounded-full bg-ink text-background transition hover:bg-danger focus-visible:ring-2 focus-visible:ring-danger/50 focus-visible:outline-none"
                 >
-                  <X className="h-3 w-3" />
+                  <X aria-hidden="true" className="h-3.5 w-3.5" />
                 </button>
               </div>
-              <p className="mt-1 text-xs text-mutedText">Image attached — Gemini will analyse it</p>
+              <p className="mt-1 text-xs text-mutedText">Image attached — the assistant will analyse it</p>
             </div>
+          )}
+          {imageError && (
+            <p role="alert" className="mb-2 text-xs text-danger">{imageError}</p>
           )}
 
           <form className="flex items-end gap-2" onSubmit={handleSubmit}>
@@ -578,9 +608,9 @@ export function ChatInterface() {
               onClick={() => fileInputRef.current?.click()}
               aria-label="Attach image"
               title="Attach image"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-borderSoft text-mutedText transition hover:border-primary hover:text-primary"
+              className="flex h-11 w-11 shrink-0 touch-manipulation items-center justify-center rounded-full border border-borderSoft text-mutedText transition hover:border-primary hover:text-primary focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
             >
-              <ImageIcon className="h-4 w-4" />
+              <ImageIcon aria-hidden="true" className="h-4 w-4" />
             </button>
 
             <label className="sr-only" htmlFor="chat-message">
@@ -590,7 +620,7 @@ export function ChatInterface() {
               ref={textareaRef}
               id="chat-message"
               rows={1}
-              className="max-h-40 flex-1 resize-none rounded-2xl border border-borderSoft bg-surface px-4 py-3 text-sm text-ink outline-none transition placeholder:text-faintText focus:border-primary"
+              className="max-h-40 flex-1 resize-none rounded-2xl border border-borderSoft bg-surface px-4 py-3 text-sm text-ink outline-none transition-[border-color,box-shadow] placeholder:text-faintText focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/40"
               placeholder="Ask about your audience… (Shift+Enter for newline)"
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -604,12 +634,12 @@ export function ChatInterface() {
               type="submit"
               className="h-11 w-11 shrink-0 bg-ink text-background hover:bg-ink/90"
             >
-              <Send className="h-4 w-4" />
+              <Send aria-hidden="true" className="h-4 w-4" />
             </Button>
           </form>
 
           <p className="mt-2 text-center text-[10px] text-faintText">
-            Enter to send · Shift+Enter for new line · Images supported via Gemini
+            Enter to send · Shift+Enter for new line · Image attachments supported
           </p>
         </div>
       </section>

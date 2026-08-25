@@ -42,22 +42,22 @@ export default function PrivacyPage() {
             </span>
           </Link>
           <div className="flex items-center gap-2">
-            <Link href="/demo">
-              <Button size="sm" variant="secondary">
-                <Eye className="h-3.5 w-3.5" /> Explore demo
-              </Button>
-            </Link>
+            <Button asChild size="sm" variant="secondary">
+              <Link href="/demo">
+                <Eye className="h-3.5 w-3.5" aria-hidden="true" /> Explore demo
+              </Link>
+            </Button>
             <ThemeToggle />
-            <Link href="/">
-              <Button size="sm" variant="ghost">
-                <ArrowLeft className="h-3.5 w-3.5" /> Back to site
-              </Button>
-            </Link>
+            <Button asChild size="sm" variant="ghost">
+              <Link href="/">
+                <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Back to site
+              </Link>
+            </Button>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-5 py-10 sm:px-8 sm:py-14">
+      <main id="main-content" className="mx-auto max-w-5xl px-5 py-10 sm:px-8 sm:py-14">
         <div className="mx-auto max-w-3xl">
           <p className="inline-flex items-center gap-2 rounded-full border border-success/20 bg-success/10 px-3 py-1 text-xs font-semibold text-success">
             <Lock className="h-3 w-3" /> Privacy & Data Security
@@ -269,16 +269,12 @@ export default function PrivacyPage() {
                 This notice supplements our Terms. Meta&apos;s own Data Policy and Platform Terms also apply when you authorize access.
               </p>
               <div className="flex flex-wrap gap-2 pt-2">
-                <Link href="/signup">
-                  <Button size="sm" className="bg-ink text-background hover:bg-ink/90">
-                    Create account
-                  </Button>
-                </Link>
-                <Link href="/demo">
-                  <Button size="sm" variant="secondary">
-                    Try sandbox demo first
-                  </Button>
-                </Link>
+                <Button asChild size="sm" className="bg-ink text-background hover:bg-ink/90">
+                  <Link href="/signup">Create account</Link>
+                </Button>
+                <Button asChild size="sm" variant="secondary">
+                  <Link href="/demo">Try sandbox demo first</Link>
+                </Button>
               </div>
             </Section>
 

@@ -24,6 +24,11 @@ import type { MetaAccount } from "@/lib/meta-api";
 
 import { useDashboardStore } from "@/lib/stores/dashboard-store";
 
+const SETTINGS_INPUT =
+  "mt-1.5 h-10 w-full rounded-xl border border-borderSoft bg-surface px-3 text-sm outline-none transition focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 dark:border-borderSoft dark:bg-surface/[0.04]";
+const SETTINGS_TEXTAREA =
+  "mt-1.5 h-20 w-full rounded-xl border border-borderSoft bg-surface p-3 text-sm outline-none transition focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 dark:border-borderSoft dark:bg-surface/[0.04]";
+
 export default function SettingsPage() {
   const router = useRouter();
   const { userName, userRole, userEmail, userBio, setProfile } = useDashboardStore();
@@ -44,6 +49,7 @@ export default function SettingsPage() {
   const [passwords, setPasswords] = useState({ current: "", newPass: "", confirmPass: "" });
   const [passwordError, setPasswordError] = useState("");
   const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [passwordSaving, setPasswordSaving] = useState(false);
 
   // Accounts state
   const [isMetaConnectOpen, setIsMetaConnectOpen] = useState(false);
@@ -77,27 +83,38 @@ export default function SettingsPage() {
 
     // Access state
   const [isAccessOpen, setIsAccessOpen] = useState(false);
-  const [teamMembers, setTeamMembers] = useState(() => {
-    // Hydrate from localStorage so invites survive refresh until backend exists
-    if (typeof window !== "undefined") {
+  const [teamMembers, setTeamMembers] = useState<Array<{ name: string; email: string; role: string }>>([{ name: userName, email: userEmail, role: "Owner" }]);
+  const [membersHydrated, setMembersHydrated] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState("Member");
+  const [inviteError, setInviteError] = useState("");
+  const [lastRemovedMember, setLastRemovedMember] = useState<{ member: { name: string; email: string; role: string }; index: number } | null>(null);
+
+  // Hydrate invites from localStorage AFTER mount so the server HTML and first
+  // client render agree (avoids a hydration mismatch when rows were persisted).
+  useEffect(() => {
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
       try {
         const raw = localStorage.getItem("eduverse:team-members");
         if (raw) {
           const parsed = JSON.parse(raw) as Array<{ name: string; email: string; role: string }>;
-          if (Array.isArray(parsed) && parsed.length) return parsed;
+          if (Array.isArray(parsed) && parsed.length) setTeamMembers(parsed);
         }
       } catch {}
-    }
-    return [{ name: userName, email: userEmail, role: "Owner" }];
-  });
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState("Member");
-  const [inviteError, setInviteError] = useState("");
+      setMembersHydrated(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-  // Persist team members whenever they change
+  // Persist team members whenever they change (only once hydrated)
   useEffect(() => {
+    if (!membersHydrated) return;
     try { localStorage.setItem("eduverse:team-members", JSON.stringify(teamMembers)); } catch {}
-  }, [teamMembers]);
+  }, [teamMembers, membersHydrated]);
 
   // Keep owner row in sync when profile loads
   const [syncedProfile, setSyncedProfile] = useState({ name: userName, email: userEmail });
@@ -117,6 +134,7 @@ export default function SettingsPage() {
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleteSuccess, setDeleteSuccess] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   // Toast message state
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -164,6 +182,25 @@ export default function SettingsPage() {
     setTimeout(() => setToastMessage(null), 3500);
   }
 
+  function removeTeamMember(idx: number, email: string) {
+    const member = teamMembers[idx];
+    setLastRemovedMember({ member, index: idx });
+    setTeamMembers((prev) => prev.filter((_, i) => i !== idx));
+    triggerToast(`Removed ${email}`);
+  }
+
+  function undoRemoveMember() {
+    if (!lastRemovedMember) return;
+    const { member, index } = lastRemovedMember;
+    setTeamMembers((prev) => {
+      const next = [...prev];
+      next.splice(Math.min(index, next.length), 0, member);
+      return next;
+    });
+    setLastRemovedMember(null);
+    triggerToast(`Restored ${member.email}`);
+  }
+
   async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault();
     setProfileError("");
@@ -204,26 +241,31 @@ export default function SettingsPage() {
       return;
     }
     if (passwords.newPass !== passwords.confirmPass) {
-      setPasswordError("New passwords do not match.");
+      setPasswordError("New passwords do not match. Recheck both fields.");
       return;
     }
 
-    const formData = new FormData();
-    formData.append("current", passwords.current);
-    formData.append("password", passwords.newPass);
-    const result = await updatePassword({ error: "" }, formData);
-    if (result.error) {
-      setPasswordError(result.error);
-      return;
-    }
+    setPasswordSaving(true);
+    try {
+      const formData = new FormData();
+      formData.append("current", passwords.current);
+      formData.append("password", passwords.newPass);
+      const result = await updatePassword({ error: "" }, formData);
+      if (result.error) {
+        setPasswordError(result.error);
+        return;
+      }
 
-    setPasswordSuccess(true);
-    triggerToast("Password changed successfully!");
-    setTimeout(() => {
-      setIsPasswordOpen(false);
-      setPasswordSuccess(false);
-      setPasswords({ current: "", newPass: "", confirmPass: "" });
-    }, 1200);
+      setPasswordSuccess(true);
+      triggerToast("Password changed successfully!");
+      setTimeout(() => {
+        setIsPasswordOpen(false);
+        setPasswordSuccess(false);
+        setPasswords({ current: "", newPass: "", confirmPass: "" });
+      }, 1200);
+    } finally {
+      setPasswordSaving(false);
+    }
   }
 
   function handleInviteMember(e: React.FormEvent) {
@@ -243,7 +285,8 @@ export default function SettingsPage() {
 
   async function handleDeleteAccount(e: React.FormEvent) {
     e.preventDefault();
-    if (deleteConfirmText.trim().toUpperCase() !== "DELETE") { setInviteError("Type DELETE to confirm."); return; }
+    setDeleteError("");
+    if (deleteConfirmText.trim().toUpperCase() !== "DELETE") { setDeleteError("Type DELETE to confirm."); return; }
     if (deleteLoading) return;
     setDeleteLoading(true);
     try {
@@ -288,9 +331,14 @@ export default function SettingsPage() {
 
       {/* Floating Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-ink px-4 py-3 text-sm font-medium text-background shadow-glass animate-in fade-in slide-in-from-bottom-5">
-          <CheckCircle2 className="h-4 w-4 text-success" />
+        <div role="status" aria-live="polite" className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] right-[calc(1.5rem+env(safe-area-inset-right))] z-50 flex items-center gap-2 rounded-xl bg-ink px-4 py-3 text-sm font-medium text-background shadow-glass animate-in fade-in slide-in-from-bottom-5">
+          <CheckCircle2 aria-hidden="true" className="h-4 w-4 shrink-0 text-success" />
           <span>{toastMessage}</span>
+          {lastRemovedMember && toastMessage.startsWith("Removed") && (
+            <button onClick={undoRemoveMember} className="ml-1 rounded-lg bg-background/15 px-2.5 py-1 text-xs font-semibold text-background transition hover:bg-background/25 focus-visible:ring-2 focus-visible:ring-background focus-visible:outline-none">
+              Undo
+            </button>
+          )}
         </div>
       )}
 
@@ -298,7 +346,7 @@ export default function SettingsPage() {
         {/* Profile Card */}
         <Card>
           <CardContent className="flex gap-4 p-5">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+            <span aria-hidden="true" className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
               <UserRound className="h-5 w-5" />
             </span>
             <div className="min-w-0 flex-1">
@@ -432,7 +480,7 @@ export default function SettingsPage() {
             ].map((item) => (
               <div key={item.label}>
                 <div className="flex justify-between text-xs"><span className="font-medium text-ink">{item.label}</span><span className="tabular-nums text-mutedText">{item.used}/{item.total}</span></div>
-                <div className="mt-1 h-1.5 rounded-full bg-borderSoft overflow-hidden"><div className="h-full bg-primary transition-all" style={{ width: `${Math.min(100, (item.used/item.total)*100)}%` }} /></div>
+                <div className="mt-1 h-1.5 rounded-full bg-borderSoft overflow-hidden"><div aria-hidden="true" className="h-full w-full origin-left bg-primary transition-transform duration-500" style={{ transform: `scaleX(${Math.min(1, item.used/item.total)})` }} /></div>
                 {item.hint && <p className="text-[10px] text-faintText">{item.hint}</p>}
               </div>
             ))}
@@ -446,7 +494,7 @@ export default function SettingsPage() {
         {/* Delete Account Card */}
         <Card className="border-danger/30">
           <CardContent className="flex gap-4 p-5">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-danger/10 text-danger dark:bg-red-400/10">
+            <span aria-hidden="true" className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-danger/10 text-danger dark:bg-red-400/10">
               <ShieldCheck className="h-5 w-5" />
             </span>
             <div>
@@ -471,48 +519,61 @@ export default function SettingsPage() {
           <ModalDescription>Update your personal information and display title.</ModalDescription>
           <form className="mt-4 space-y-4" onSubmit={handleSaveProfile}>
             {profileError && (
-              <div className="rounded-xl border border-danger/30 bg-danger/10 p-3 text-xs text-danger">
+              <div role="alert" className="rounded-xl border border-danger/30 bg-danger/10 p-3 text-xs text-danger">
                 {profileError}
               </div>
             )}
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-faintText">
+              <label htmlFor="profile-name" className="block text-xs font-semibold uppercase tracking-wider text-faintText">
                 Display Name
               </label>
               <input
-                className="mt-1.5 h-10 w-full rounded-xl border border-borderSoft bg-surface px-3 text-sm outline-none ring-primary focus:ring-2 dark:border-borderSoft dark:bg-surface/[0.04]"
+                id="profile-name"
+                name="name"
+                autoComplete="name"
+                className={SETTINGS_INPUT}
                 onChange={(e) => setTempProfile({ ...tempProfile, name: e.target.value })}
                 required
                 value={tempProfile.name}
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-faintText">
+              <label htmlFor="profile-role" className="block text-xs font-semibold uppercase tracking-wider text-faintText">
                 Role / Job Title
               </label>
               <input
-                className="mt-1.5 h-10 w-full rounded-xl border border-borderSoft bg-surface px-3 text-sm outline-none ring-primary focus:ring-2 dark:border-borderSoft dark:bg-surface/[0.04]"
+                id="profile-role"
+                name="role"
+                autoComplete="organization-title"
+                className={SETTINGS_INPUT}
                 onChange={(e) => setTempProfile({ ...tempProfile, role: e.target.value })}
                 required
                 value={tempProfile.role}
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-faintText">
+              <label htmlFor="profile-email" className="block text-xs font-semibold uppercase tracking-wider text-faintText">
                 Email Address
               </label>
               <input
-                className="mt-1.5 h-10 w-full rounded-xl border border-borderSoft bg-surface px-3 text-sm outline-none"
+                id="profile-email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                spellCheck={false}
+                className={`${SETTINGS_INPUT} opacity-60`}
                 disabled
                 value={tempProfile.email}
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-faintText">
+              <label htmlFor="profile-bio" className="block text-xs font-semibold uppercase tracking-wider text-faintText">
                 Bio / Workspace Note
               </label>
               <textarea
-                className="mt-1.5 h-20 w-full rounded-xl border border-borderSoft bg-surface p-3 text-sm outline-none ring-primary focus:ring-2 dark:border-borderSoft dark:bg-surface/[0.04]"
+                id="profile-bio"
+                name="bio"
+                className={SETTINGS_TEXTAREA}
                 onChange={(e) => setTempProfile({ ...tempProfile, bio: e.target.value })}
                 value={tempProfile.bio}
               />
@@ -542,16 +603,19 @@ export default function SettingsPage() {
           ) : (
             <form className="mt-4 space-y-4" onSubmit={handlePasswordSubmit}>
               {passwordError && (
-                <div className="rounded-xl border border-danger/30 bg-danger/10 p-3 text-xs text-red-700 dark:border-red-400/20 dark:bg-red-400/10 text-danger">
+                <div role="alert" className="rounded-xl border border-danger/30 bg-danger/10 p-3 text-xs text-red-700 dark:border-red-400/20 dark:bg-red-400/10 text-danger">
                   {passwordError}
                 </div>
               )}
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-faintText">
+                <label htmlFor="password-current" className="block text-xs font-semibold uppercase tracking-wider text-faintText">
                   Current Password
                 </label>
                 <input
-                  className="mt-1.5 h-10 w-full rounded-xl border border-borderSoft bg-surface px-3 text-sm outline-none ring-primary focus:ring-2 dark:border-borderSoft dark:bg-surface/[0.04]"
+                  id="password-current"
+                  name="current-password"
+                  autoComplete="current-password"
+                  className={SETTINGS_INPUT}
                   onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
                   required
                   type="password"
@@ -559,24 +623,30 @@ export default function SettingsPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-faintText">
+                <label htmlFor="password-new" className="block text-xs font-semibold uppercase tracking-wider text-faintText">
                   New Password
                 </label>
                 <input
-                  className="mt-1.5 h-10 w-full rounded-xl border border-borderSoft bg-surface px-3 text-sm outline-none ring-primary focus:ring-2 dark:border-borderSoft dark:bg-surface/[0.04]"
+                  id="password-new"
+                  name="new-password"
+                  autoComplete="new-password"
+                  className={SETTINGS_INPUT}
                   onChange={(e) => setPasswords({ ...passwords, newPass: e.target.value })}
-                  placeholder="At least 8 characters"
+                  placeholder="At least 8 characters…"
                   required
                   type="password"
                   value={passwords.newPass}
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-faintText">
+                <label htmlFor="password-confirm" className="block text-xs font-semibold uppercase tracking-wider text-faintText">
                   Confirm New Password
                 </label>
                 <input
-                  className="mt-1.5 h-10 w-full rounded-xl border border-borderSoft bg-surface px-3 text-sm outline-none ring-primary focus:ring-2 dark:border-borderSoft dark:bg-surface/[0.04]"
+                  id="password-confirm"
+                  name="confirm-password"
+                  autoComplete="new-password"
+                  className={SETTINGS_INPUT}
                   onChange={(e) => setPasswords({ ...passwords, confirmPass: e.target.value })}
                   required
                   type="password"
@@ -587,8 +657,8 @@ export default function SettingsPage() {
                 <Button onClick={() => setIsPasswordOpen(false)} type="button" variant="ghost">
                   Cancel
                 </Button>
-                <Button type="submit" variant="primary">
-                  Update password
+                <Button disabled={passwordSaving} type="submit" variant="primary">
+                  {passwordSaving ? "Updating…" : "Update password"}
                 </Button>
               </div>
             </form>
@@ -676,11 +746,13 @@ export default function SettingsPage() {
             <label className="sr-only" htmlFor="invite-email">Invite email</label>
             <input
               id="invite-email"
-              className="h-10 flex-1 rounded-xl border border-borderSoft bg-surface px-3 text-sm outline-none ring-primary focus:ring-2 dark:border-borderSoft dark:bg-surface/[0.04]"
+              name="invite-email"
+              className="h-10 flex-1 rounded-xl border border-borderSoft bg-surface px-3 text-sm outline-none transition focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 dark:border-borderSoft dark:bg-surface/[0.04]"
               onChange={(e) => { setInviteEmail(e.target.value); if (inviteError) setInviteError(""); }}
-              placeholder="colleague@company.com"
+              placeholder="colleague@company.com…"
               type="email"
               autoComplete="email"
+              spellCheck={false}
               value={inviteEmail}
               aria-invalid={Boolean(inviteError)}
               aria-describedby={inviteError ? "invite-error" : undefined}
@@ -688,7 +760,8 @@ export default function SettingsPage() {
             <label className="sr-only" htmlFor="invite-role">Role</label>
             <select
               id="invite-role"
-              className="h-10 rounded-xl border border-borderSoft bg-surface px-2 text-xs outline-none dark:border-borderSoft dark:bg-surface/[0.04]"
+              name="invite-role"
+              className="h-10 rounded-xl border border-borderSoft bg-surface px-2 text-xs outline-none transition focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 dark:border-borderSoft dark:bg-surface/[0.04]"
               onChange={(e) => setInviteRole(e.target.value)}
               value={inviteRole}
             >
@@ -696,7 +769,7 @@ export default function SettingsPage() {
               <option value="Admin">Admin</option>
             </select>
             <Button size="sm" type="submit" variant="primary">
-              <UserPlus className="h-4 w-4" />
+              <UserPlus aria-hidden="true" className="h-4 w-4" />
               Invite
             </Button>
           </form>
@@ -718,7 +791,7 @@ export default function SettingsPage() {
                 <div className="ml-2 flex items-center gap-2 shrink-0">
                   <Badge variant={m.role === "Owner" ? "primary" : "default"}>{m.role}</Badge>
                   {idx !== 0 && (
-                    <button onClick={() => { setTeamMembers((prev) => prev.filter((_, i) => i !== idx)); triggerToast(`Removed ${m.email}`); }} aria-label={`Remove ${m.email}`} className="rounded-full p-1 text-mutedText hover:bg-surface hover:text-danger"><Trash2 className="h-3.5 w-3.5" /></button>
+                    <button onClick={() => removeTeamMember(idx, m.email)} aria-label={`Remove ${m.email}`} className="rounded-full p-2 text-mutedText hover:bg-surface hover:text-danger focus-visible:ring-2 focus-visible:ring-danger/50 focus-visible:outline-none"><Trash2 aria-hidden="true" className="h-3.5 w-3.5" /></button>
                   )}
                 </div>
               </div>
@@ -749,28 +822,36 @@ export default function SettingsPage() {
           ) : (
             <form className="mt-4 space-y-4" onSubmit={handleDeleteAccount}>
               <div className="rounded-xl border border-danger/30 bg-danger/10 p-3 text-xs leading-relaxed text-danger">
-                Type <strong>DELETE</strong> to clear local workspace data and sign out. Server-side workspace rows will be attempted; if the admin API is not configured you will be signed out locally and receive contact instructions.
+                Type <strong>DELETE</strong> to clear local workspace data and sign out. We attempt server-side deletion too; if the admin API is not configured, you are signed out locally and receive contact instructions.
               </div>
               <label className="sr-only" htmlFor="delete-confirm">Type DELETE to confirm</label>
               <input
                 id="delete-confirm"
-                className="h-10 w-full rounded-xl border border-borderSoft bg-surface px-3 text-sm outline-none ring-red-500 focus:ring-2 dark:border-borderSoft dark:bg-surface/[0.04]"
-                onChange={(e) => setDeleteConfirmText(e.target.value)}
-                placeholder="Type DELETE"
-                value={deleteConfirmText}
+                name="delete-confirm"
+                aria-invalid={Boolean(deleteError)}
+                aria-describedby={deleteError ? "delete-error" : undefined}
+                autoCapitalize="off"
                 autoComplete="off"
+                spellCheck={false}
+                className="h-10 w-full rounded-xl border border-borderSoft bg-surface px-3 text-sm outline-none transition focus-visible:border-danger focus-visible:ring-2 focus-visible:ring-red-500/50 dark:border-borderSoft dark:bg-surface/[0.04]"
+                onChange={(e) => { setDeleteConfirmText(e.target.value); if (deleteError) setDeleteError(""); }}
+                placeholder="Type DELETE…"
+                value={deleteConfirmText}
               />
+              {deleteError && (
+                <p id="delete-error" role="alert" className="text-xs text-danger">{deleteError}</p>
+              )}
               <div className="flex justify-end gap-2 pt-2">
                 <Button onClick={() => setIsDeleteOpen(false)} type="button" variant="ghost">
                   Cancel
                 </Button>
                 <Button
-                  disabled={deleteConfirmText.trim().toUpperCase() !== "DELETE" || deleteLoading}
+                  disabled={deleteLoading}
                   type="submit"
                   variant="primary"
                   className="bg-danger hover:bg-danger/90 text-background"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 aria-hidden="true" className="h-4 w-4" />
                   {deleteLoading ? "Clearing…" : "Confirm Deletion"}
                 </Button>
               </div>

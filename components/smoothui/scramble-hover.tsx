@@ -82,14 +82,11 @@ export function ScrambleHover({
   };
 
   return (
-    <span
-      className={className}
-      onBlur={handleLeave}
-      onFocus={handleEnter}
-      onMouseEnter={handleEnter}
-      onMouseLeave={handleLeave}
-    >
-      {display}
+    <span className={className} onBlur={handleLeave} onFocus={handleEnter} onMouseEnter={handleEnter} onMouseLeave={handleLeave}>
+      <span aria-hidden="true">{display}</span>
+      {/* Stable copy for screen readers — the churning characters above change
+          every ~30ms and would otherwise be read aloud mid-scramble. */}
+      <span className="sr-only">{children}</span>
     </span>
   );
 }

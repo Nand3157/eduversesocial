@@ -2,6 +2,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle2, Clock3, XCircle, Trash2, ShieldCheck, Star, Loader2, RefreshCcw, Lock } from "lucide-react";
 import { PageHeading } from "@/components/dashboard/page-heading";
 import { Button } from "@/components/ui/button";
@@ -23,9 +24,9 @@ type Filter = "pending" | "approved" | "rejected" | "all";
 
 function Stars({ rating }: { rating: number }) {
   return (
-    <span className="inline-flex gap-0.5" aria-label={`${rating} / 5`}>
+    <span role="img" aria-label={`Rated ${rating} out of 5 stars`} className="inline-flex gap-0.5">
       {[1, 2, 3, 4, 5].map((n) => (
-        <Star key={n} className={`h-3.5 w-3.5 ${n <= rating ? "fill-primary text-primary" : "text-faintText"}`} />
+        <Star aria-hidden="true" key={n} className={`h-3.5 w-3.5 ${n <= rating ? "fill-primary text-primary" : "text-faintText"}`} />
       ))}
     </span>
   );
@@ -41,7 +42,18 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function ReviewsModerationPage() {
-  const [filter, setFilter] = useState<Filter>("pending");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  // Filter lives in the URL (?status=…) so views are deep-linkable and the
+  // back button restores the previous queue.
+  const [filter, setFilterState] = useState<Filter>(() => {
+    const value = searchParams.get("status");
+    return value === "approved" || value === "rejected" || value === "all" ? value : "pending";
+  });
+  const setFilter = (next: Filter) => {
+    setFilterState(next);
+    router.replace(`/dashboard/reviews?status=${next}`, { scroll: false });
+  };
   const [reviews, setReviews] = useState<ReviewRow[]>([]);
   const [counts, setCounts] = useState<Record<string, number> | null>(null);
   const [loading, setLoading] = useState(true);
@@ -132,7 +144,7 @@ export default function ReviewsModerationPage() {
         <Card className="border-warning/30 bg-warning/10">
           <CardContent className="flex gap-3 p-5">
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-warning/20 text-warning">
-              <Lock className="h-5 w-5" />
+              <Lock aria-hidden="true" className="h-5 w-5" />
             </span>
             <div>
               <p className="font-semibold text-ink">Restricted to owner account</p>
@@ -143,8 +155,8 @@ export default function ReviewsModerationPage() {
       )}
 
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-ink px-4 py-3 text-sm font-medium text-background shadow-glass">
-          <CheckCircle2 className="h-4 w-4 text-success" />
+        <div role="status" aria-live="polite" className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] right-[calc(1.5rem+env(safe-area-inset-right))] z-50 flex items-center gap-2 rounded-xl bg-ink px-4 py-3 text-sm font-medium text-background shadow-glass">
+          <CheckCircle2 aria-hidden="true" className="h-4 w-4 shrink-0 text-success" />
           <span>{toast}</span>
         </div>
       )}
@@ -153,7 +165,7 @@ export default function ReviewsModerationPage() {
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5 text-primary" />
+              <ShieldCheck aria-hidden="true" className="h-5 w-5 text-primary" />
               Moderation queue
             </CardTitle>
             <CardDescription>
@@ -167,7 +179,7 @@ export default function ReviewsModerationPage() {
             </CardDescription>
           </div>
           <Button size="sm" variant="secondary" onClick={() => fetchReviews(filter)} disabled={loading}>
-            <RefreshCcw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCcw aria-hidden="true" className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
         </CardHeader>
@@ -177,7 +189,8 @@ export default function ReviewsModerationPage() {
               <button
                 key={key}
                 onClick={() => setFilter(key)}
-                className={`rounded-full border px-4 py-2 text-sm font-medium transition ${filter === key ? "border-primary bg-primary text-background shadow-glow" : "border-borderSoft bg-surface text-mutedText hover:border-primary/40 hover:text-ink"}`}
+                aria-pressed={filter === key}
+                className={`touch-manipulation rounded-full border px-4 py-2 text-sm font-medium transition focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none ${filter === key ? "border-primary bg-primary text-background shadow-glow" : "border-borderSoft bg-surface text-mutedText hover:border-primary/40 hover:text-ink"}`}
               >
                 {label}
                 {counts && typeof counts[key] === "number" && key !== "all" && <Badge variant="default" className="ml-2">{counts[key]}</Badge>}
@@ -186,7 +199,7 @@ export default function ReviewsModerationPage() {
           </div>
 
           {error && (
-            <div className="mt-5 rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
+            <div role="alert" className="mt-5 rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
               {error}
               {error.includes("service-role") || error.includes("503") ? (
                 <p className="mt-1 text-xs leading-relaxed">Add <code className="rounded bg-surface px-1">SUPABASE_SERVICE_ROLE_KEY</code> in Vercel env vars and redeploy, then push the new migration.</p>
@@ -195,12 +208,12 @@ export default function ReviewsModerationPage() {
           )}
 
           {loading ? (
-            <div className="mt-6 flex items-center justify-center gap-2 rounded-xl border border-dashed border-borderSoft bg-surface px-6 py-12 text-sm text-mutedText">
-              <Loader2 className="h-4 w-4 animate-spin" /> Loading reviews…
+            <div role="status" className="mt-6 flex items-center justify-center gap-2 rounded-xl border border-dashed border-borderSoft bg-surface px-6 py-12 text-sm text-mutedText">
+              <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> Loading reviews…
             </div>
           ) : reviews.length === 0 ? (
             <div className="mt-6 rounded-xl border border-dashed border-borderSoft bg-surface px-6 py-14 text-center">
-              <Clock3 className="mx-auto h-6 w-6 text-faintText" />
+              <Clock3 aria-hidden="true" className="mx-auto h-6 w-6 text-faintText" />
               <p className="mt-3 font-medium text-ink">No {filter === "all" ? "" : filter} reviews.</p>
               <p className="mt-1 text-sm text-mutedText">
                 {filter === "pending" ? "New submissions will appear here for approval." : `No reviews with status "${filter}" found.`}
@@ -219,7 +232,10 @@ export default function ReviewsModerationPage() {
                       </div>
                       <div className="mt-1 flex items-center gap-2">
                         <Stars rating={r.rating} />
-                        <span className="text-xs tabular-nums text-mutedText">{new Date(r.created_at).toLocaleDateString()} · {new Date(r.created_at).toLocaleTimeString()}</span>
+                        <span className="text-xs tabular-nums text-mutedText">
+                          {new Intl.DateTimeFormat(undefined, { year: "numeric", month: "short", day: "numeric" }).format(new Date(r.created_at))} ·{" "}
+                          {new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date(r.created_at))}
+                        </span>
                       </div>
                     </div>
                     <span className="font-mono text-[10px] text-faintText">{r.id.slice(0, 8)}…</span>
@@ -227,19 +243,19 @@ export default function ReviewsModerationPage() {
                   <blockquote className="mt-3 text-sm leading-7 text-ink">{r.content}</blockquote>
                   <div className="mt-4 flex flex-wrap gap-2">
                     <Button size="sm" variant="primary" disabled={!!actionId || isForbiddenError} onClick={() => mutate(r.id, "approve")} className="bg-success hover:bg-success/90" title={isForbiddenError ? "Owner only" : undefined}>
-                      {actionId === r.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                      {actionId === r.id ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <CheckCircle2 aria-hidden="true" className="h-4 w-4" />}
                       Approve
                     </Button>
                     <Button size="sm" variant="secondary" disabled={!!actionId || isForbiddenError} onClick={() => mutate(r.id, "reject")} title={isForbiddenError ? "Owner only" : undefined}>
-                      <XCircle className="h-4 w-4" />
+                      <XCircle aria-hidden="true" className="h-4 w-4" />
                       Reject
                     </Button>
                     <Button size="sm" variant="ghost" disabled={!!actionId || isForbiddenError} onClick={() => mutate(r.id, "pending")} title={isForbiddenError ? "Owner only" : undefined}>
-                      <Clock3 className="h-4 w-4" />
+                      <Clock3 aria-hidden="true" className="h-4 w-4" />
                       Pending
                     </Button>
                     <Button size="sm" variant="ghost" disabled={!!actionId || isForbiddenError} onClick={() => { if (confirm(`Delete review by "${r.name}" permanently? This is only allowed for the owner account.`)) void mutate(r.id, "delete"); }} className="ml-auto text-danger hover:bg-danger/10 hover:text-danger" title={isForbiddenError ? "Owner only" : "Permanently delete"}>
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 aria-hidden="true" className="h-4 w-4" />
                       Delete
                     </Button>
                   </div>

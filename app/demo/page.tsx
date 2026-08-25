@@ -32,21 +32,19 @@ export default function DemoPage() {
               <ShieldCheck className="h-3.5 w-3.5 text-success" /> Privacy & Data Security
             </Link>
             <ThemeToggle />
-            <Link href="/">
-              <Button size="sm" variant="secondary">
-                <ArrowLeft className="h-3.5 w-3.5" /> Back to site
-              </Button>
-            </Link>
-            <Link href="/signup">
-              <Button size="sm" className="bg-ink text-background hover:bg-ink/90">
-                Start free
-              </Button>
-            </Link>
+            <Button asChild size="sm" variant="secondary">
+              <Link href="/">
+                <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Back to site
+              </Link>
+            </Button>
+            <Button asChild size="sm" className="bg-ink text-background hover:bg-ink/90">
+              <Link href="/signup">Start free</Link>
+            </Button>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-5 py-8 sm:px-8 sm:py-10">
+      <main id="main-content" className="mx-auto max-w-6xl px-5 py-8 sm:px-8 sm:py-10">
         <div className="mb-6 flex flex-wrap items-center gap-2 text-xs text-mutedText">
           <Link href="/" className="hover:text-ink">
             Home

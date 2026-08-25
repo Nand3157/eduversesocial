@@ -50,7 +50,7 @@ export default function ContentPage() {
           const cols = lines[i].split(",").map((c) => c.trim().replace(/^"|"$/g, ""));
           const platform = (cols[platformIdx] || "instagram").toLowerCase();
           const content = cols[contentIdx] || "";
-          const date = dateIdx !== -1 ? cols[dateIdx] || new Date().toLocaleDateString() : new Date().toLocaleDateString();
+          const date = dateIdx !== -1 ? cols[dateIdx] || new Intl.DateTimeFormat(undefined, { year: "numeric", month: "short", day: "numeric" }).format(new Date()) : new Intl.DateTimeFormat(undefined, { year: "numeric", month: "short", day: "numeric" }).format(new Date());
           if (!content) continue;
           if (!["instagram","facebook","threads"].includes(platform)) continue;
           rows.push({ platform, content: content.slice(0, 2200), date });
@@ -88,24 +88,24 @@ export default function ContentPage() {
         <div className="flex flex-wrap gap-2">
           <input ref={fileInputRef} type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleCsvFile(f); }} />
           <Button size="sm" variant="secondary" onClick={handleCsvPick}>
-            <FileUp className="h-4 w-4" />
+            <FileUp aria-hidden="true" className="h-4 w-4" />
             Upload CSV
           </Button>
           <Button size="sm" variant="ghost" onClick={downloadTemplate} title="Download CSV template">
-            <Download className="h-3.5 w-3.5" />
+            <Download aria-hidden="true" className="h-3.5 w-3.5" />
             Template
           </Button>
           <Button size="sm" className="bg-ink text-background hover:bg-ink/90" onClick={() => setPublisherOpen(true)}>
-            <Plus className="h-4 w-4" />
+            <Plus aria-hidden="true" className="h-4 w-4" />
             New post
           </Button>
         </div>
       </div>
 
       {csvSuccess && (
-        <div className="flex items-center gap-2 rounded-xl border border-success/25 bg-success/10 px-4 py-3 text-sm text-success">
-          <CheckCircle2 className="h-4 w-4" /> {csvSuccess}
-          <button onClick={() => setCsvSuccess(null)} className="ml-auto text-success hover:text-success/70"><X className="h-4 w-4" /></button>
+        <div role="status" aria-live="polite" className="flex items-center gap-2 rounded-xl border border-success/25 bg-success/10 px-4 py-3 text-sm text-success">
+          <CheckCircle2 aria-hidden="true" className="h-4 w-4" /> {csvSuccess}
+          <button onClick={() => setCsvSuccess(null)} aria-label="Dismiss message" className="ml-auto rounded-lg p-1.5 text-success hover:text-success/70 focus-visible:ring-2 focus-visible:ring-success/50 focus-visible:outline-none"><X aria-hidden="true" className="h-4 w-4" /></button>
         </div>
       )}
 

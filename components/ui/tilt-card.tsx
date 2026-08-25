@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { motion, useMotionValue, useReducedMotion, useSpring, type Variants } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -47,10 +47,21 @@ export function TiltCard({
   const sy = useSpring(rotateY, spring);
   const dir = effect === "evade" ? -1 : 1;
 
+  // Cache the card's rect on pointer enter — reading it on every move forces
+  // synchronous layout between frames.
+  const rectRef = useRef<DOMRect | null>(null);
+
+  const handlePointerEnter = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType !== "mouse") return;
+    setIsHovered(true);
+    rectRef.current = event.currentTarget.getBoundingClientRect();
+  }, []);
+
   const handlePointerMove = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
-      if (reduceMotion) return;
-      const rect = event.currentTarget.getBoundingClientRect();
+      // Touch drags must not trigger tilt; only fine pointers participate.
+      if (reduceMotion || event.pointerType !== "mouse") return;
+      const rect = rectRef.current ?? event.currentTarget.getBoundingClientRect();
       const px = (event.clientX - rect.left) / rect.width;
       const py = (event.clientY - rect.top) / rect.height;
       rotateX.set((py - 0.5) * tiltLimit * 2 * dir);
@@ -63,13 +74,14 @@ export function TiltCard({
 
   const handlePointerLeave = useCallback(() => {
     setIsHovered(false);
+    rectRef.current = null;
     rotateX.set(0);
     rotateY.set(0);
   }, [rotateX, rotateY]);
 
   return (
     <motion.div
-      onPointerEnter={() => setIsHovered(true)}
+      onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}
       onPointerMove={handlePointerMove}
       style={{ rotateX: sx, rotateY: sy, transformPerspective: perspective, transformStyle: "preserve-3d", willChange: isHovered && !reduceMotion ? "transform" : "auto" } as React.CSSProperties}

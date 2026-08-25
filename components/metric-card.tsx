@@ -1,4 +1,4 @@
-import { ArrowUpRight } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -21,13 +21,15 @@ export function MetricCard({
   change: string;
   tone: MetricTone;
 }) {
+  // Warning tone implies a downtrend — point the indicator down accordingly.
+  const ArrowIcon = tone === "warning" ? ArrowDownRight : ArrowUpRight;
   return (
     <Card>
       <CardContent className="p-5">
         <div className="flex items-start justify-between gap-3">
           <p className="text-sm text-mutedText">{label}</p>
-          <span className="grid h-8 w-8 place-items-center rounded-full border border-borderSoft bg-surface">
-            <ArrowUpRight className="h-4 w-4 text-mutedText" />
+          <span aria-hidden="true" className="grid h-8 w-8 place-items-center rounded-full border border-borderSoft bg-surface">
+            <ArrowIcon className="h-4 w-4 text-mutedText" />
           </span>
         </div>
         <div className="mt-3 flex items-end justify-between gap-3">

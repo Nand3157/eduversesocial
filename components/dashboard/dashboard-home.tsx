@@ -39,8 +39,8 @@ export function DashboardHome() {
 
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
-          <div className="flex items-center gap-2 text-xs font-medium text-success">
-            <span className={`h-1.5 w-1.5 rounded-full ${analytics?.live ? "animate-pulse bg-success" : "bg-mutedText"}`} />
+          <div aria-live="polite" className="flex items-center gap-2 text-xs font-medium text-success">
+            <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${analytics?.live ? "animate-pulse bg-success" : "bg-mutedText"}`} />
             {analytics?.live ? "Meta Graph API live" : "Meta analytics not connected"}
           </div>
           <h1 className="mt-2 font-heading text-3xl font-medium tracking-tight text-ink sm:text-4xl">
@@ -53,19 +53,19 @@ export function DashboardHome() {
 
         <div className="flex flex-wrap gap-2">
           <Button onClick={() => setConnectModalOpen(true)} size="sm" variant="secondary">
-            <Sparkles className="h-3.5 w-3.5 text-primary" />
+            <Sparkles aria-hidden="true" className="h-3.5 w-3.5 text-primary" />
             Meta connect
           </Button>
           <Button onClick={() => setPublisherModalOpen(true)} size="sm" className="bg-ink text-background hover:bg-ink/90">
-            <Send className="h-3.5 w-3.5" />
+            <Send aria-hidden="true" className="h-3.5 w-3.5" />
             Publish post
           </Button>
-          <Link href="/dashboard/chat">
-            <Button size="sm" className="bg-primary text-background hover:bg-primary-strong">
-              <MessageSquareText className="h-3.5 w-3.5" />
+          <Button asChild size="sm" className="bg-primary text-background hover:bg-primary-strong">
+            <Link href="/dashboard/chat">
+              <MessageSquareText aria-hidden="true" className="h-3.5 w-3.5" />
               Ask AI strategy
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </div>
 
@@ -77,7 +77,7 @@ export function DashboardHome() {
                 <p className="font-medium text-ink">Your live analytics workspace is ready.</p>
                 <p className="mt-1 text-sm text-mutedText">Connect a Meta User Access Token to load accounts, posts, reach, and engagement.</p>
                 <p className="mt-2 flex items-center gap-1.5 text-[11px] text-mutedText">
-                  <Lock className="h-3 w-3 text-success" /> Tokens AES-256-GCM encrypted ·{" "}
+                  <Lock aria-hidden="true" className="h-3 w-3 text-success" /> Tokens AES-256-GCM encrypted ·{" "}
                   <Link href="/privacy" className="font-medium text-primary hover:underline">
                     Privacy & Data Security
                   </Link>
@@ -87,17 +87,17 @@ export function DashboardHome() {
                 <Button onClick={() => setConnectModalOpen(true)} className="shrink-0 bg-ink text-background hover:bg-ink/90">
                   Connect Meta
                 </Button>
-                <Link href="/demo">
-                  <Button variant="secondary" size="sm" className="w-full sm:w-auto border-warning/20 bg-warning/10 text-warning hover:bg-warning/15">
-                    <Eye className="h-3.5 w-3.5" /> Explore Live Demo
-                  </Button>
-                </Link>
+                <Button asChild variant="secondary" size="sm" className="w-full sm:w-auto border-warning/20 bg-warning/10 text-warning hover:bg-warning/15">
+                  <Link href="/demo">
+                    <Eye aria-hidden="true" className="h-3.5 w-3.5" /> Explore Live Demo
+                  </Link>
+                </Button>
               </div>
             </CardContent>
           </Card>
           <div className="flex items-center justify-between rounded-xl border border-borderSoft bg-surface/50 px-4 py-2.5 text-xs">
             <span className="inline-flex items-center gap-1.5 text-mutedText">
-              <ShieldCheck className="h-3.5 w-3.5 text-success" /> Curious before OAuth? Preview a simulated dashboard with no login.
+              <ShieldCheck aria-hidden="true" className="h-3.5 w-3.5 text-success" /> Curious before OAuth? Preview a simulated dashboard with no login.
             </span>
             <Link href="/demo" className="font-medium text-primary hover:underline">
               Open sandbox →
@@ -108,7 +108,8 @@ export function DashboardHome() {
 
       <motion.div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" variants={staggerContainer} initial="hidden" animate="show">
         {analyticsLoading ? (
-          <>
+          <div role="status" aria-live="polite" className="contents">
+            <span className="sr-only">Loading metrics…</span>
             {[0, 1, 2].map((skeleton) => (
               <Card aria-hidden="true" className="animate-pulse" key={skeleton}>
                 <CardContent className="p-5">
@@ -118,7 +119,7 @@ export function DashboardHome() {
                 </CardContent>
               </Card>
             ))}
-          </>
+          </div>
         ) : metrics.length ? metrics.map((metric) => (
           <TiltCard key={metric.label} variants={staggerItemFast} tiltLimit={10} scale={1.02} className="h-full">
             <Card className="h-full transition-shadow hover:shadow-glow">
@@ -158,10 +159,10 @@ export function DashboardHome() {
                   <h2 className="mt-2 font-heading text-2xl font-medium tracking-tight text-ink">{title}</h2>
                   <p className="mt-2 text-sm leading-relaxed text-mutedText">{detail}</p>
                 </div>
-                <Button onClick={() => setPublisherModalOpen(true)} className="bg-ink text-background hover:bg-ink/90"><Sparkles className="h-4 w-4" />Generate draft & schedule to Meta</Button>
+                <Button onClick={() => setPublisherModalOpen(true)} className="bg-ink text-background hover:bg-ink/90"><Sparkles aria-hidden="true" className="h-4 w-4" />Generate draft & schedule to Meta</Button>
               </div>
             )) : (
-              <div className="rounded-xl border border-dashed border-borderSoft bg-surface/50 p-5 text-sm leading-relaxed text-mutedText">No recommendation is being invented. Once Meta returns enough live post and engagement history, EduVerse can generate a grounded next step.</div>
+              <div className="rounded-xl border border-dashed border-borderSoft bg-surface/50 p-5 text-sm leading-relaxed text-mutedText">EduVerse does not invent recommendations. Once Meta returns enough live post and engagement history, EduVerse can generate a grounded next step.</div>
             )}
           </CardContent>
         </Card>
@@ -170,7 +171,7 @@ export function DashboardHome() {
           <CardHeader><CardTitle>Audience memory timeline</CardTitle><CardDescription>Signals retained from live connected content.</CardDescription></CardHeader>
           <CardContent>
             {memoryItems.length ? <div className="space-y-4">{memoryItems.map((item, index) => (
-              <div className="relative flex gap-3" key={item}><span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full border border-success/30 bg-success/10"><Check className="h-3.5 w-3.5 text-success" /></span>{index < memoryItems.length - 1 && <span className="absolute left-3 top-7 h-8 w-px bg-borderSoft" />}<div><p className="text-sm font-medium leading-relaxed text-ink">{item}</p><p className="mt-0.5 text-[11px] text-faintText">Derived from live Meta insights.</p></div></div>
+              <div className="relative flex gap-3" key={item}><span aria-hidden="true" className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full border border-success/30 bg-success/10"><Check className="h-3.5 w-3.5 text-success" /></span>{index < memoryItems.length - 1 && <span aria-hidden="true" className="absolute left-3 top-7 h-8 w-px bg-borderSoft" />}<div><p className="text-sm font-medium leading-relaxed text-ink">{item}</p><p className="mt-0.5 text-[11px] text-faintText">Derived from live Meta insights.</p></div></div>
             ))}</div> : <div className="rounded-xl border border-dashed border-borderSoft bg-surface/50 p-5 text-sm leading-relaxed text-mutedText">Audience memory will appear after live Meta content is analyzed.</div>}
           </CardContent>
         </Card>

@@ -56,5 +56,13 @@ export function TypewriterText({
     };
   }, [children, speed, loop, shouldReduceMotion]);
 
-  return <span className={className}>{displayed}</span>;
+  // The animated span is decorative for assistive tech; the sr-only copy
+  // carries the full text immediately so screen readers never wait out the
+  // typing animation (or hear it restart on loop).
+  return (
+    <span className={className}>
+      <span aria-hidden="true">{displayed}</span>
+      <span className="sr-only">{children}</span>
+    </span>
+  );
 }

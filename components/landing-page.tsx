@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Check, Eye, Loader2, Lock, Menu, MessageCircle, ShieldCheck, Sparkles, Star, X } from "lucide-react";
-import { AnimatePresence, motion, useMotionValueEvent, useScroll, useTransform } from "framer-motion";
+import { AnimatePresence, motion, useMotionValueEvent, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,7 +36,7 @@ type Review = {
 
 function ReviewStars({ rating, className }: { rating: number; className?: string }) {
   return (
-    <span className={cn("inline-flex items-center gap-0.5", className)} aria-label={`${rating} out of 5 stars`}>
+    <span role="img" aria-label={`${rating} out of 5 stars`} className={cn("inline-flex items-center gap-0.5", className)}>
       {[1, 2, 3, 4, 5].map((star) => (
         <Star key={star} className={cn("h-3.5 w-3.5", star <= rating ? "fill-primary text-primary" : "text-faintText")} />
       ))}
@@ -91,6 +92,10 @@ export function LandingPage() {
   const [marqueePaused, setMarqueePaused] = useState(false);
   const pageRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLElement>(null);
+  // Respect the OS reduced-motion preference for JS-driven smooth scrolling —
+  // an explicit behavior:"smooth" would otherwise override the CSS kill switch.
+  const prefersReducedMotion = useReducedMotion();
+  const scrollBehavior = prefersReducedMotion ? "auto" : "smooth";
   // Gentle scroll parallax on the hero backdrop so the page feels alive while
   // scrolling instead of strictly static.
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
@@ -163,12 +168,12 @@ export function LandingPage() {
   };
 
   const scrollToUseCase = () => {
-    document.getElementById("telemetry")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    document.getElementById("telemetry")?.scrollIntoView({ behavior: scrollBehavior, block: "start" });
   };
 
   const scrollToSection = (id: string) => {
     setMobileMenuOpen(false);
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    document.getElementById(id)?.scrollIntoView({ behavior: scrollBehavior, block: "start" });
   };
 
   return (
@@ -183,9 +188,11 @@ export function LandingPage() {
           <Wordmark />
           <div className="flex items-center gap-2.5">
             <ThemeToggle />
-            <Button onClick={() => router.push("/login")} size="sm" className="hidden bg-ink text-background hover:bg-ink/90 sm:inline-flex">
-              <ScrambleHover>Open dashboard</ScrambleHover>
-              <ArrowRight className="h-3.5 w-3.5" />
+            <Button asChild size="sm" className="hidden bg-ink text-background hover:bg-ink/90 sm:inline-flex">
+              <Link href="/login">
+                <ScrambleHover>Open dashboard</ScrambleHover>
+                <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
+              </Link>
             </Button>
             <button
               aria-controls="mobile-menu"
@@ -225,9 +232,11 @@ export function LandingPage() {
                     {label}
                   </button>
                 ))}
-                <Button onClick={() => router.push("/login")} className="mt-2 w-full bg-ink text-background hover:bg-ink/90">
-                  Open dashboard
-                  <ArrowRight className="h-4 w-4" />
+                <Button asChild className="mt-2 w-full bg-ink text-background hover:bg-ink/90">
+                  <Link href="/login">
+                    Open dashboard
+                    <ArrowRight aria-hidden="true" className="h-4 w-4" />
+                  </Link>
                 </Button>
                 <p className="pt-2 text-center text-xs text-mutedText">
                   <a href="/privacy" className="font-medium text-primary hover:underline">
@@ -285,9 +294,11 @@ export function LandingPage() {
               transition={{ duration: 0.7, delay: 0.24, ease: EASE }}
               className="mt-9 flex flex-wrap items-center justify-center gap-3"
             >
-              <Button onClick={() => router.push("/signup")} className="bg-ink px-6 py-3 text-sm text-background hover:bg-ink/90">
-                Start free
-                <ArrowRight className="h-4 w-4" />
+              <Button asChild className="bg-ink px-6 py-3 text-sm text-background hover:bg-ink/90">
+                <Link href="/signup">
+                  Start free
+                  <ArrowRight aria-hidden="true" className="h-4 w-4" />
+                </Link>
               </Button>
               <Button
                 onClick={scrollToUseCase}
@@ -450,13 +461,17 @@ export function LandingPage() {
                 </li>
               </ul>
               <div className="mt-6 flex flex-wrap items-center gap-3">
-                <Button onClick={() => router.push("/demo")} className="bg-ink px-6 py-3 text-sm text-background hover:bg-ink/90">
-                  <Eye className="h-4 w-4" />
-                  Explore Live Demo
+                <Button asChild className="bg-ink px-6 py-3 text-sm text-background hover:bg-ink/90">
+                  <Link href="/demo">
+                    <Eye aria-hidden="true" className="h-4 w-4" />
+                    Explore Live Demo
+                  </Link>
                 </Button>
-                <Button onClick={() => router.push("/signup")} variant="secondary" className="px-6 py-3 text-sm">
-                  Start free — then connect Meta
-                  <ArrowRight className="h-4 w-4 text-primary" />
+                <Button asChild variant="secondary" className="px-6 py-3 text-sm">
+                  <Link href="/signup">
+                    Start free — then connect Meta
+                    <ArrowRight aria-hidden="true" className="h-4 w-4 text-primary" />
+                  </Link>
                 </Button>
               </div>
               <p className="mt-4 text-xs leading-relaxed text-mutedText">
@@ -497,7 +512,7 @@ export function LandingPage() {
                     ].map((m) => (
                       <div key={m.label} className="rounded-xl border border-borderSoft bg-surface px-3 py-3">
                         <p className="text-[11px] text-mutedText">{m.label}</p>
-                        <p className="mt-1 font-display text-lg font-semibold tracking-tight text-ink">{m.value}</p>
+                        <p className="mt-1 font-display text-lg font-semibold tracking-tight tabular-nums text-ink">{m.value}</p>
                         <p className="mt-1 text-[10px] leading-none text-success">Simulated</p>
                       </div>
                     ))}
@@ -543,7 +558,15 @@ export function LandingPage() {
             </p>
             <p className="mt-2 text-center text-[11px] text-faintText">Live via official Meta Graph API — Instagram · Facebook · Threads</p>
             <div className="marquee-mask mt-7">
-              <div className="marquee flex w-max items-center">
+              <div
+                className="marquee flex w-max items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-background"
+                style={{ animationPlayState: marqueePaused ? "paused" : undefined }}
+                tabIndex={0}
+                role="group"
+                aria-label="Supported Meta platforms carousel — focus to pause"
+                onFocus={() => setMarqueePaused(true)}
+                onBlur={() => setMarqueePaused(false)}
+              >
                 {[0, 1, 2].map((copy) => (
                   <div aria-hidden={copy > 0} className="flex items-center" key={copy}>
                     {platformLogos.filter((plat) => ["instagram", "facebook", "threads"].includes(plat.slug)).map((plat) => (
@@ -551,7 +574,7 @@ export function LandingPage() {
                         key={`${copy}-${plat.slug}`}
                         className="mx-5 flex items-center gap-2 text-mutedText transition-colors duration-200 hover:text-ink sm:mx-7"
                       >
-                        <svg className="h-5 w-5 fill-current" viewBox="0 0 24 24">
+                        <svg aria-hidden="true" className="h-5 w-5 fill-current" viewBox="0 0 24 24">
                           <path d={plat.svgPath} />
                         </svg>
                         <span className="font-display text-lg italic tracking-tight">{plat.name}</span>
@@ -627,7 +650,7 @@ export function LandingPage() {
               </h2>
             </div>
             {reviews.length > 0 && (
-              <p className="text-sm text-mutedText">
+              <p className="text-sm tabular-nums text-mutedText">
                 {reviews.length} review{reviews.length === 1 ? "" : "s"} ·{" "}
                 {(reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1)} average
               </p>
@@ -643,12 +666,11 @@ export function LandingPage() {
           >
             {reviewsLoading ? (
               <motion.div
+                role="status"
                 variants={staggerItem}
-                whileHover={{ scale: 1.02, boxShadow: "0 20px 40px -12px var(--accent-strong)" }}
-                transition={{ duration: 0.2 }}
-                className="col-span-full flex items-center gap-2 rounded-2xl border border-dashed border-borderSoft bg-surface p-6 text-center text-xs text-mutedText hover:border-primary/50 hover:bg-surface/50"
+                className="col-span-full flex items-center gap-2 rounded-2xl border border-dashed border-borderSoft bg-surface p-6 text-center text-xs text-mutedText"
               >
-                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading reviews…
+                <Loader2 aria-hidden="true" className="h-3.5 w-3.5 animate-spin" /> Loading reviews…
               </motion.div>
             ) : reviews.length === 0 ? (
               <motion.div
@@ -672,21 +694,22 @@ export function LandingPage() {
                 >
                   <figure className="flex h-full flex-col justify-between">
                     <blockquote className="text-pretty text-sm leading-7 text-ink">
-                      <motion.span animate={{ y: [0, -3, 0] }} transition={{ duration: 2.8, repeat: Infinity, delay: 0.25 }} className="inline-block font-display text-2xl text-primary">“</motion.span>
+                      <motion.span aria-hidden="true" animate={{ y: [0, -3, 0] }} transition={{ duration: 2.8, repeat: Infinity, delay: 0.25 }} className="inline-block font-display text-2xl text-primary">“</motion.span>
                       {review.content}
                     </blockquote>
                     <figcaption className="mt-6 border-t border-borderSoft pt-4">
                       <ReviewStars rating={review.rating} />
-                      <div className="mt-3 flex items-center gap-3">
+                      <div className="mt-3 flex min-w-0 items-center gap-3">
                         <motion.span
+                          aria-hidden="true"
                           whileTap={{ scale: 0.9 }}
-                          className="grid h-9 w-9 place-items-center rounded-full bg-surface text-xs font-semibold text-primary"
+                          className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface text-xs font-semibold text-primary"
                         >
                           {review.name.split(" ").map((n) => n[0]).join("")}
                         </motion.span>
-                        <div>
-                          <p className="text-sm font-semibold text-ink">{review.name}</p>
-                          {review.role && <p className="text-xs text-mutedText">{review.role}</p>}
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-ink">{review.name}</p>
+                          {review.role && <p className="truncate text-xs text-mutedText">{review.role}</p>}
                         </div>
                       </div>
                     </figcaption>
@@ -705,7 +728,7 @@ export function LandingPage() {
               <p className="mt-4 max-w-md text-sm leading-6 text-mutedText">Used EduVerse? Tell us what feels useful, confusing, or missing. Reviews are moderated and appear in the wall above after approval.</p>
             </div>
             <Card className="p-6">
-              {feedbackSent ? <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="grid min-h-48 place-items-center text-center"><div><span className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-success/15 text-success"><Check className="h-5 w-5" /></span><h3 className="mt-4 font-heading text-xl font-medium text-ink">Review submitted.</h3><p className="mt-2 text-sm text-mutedText">Thanks! Your review is pending moderation and will appear after approval.</p><Button className="mt-5" size="sm" variant="secondary" onClick={() => setFeedbackSent(false)}>Write another</Button></div></motion.div> : <form onSubmit={handleFeedbackSubmit} className="space-y-5"><div className="grid gap-3 sm:grid-cols-2"><div><label htmlFor="reviewer-name" className="text-sm font-medium text-ink">Your name <span aria-hidden="true" className="text-danger">*</span></label><input id="reviewer-name" value={reviewerName} onChange={(event) => setReviewerName(event.target.value)} required maxLength={80} placeholder="e.g. Priya Sharma" className="mt-2 w-full rounded-xl border border-borderSoft bg-surface p-3 text-sm text-ink outline-none transition placeholder:text-faintText focus:border-primary" /></div><div><label htmlFor="reviewer-role" className="text-sm font-medium text-ink">Role <span className="text-xs text-mutedText">(optional)</span></label><input id="reviewer-role" value={reviewerRole} onChange={(event) => setReviewerRole(event.target.value)} maxLength={120} placeholder="e.g. Social Media Manager" className="mt-2 w-full rounded-xl border border-borderSoft bg-surface p-3 text-sm text-ink outline-none transition placeholder:text-faintText focus:border-primary" /></div></div><div><label className="text-sm font-medium text-ink">How is EduVerse feeling?</label><div className="mt-3 flex flex-wrap gap-2" role="radiogroup" aria-label="Review rating" onKeyDown={(e)=>{ if(e.key==="ArrowRight"||e.key==="ArrowDown"){e.preventDefault(); setFeedbackRating(Math.min(5, feedbackRating+1))} if(e.key==="ArrowLeft"||e.key==="ArrowUp"){e.preventDefault(); setFeedbackRating(Math.max(1, feedbackRating-1))}}}>{[1, 2, 3, 4, 5].map((rating) => <button key={rating} type="button" role="radio" aria-checked={feedbackRating === rating} aria-label={`${rating} out of 5`} onClick={() => setFeedbackRating(rating)} className={`grid h-11 w-11 place-items-center rounded-full border text-sm transition ${feedbackRating === rating ? "border-primary bg-primary text-background" : "border-borderSoft bg-surface text-mutedText hover:border-primary/50"}`}>{rating}</button>)}</div></div><div><label htmlFor="review-content" className="text-sm font-medium text-ink">Your review <span aria-hidden="true" className="text-danger">*</span></label><textarea id="review-content" value={feedback} onChange={(event) => setFeedback(event.target.value)} required rows={4} maxLength={800} placeholder="What has your experience been like so far?" className="mt-2 w-full resize-none rounded-xl border border-borderSoft bg-surface p-3 text-sm text-ink outline-none transition placeholder:text-faintText focus:border-primary" /></div>{feedbackError && <p className="text-xs text-danger">{feedbackError}</p>}<div className="flex items-center justify-between gap-3"><span className="text-xs text-mutedText">Rating: {feedbackRating}/5</span><Button type="submit" disabled={feedbackSubmitting} className="bg-ink text-background hover:bg-ink/90"><MessageCircle className="h-4 w-4" />{feedbackSubmitting ? "Submitting…" : "Submit review"}</Button></div></form>}
+              {feedbackSent ? <motion.div role="status" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="grid min-h-48 place-items-center text-center"><div><span className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-success/15 text-success"><Check aria-hidden="true" className="h-5 w-5" /></span><h3 className="mt-4 font-heading text-xl font-medium text-ink">Review submitted.</h3><p className="mt-2 text-sm text-mutedText">Thanks! Your review is pending moderation and will appear after approval.</p><Button className="mt-5" size="sm" variant="secondary" onClick={() => setFeedbackSent(false)}>Write another</Button></div></motion.div> : <form onSubmit={handleFeedbackSubmit} className="space-y-5"><div className="grid gap-3 sm:grid-cols-2"><div><label htmlFor="reviewer-name" className="text-sm font-medium text-ink">Your name <span aria-hidden="true" className="text-danger">*</span></label><input id="reviewer-name" name="name" autoComplete="name" value={reviewerName} onChange={(event) => setReviewerName(event.target.value)} required maxLength={80} placeholder="e.g. Priya Sharma…" className="mt-2 w-full rounded-xl border border-borderSoft bg-surface p-3 text-sm text-ink outline-none transition-[border-color,box-shadow] placeholder:text-faintText focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/40" /></div><div><label htmlFor="reviewer-role" className="text-sm font-medium text-ink">Role <span className="text-xs text-mutedText">(optional)</span></label><input id="reviewer-role" name="role" autoComplete="organization-title" value={reviewerRole} onChange={(event) => setReviewerRole(event.target.value)} maxLength={120} placeholder="e.g. Social Media Manager…" className="mt-2 w-full rounded-xl border border-borderSoft bg-surface p-3 text-sm text-ink outline-none transition-[border-color,box-shadow] placeholder:text-faintText focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/40" /></div></div><div><label className="text-sm font-medium text-ink">How is EduVerse feeling?</label><div className="mt-3 flex flex-wrap gap-2" role="radiogroup" aria-label="Review rating" onKeyDown={(e)=>{ if(e.key==="ArrowRight"||e.key==="ArrowDown"){e.preventDefault(); setFeedbackRating(Math.min(5, feedbackRating+1))} if(e.key==="ArrowLeft"||e.key==="ArrowUp"){e.preventDefault(); setFeedbackRating(Math.max(1, feedbackRating-1))}}}>{[1, 2, 3, 4, 5].map((rating) => <button key={rating} type="button" role="radio" aria-checked={feedbackRating === rating} aria-label={`${rating} out of 5`} onClick={() => setFeedbackRating(rating)} className={`grid h-11 w-11 place-items-center rounded-full border text-sm transition ${feedbackRating === rating ? "border-primary bg-primary text-background" : "border-borderSoft bg-surface text-mutedText hover:border-primary/50"}`}>{rating}</button>)}</div></div><div><label htmlFor="review-content" className="text-sm font-medium text-ink">Your review <span aria-hidden="true" className="text-danger">*</span></label><textarea id="review-content" value={feedback} onChange={(event) => setFeedback(event.target.value)} required rows={4} maxLength={800} placeholder="What has your experience been like so far?…" className="mt-2 w-full resize-none rounded-xl border border-borderSoft bg-surface p-3 text-sm text-ink outline-none transition-[border-color,box-shadow] placeholder:text-faintText focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/40" /></div>{feedbackError && <p role="alert" className="text-xs text-danger">{feedbackError}</p>}<div className="flex items-center justify-between gap-3"><span className="text-xs tabular-nums text-mutedText">Rating: {feedbackRating}/5</span><Button type="submit" disabled={feedbackSubmitting} className="bg-ink text-background hover:bg-ink/90"><MessageCircle aria-hidden="true" className="h-4 w-4" />{feedbackSubmitting ? "Submitting…" : "Submit review"}</Button></div></form>}
             </Card>
           </motion.div>
         </section>
@@ -723,18 +746,22 @@ export function LandingPage() {
               no OAuth required.
             </p>
             <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-              <Button onClick={() => router.push("/demo")} className="border-2 border-background bg-transparent px-6 py-3 text-sm font-medium text-background hover:bg-background hover:text-ink">
-                <Eye className="h-4 w-4" />
-                Explore Live Demo
+              <Button asChild className="border-2 border-background bg-transparent px-6 py-3 text-sm font-medium text-background hover:bg-background hover:text-ink">
+                <Link href="/demo">
+                  <Eye aria-hidden="true" className="h-4 w-4" />
+                  Explore Live Demo
+                </Link>
               </Button>
-              <Button onClick={() => router.push("/login")} className="bg-background px-6 py-3 text-sm text-ink hover:bg-background/90">
-                Open the dashboard
-                <ArrowRight className="h-4 w-4" />
+              <Button asChild className="bg-background px-6 py-3 text-sm text-ink hover:bg-background/90">
+                <Link href="/login">
+                  Open the dashboard
+                  <ArrowRight aria-hidden="true" className="h-4 w-4" />
+                </Link>
               </Button>
               <Button
                 onClick={handleConnectClick}
                 disabled={checkingAuth}
-                className="border-2 border-primary bg-primary/15 px-6 py-3 text-sm font-medium text-primary hover:bg-primary/25 hover:border-primary hover:shadow-glow transition-all disabled:opacity-50"
+                className="border-2 border-primary bg-primary/15 px-6 py-3 text-sm font-medium text-primary transition-[border-color,background-color,box-shadow] hover:border-primary hover:bg-primary/25 hover:shadow-glow disabled:opacity-50"
               >
                 {checkingAuth ? "Checking…" : "Connect Meta"}
               </Button>

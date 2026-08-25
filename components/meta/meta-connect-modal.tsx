@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import * as Dialog from "@radix-ui/react-dialog";
 import { AlertCircle, Check, Eye, Link2Off, Lock, RefreshCw, ShieldCheck, Sparkles, X } from "lucide-react";
 import type { MetaAccount } from "@/lib/meta-api";
 
@@ -45,7 +46,7 @@ export function MetaConnectModal({ isOpen, onClose, onConnected }: MetaConnectMo
       setConnectedList(data.accounts ?? []);
       if (!response.ok && data.error) setErrorMessage(data.error);
     } catch {
-      setErrorMessage("Could not reach the Meta connection service.");
+      setErrorMessage("Could not reach the Meta connection service. Check your network and try again.");
     } finally {
       setLoadingAccounts(false);
     }
@@ -64,8 +65,6 @@ export function MetaConnectModal({ isOpen, onClose, onConnected }: MetaConnectMo
     };
   }, [isOpen, loadAccounts]);
 
-  if (!isOpen) return null;
-
   const startConnect = (kind: "facebook" | "threads") => {
     if (authRequired) {
       router.push("/login?next=/dashboard/settings");
@@ -77,7 +76,7 @@ export function MetaConnectModal({ isOpen, onClose, onConnected }: MetaConnectMo
     try {
       window.location.assign(kind === "threads" ? "/api/meta/threads" : "/api/meta/oauth");
     } catch {
-      setErrorMessage("Could not reach the Meta connection service.");
+      setErrorMessage("Could not reach the Meta connection service. Check your network and try again.");
       setConnecting(null);
     }
   };
@@ -92,7 +91,7 @@ export function MetaConnectModal({ isOpen, onClose, onConnected }: MetaConnectMo
       onConnected?.(next);
       window.dispatchEvent(new Event("eduverse:analytics-refresh"));
     } catch {
-      setErrorMessage("Could not disconnect the account.");
+      setErrorMessage("Could not disconnect the account. Retry in a moment — if it persists, reconnect and try again.");
     } finally {
       setLoadingAccounts(false);
     }
@@ -101,146 +100,153 @@ export function MetaConnectModal({ isOpen, onClose, onConnected }: MetaConnectMo
   const connectedCount = connectedList.filter((account) => account.status === "active" || account.status === "token_expiring").length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 p-4 backdrop-blur-sm">
-      <div className="relative w-full max-w-xl overflow-hidden rounded-2xl border border-borderSoft bg-card p-6 shadow-glass">
-        <div className="flex items-center justify-between border-b border-borderSoft pb-4">
-          <div className="flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center rounded-xl bg-accent-soft text-primary">
-              <ShieldCheck className="h-5 w-5" />
-            </span>
-            <div>
-              <h3 className="font-heading text-lg font-medium text-ink">Connect Meta accounts</h3>
-              <p className="text-xs text-mutedText">Instagram Business, Facebook Pages and Threads</p>
+    <Dialog.Root open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-background/70 backdrop-blur-sm" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[88vh] w-[min(92vw,40rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto overscroll-contain rounded-2xl border border-borderSoft bg-card p-6 shadow-glass">
+          <div className="flex items-center justify-between border-b border-borderSoft pb-4">
+            <div className="flex items-center gap-3">
+              <span aria-hidden="true" className="grid h-10 w-10 place-items-center rounded-xl bg-accent-soft text-primary">
+                <ShieldCheck className="h-5 w-5" />
+              </span>
+              <div>
+                <Dialog.Title className="font-heading text-lg font-medium text-ink">Connect Meta accounts</Dialog.Title>
+                <Dialog.Description className="text-xs text-mutedText">Instagram Business, Facebook Pages and Threads</Dialog.Description>
+              </div>
             </div>
-          </div>
-          <button aria-label="Close Meta connection dialog" onClick={onClose} className="rounded-lg p-2 text-mutedText transition hover:bg-surface hover:text-ink">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <div className="mt-5 space-y-5">
-          <div className="rounded-xl border border-primary/25 bg-accent-soft p-4">
-            <div className="flex items-center gap-2 text-xs font-semibold text-primary">
-              <Sparkles className="h-4 w-4" />
-              <span>Live Graph API connection</span>
-            </div>
-            <p className="mt-1 text-xs leading-relaxed text-mutedText">
-              Connecting opens Meta&apos;s consent screen and returns you here. Only accounts Meta actually returns are shown — nothing is simulated.
-            </p>
+            <Dialog.Close aria-label="Close Meta connection dialog" className="rounded-lg p-2 text-mutedText transition hover:bg-surface hover:text-ink">
+              <X aria-hidden="true" className="h-5 w-5" />
+            </Dialog.Close>
           </div>
 
-          {authRequired && (
-            <div className="flex items-start gap-2 rounded-xl border border-warning/30 bg-warning/10 p-4 text-xs leading-relaxed text-warning dark:text-amber-300">
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-              <div className="space-y-2">
-                <p className="font-semibold">Sign in required</p>
-                <p className="text-warning/80 dark:text-amber-300/80">You need to be logged in to connect Meta accounts. Sign in first, then return here to connect.</p>
-                <a href="/login?next=/dashboard/settings" className="inline-flex items-center justify-center rounded-lg bg-ink px-4 py-2 text-xs font-semibold text-background hover:bg-ink/90">
-                  Go to login
+          <div className="mt-5 space-y-5">
+            <div className="rounded-xl border border-primary/25 bg-accent-soft p-4">
+              <div className="flex items-center gap-2 text-xs font-semibold text-primary">
+                <Sparkles aria-hidden="true" className="h-4 w-4" />
+                <span>Live Graph API connection</span>
+              </div>
+              <p className="mt-1 text-xs leading-relaxed text-mutedText">
+                Connecting opens Meta&apos;s consent screen and returns you here. Only accounts Meta actually returns are shown — nothing is simulated.
+              </p>
+            </div>
+
+            <div aria-live="polite">
+              {authRequired && (
+                <div className="flex items-start gap-2 rounded-xl border border-warning/30 bg-warning/10 p-4 text-xs leading-relaxed text-warning dark:text-amber-300">
+                  <AlertCircle aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
+                  <div className="space-y-2">
+                    <p className="font-semibold">Sign in required</p>
+                    <p className="text-warning/80 dark:text-amber-300/80">You need to be logged in to connect Meta accounts. Sign in first, then return here to connect.</p>
+                    <a href="/login?next=/dashboard/settings" className="inline-flex items-center justify-center rounded-lg bg-ink px-4 py-2 text-xs font-semibold text-background hover:bg-ink/90">
+                      Go to login
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="grid gap-2 sm:grid-cols-2">
+              <button
+                onClick={() => startConnect("facebook")}
+                disabled={connecting !== null || authRequired}
+                className="inline-flex touch-manipulation items-center justify-center gap-2 rounded-xl bg-ink px-4 py-2.5 text-xs font-semibold text-background transition-[background-color] hover:bg-ink/90 disabled:pointer-events-none disabled:opacity-50"
+                title={authRequired ? "Sign in required" : undefined}
+              >
+                {connecting === "facebook" ? <RefreshCw aria-hidden="true" className="h-3.5 w-3.5 animate-spin" /> : <Check aria-hidden="true" className="h-3.5 w-3.5" />}
+                {connecting === "facebook" ? "Opening Meta…" : "Connect Facebook & Instagram"}
+              </button>
+              <button
+                onClick={() => startConnect("threads")}
+                disabled={connecting !== null || authRequired}
+                className="inline-flex touch-manipulation items-center justify-center gap-2 rounded-xl border border-borderSoft bg-surface px-4 py-2.5 text-xs font-semibold text-ink transition-[background-color] hover:bg-surfaceMuted disabled:pointer-events-none disabled:opacity-50"
+                title={authRequired ? "Sign in required" : undefined}
+              >
+                {connecting === "threads" ? <RefreshCw aria-hidden="true" className="h-3.5 w-3.5 animate-spin" /> : <Check aria-hidden="true" className="h-3.5 w-3.5" />}
+                {connecting === "threads" ? "Opening Threads…" : "Connect Threads"}
+              </button>
+            </div>
+
+            <div className="flex items-start gap-2 rounded-xl border border-success/20 bg-success/10 px-3.5 py-3">
+              <Lock aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" />
+              <p className="text-[11px] leading-relaxed text-ink">
+                OAuth opens on <strong className="font-semibold text-ink">Meta&apos;s consent screen</strong> — we request only{" "}
+                <code className="rounded bg-surface border border-borderSoft px-1 py-0.5 text-[10px] text-ink">pages_show_list</code> + related scopes. Tokens are{" "}
+                <strong className="font-semibold text-ink">AES-256-GCM encrypted</strong> and scoped to your workspace via RLS.
+                <a href="/privacy" target="_blank" rel="noopener noreferrer" className="ml-1 font-semibold text-success hover:underline">
+                  Privacy & Data Security →
                 </a>
-              </div>
+              </p>
             </div>
-          )}
-
-          <div className="grid gap-2 sm:grid-cols-2">
-            <button
-              onClick={() => startConnect("facebook")}
-              disabled={connecting !== null || authRequired}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-ink px-4 py-2.5 text-xs font-semibold text-background transition hover:bg-ink/90 disabled:opacity-50"
-              title={authRequired ? "Sign in required" : undefined}
+            <a
+              href="/demo"
+              className="flex items-center justify-center gap-1.5 rounded-xl border border-warning/20 bg-warning/10 px-3 py-2.5 text-xs font-medium text-warning transition hover:bg-warning/15"
             >
-              {connecting === "facebook" ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-              {connecting === "facebook" ? "Opening Meta…" : "Connect Facebook & Instagram"}
-            </button>
-            <button
-              onClick={() => startConnect("threads")}
-              disabled={connecting !== null || authRequired}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-borderSoft bg-surface px-4 py-2.5 text-xs font-semibold text-ink transition hover:bg-surfaceMuted disabled:opacity-50"
-              title={authRequired ? "Sign in required" : undefined}
-            >
-              {connecting === "threads" ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-              {connecting === "threads" ? "Opening Threads…" : "Connect Threads"}
-            </button>
-          </div>
+              <Eye aria-hidden="true" className="h-3.5 w-3.5" /> Prefer to preview first? Explore Live Demo — no OAuth needed
+            </a>
 
-          <div className="flex items-start gap-2 rounded-xl border border-success/20 bg-success/10 px-3.5 py-3">
-            <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" />
-            <p className="text-[11px] leading-relaxed text-ink">
-              OAuth opens on <strong className="font-semibold text-ink">Meta&apos;s consent screen</strong> — we request only{" "}
-              <code className="rounded bg-surface border border-borderSoft px-1 py-0.5 text-[10px] text-ink">pages_show_list</code> + related scopes. Tokens are{" "}
-              <strong className="font-semibold text-ink">AES-256-GCM encrypted</strong> and scoped to your workspace via RLS.
-              <a href="/privacy" target="_blank" rel="noopener noreferrer" className="ml-1 font-semibold text-success hover:underline">
-                Privacy & Data Security →
-              </a>
-            </p>
-          </div>
-          <a
-            href="/demo"
-            className="flex items-center justify-center gap-1.5 rounded-xl border border-warning/20 bg-warning/10 px-3 py-2.5 text-xs font-medium text-warning transition hover:bg-warning/15"
-          >
-            <Eye className="h-3.5 w-3.5" /> Prefer to preview first? Explore Live Demo — no OAuth needed
-          </a>
-
-          {successMessage && <div className="rounded-lg border border-success/25 bg-success/10 p-3 text-xs text-success">{successMessage}</div>}
-          {errorMessage && !authRequired && (
-            <div className="flex items-start gap-2 rounded-lg border border-danger/25 bg-danger/10 p-3 text-xs text-danger">
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>{errorMessage}</span>
+            <div aria-live="polite">
+              {successMessage && <div className="rounded-lg border border-success/25 bg-success/10 p-3 text-xs text-success">{successMessage}</div>}
+              {errorMessage && !authRequired && (
+                <div role="alert" className="flex items-start gap-2 rounded-lg border border-danger/25 bg-danger/10 p-3 text-xs text-danger">
+                  <AlertCircle aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>{errorMessage}</span>
+                </div>
+              )}
             </div>
-          )}
 
-          <div>
-            <div className="mb-3 flex items-center justify-between">
-              <h4 className="text-xs font-semibold text-mutedText">Accounts returned by Meta ({connectedCount} connected)</h4>
-            </div>
-            {loadingAccounts ? (
-              <div className="flex items-center justify-center gap-2 rounded-xl border border-borderSoft bg-surface p-6 text-xs text-mutedText">
-                <RefreshCw className="h-4 w-4 animate-spin" /> Checking Meta Graph API…
-              </div>
-            ) : connectedList.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-borderSoft bg-surface p-6 text-center text-xs leading-relaxed text-mutedText">
-                No linked accounts yet. Connect Facebook &amp; Instagram or Threads above.
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {connectedList.map((account) => {
-                  const status = STATUS_META[account.status] ?? STATUS_META.disconnected;
-                  return (
-                    <div key={`${account.platform}-${account.id}`} className="flex items-center justify-between rounded-xl border border-borderSoft bg-surface p-3">
-                      <div className="flex min-w-0 items-center gap-3">
-                        {account.avatarUrl ? <Image src={account.avatarUrl} alt="" width={36} height={36} className="h-9 w-9 shrink-0 rounded-full border border-borderSoft object-cover" /> : <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/15 text-xs font-semibold text-primary">{account.name.slice(0, 1).toUpperCase()}</span>}
-                        <div className="min-w-0">
-                          <p className="truncate text-xs font-semibold text-ink">{account.name}</p>
-                          <p className="truncate text-[11px] text-mutedText">{account.platform === "instagram" ? "Instagram" : account.platform === "threads" ? "Threads" : "Facebook Page"} · {account.handle}{account.followers !== undefined ? ` · ${account.followers.toLocaleString()} followers` : ""}</p>
+            <div>
+              <h4 className="mb-3 text-xs font-semibold text-mutedText">Accounts returned by Meta ({connectedCount} connected)</h4>
+              <div aria-live="polite" aria-busy={loadingAccounts}>
+                {loadingAccounts ? (
+                  <div className="flex items-center justify-center gap-2 rounded-xl border border-borderSoft bg-surface p-6 text-xs text-mutedText">
+                    <RefreshCw aria-hidden="true" className="h-4 w-4 animate-spin" /> Checking Meta Graph API…
+                  </div>
+                ) : connectedList.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-borderSoft bg-surface p-6 text-center text-xs leading-relaxed text-mutedText">
+                    No linked accounts yet. Connect Facebook &amp; Instagram or Threads above.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {connectedList.map((account) => {
+                      const status = STATUS_META[account.status] ?? STATUS_META.disconnected;
+                      return (
+                        <div key={`${account.platform}-${account.id}`} className="flex items-center justify-between rounded-xl border border-borderSoft bg-surface p-3">
+                          <div className="flex min-w-0 items-center gap-3">
+                            {account.avatarUrl ? <Image src={account.avatarUrl} alt="" width={36} height={36} className="h-9 w-9 shrink-0 rounded-full border border-borderSoft object-cover" /> : <span aria-hidden="true" className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/15 text-xs font-semibold text-primary">{account.name.slice(0, 1).toUpperCase()}</span>}
+                            <div className="min-w-0">
+                              <p className="truncate text-xs font-semibold text-ink">{account.name}</p>
+                              <p className="truncate text-[11px] text-mutedText">{account.platform === "instagram" ? "Instagram" : account.platform === "threads" ? "Threads" : "Facebook Page"} · {account.handle}{account.followers !== undefined ? ` · ${account.followers.toLocaleString()} followers` : ""}</p>
+                            </div>
+                          </div>
+                          <div className="ml-3 flex shrink-0 items-center gap-2">
+                            <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-semibold ${status.className}`}>
+                              {account.status === "active" && <Check aria-hidden="true" className="h-3 w-3" />}
+                              {status.label}
+                            </span>
+                            {account.status === "expired" || account.status === "permission_required" ? (
+                              <button onClick={() => startConnect(account.platform === "threads" ? "threads" : "facebook")} disabled={connecting !== null} className="inline-flex touch-manipulation min-h-[28px] items-center gap-1 rounded-lg border border-borderSoft bg-card px-2 py-1 text-[10px] font-semibold text-primary transition-[background-color] hover:bg-surfaceMuted disabled:pointer-events-none disabled:opacity-50">
+                                <RefreshCw aria-hidden="true" className="h-3 w-3" /> Reconnect
+                              </button>
+                            ) : (
+                              <button onClick={() => disconnectAccount(account)} disabled={loadingAccounts} className="inline-flex touch-manipulation min-h-[28px] items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-medium text-danger transition hover:opacity-75 disabled:pointer-events-none disabled:opacity-50" aria-label={`Disconnect ${account.name}`}>
+                                <Link2Off aria-hidden="true" className="h-3 w-3" /> Disconnect
+                              </button>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                      <div className="ml-3 flex shrink-0 items-center gap-2">
-                        <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-semibold ${status.className}`}>
-                          {account.status === "active" && <Check className="h-3 w-3" />}
-                          {status.label}
-                        </span>
-                        {account.status === "expired" || account.status === "permission_required" ? (
-                          <button onClick={() => startConnect(account.platform === "threads" ? "threads" : "facebook")} disabled={connecting !== null} className="inline-flex items-center gap-1 rounded-lg border border-borderSoft bg-card px-2 py-1 text-[10px] font-semibold text-primary transition hover:bg-surfaceMuted">
-                            <RefreshCw className="h-3 w-3" /> Reconnect
-                          </button>
-                        ) : (
-                          <button onClick={() => disconnectAccount(account)} disabled={loadingAccounts} className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-medium text-danger transition hover:opacity-75 disabled:opacity-50" aria-label={`Disconnect ${account.name}`}>
-                            <Link2Off className="h-3 w-3" /> Disconnect
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
-        </div>
 
-        <div className="mt-6 flex justify-end border-t border-borderSoft pt-4">
-          <button onClick={onClose} className="rounded-xl border border-borderSoft bg-surface px-4 py-2 text-xs font-semibold text-ink transition hover:bg-surfaceMuted">Close</button>
-        </div>
-      </div>
-    </div>
+          <div className="mt-6 flex justify-end border-t border-borderSoft pt-4">
+            <Dialog.Close className="rounded-xl border border-borderSoft bg-surface px-4 py-2 text-xs font-semibold text-ink transition hover:bg-surfaceMuted">Close</Dialog.Close>
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }

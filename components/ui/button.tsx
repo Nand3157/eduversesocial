@@ -1,9 +1,10 @@
 import * as React from "react";
+import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "group relative isolate inline-flex items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-full text-sm font-medium outline-none transition-all duration-150 ease-out focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50",
+  "group relative isolate inline-flex items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-full text-sm font-medium outline-none touch-manipulation transition-[transform,box-shadow,background-color,border-color,color] duration-150 ease-out focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
@@ -27,19 +28,26 @@ const buttonVariants = cva(
   }
 );
 
+const SHEEN =
+  "before:pointer-events-none before:absolute before:inset-y-0 before:left-0 before:z-[-1] before:w-1/2 before:-translate-x-full before:-skew-x-12 before:bg-background/20 before:opacity-0 before:content-[''] before:transition-[transform,opacity] before:duration-500 before:ease-out group-hover:before:translate-x-[240%] group-hover:before:opacity-100";
+
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {}
+    VariantProps<typeof buttonVariants> {
+  asChild?: boolean;
+}
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, children, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, children, ...props }, ref) => {
+    const Comp = asChild ? Slot : "button";
     return (
-      <button className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props}>
-        <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 -left-1/2 z-[-1] w-1/2 -skew-x-12 bg-background/20 opacity-0 transition-all duration-500 group-hover:left-[120%] group-hover:opacity-100" />
+      <Comp className={cn(buttonVariants({ variant, size }), SHEEN, className)} ref={ref} {...props}>
         {children}
-      </button>
+      </Comp>
     );
   }
 );
 
 Button.displayName = "Button";
+
+export { buttonVariants };
