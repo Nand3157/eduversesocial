@@ -14,9 +14,9 @@ interface MetaConnectModalProps {
 
 const STATUS_META: Record<MetaAccount["status"], { label: string; className: string }> = {
   active: { label: "Connected", className: "border-success/25 bg-success/10 text-success" },
-  token_expiring: { label: "Token expiring soon", className: "border-amber-500/30 bg-amber-500/10 text-amber-600" },
+  token_expiring: { label: "Token expiring soon", className: "border-warning/30 bg-warning/10 text-warning" },
   expired: { label: "Token expired", className: "border-danger/25 bg-danger/10 text-danger" },
-  permission_required: { label: "Permission required", className: "border-amber-500/30 bg-amber-500/10 text-amber-600" },
+  permission_required: { label: "Permission required", className: "border-warning/30 bg-warning/10 text-warning" },
   disconnected: { label: "Disconnected", className: "border-borderSoft bg-surface text-mutedText" }
 };
 
@@ -130,11 +130,11 @@ export function MetaConnectModal({ isOpen, onClose, onConnected }: MetaConnectMo
           </div>
 
           {authRequired && (
-            <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-xs leading-relaxed text-amber-700 dark:text-amber-300">
+            <div className="flex items-start gap-2 rounded-xl border border-warning/30 bg-warning/10 p-4 text-xs leading-relaxed text-warning dark:text-amber-300">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
               <div className="space-y-2">
                 <p className="font-semibold">Sign in required</p>
-                <p className="text-amber-700/80 dark:text-amber-300/80">You need to be logged in to connect Meta accounts. Sign in first, then return here to connect.</p>
+                <p className="text-warning/80 dark:text-amber-300/80">You need to be logged in to connect Meta accounts. Sign in first, then return here to connect.</p>
                 <a href="/login?next=/dashboard/settings" className="inline-flex items-center justify-center rounded-lg bg-ink px-4 py-2 text-xs font-semibold text-background hover:bg-ink/90">
                   Go to login
                 </a>
@@ -155,7 +155,7 @@ export function MetaConnectModal({ isOpen, onClose, onConnected }: MetaConnectMo
             <button
               onClick={() => startConnect("threads")}
               disabled={connecting !== null || authRequired}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-borderSoft bg-surface px-4 py-2.5 text-xs font-semibold text-ink transition hover:bg-white/10 disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-borderSoft bg-surface px-4 py-2.5 text-xs font-semibold text-ink transition hover:bg-surfaceMuted disabled:opacity-50"
               title={authRequired ? "Sign in required" : undefined}
             >
               {connecting === "threads" ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
@@ -176,7 +176,7 @@ export function MetaConnectModal({ isOpen, onClose, onConnected }: MetaConnectMo
           </div>
           <a
             href="/demo"
-            className="flex items-center justify-center gap-1.5 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2.5 text-xs font-medium text-amber-700 transition hover:bg-amber-500/15"
+            className="flex items-center justify-center gap-1.5 rounded-xl border border-warning/20 bg-warning/10 px-3 py-2.5 text-xs font-medium text-warning transition hover:bg-warning/15"
           >
             <Eye className="h-3.5 w-3.5" /> Prefer to preview first? Explore Live Demo — no OAuth needed
           </a>
@@ -220,7 +220,7 @@ export function MetaConnectModal({ isOpen, onClose, onConnected }: MetaConnectMo
                           {status.label}
                         </span>
                         {account.status === "expired" || account.status === "permission_required" ? (
-                          <button onClick={() => startConnect(account.platform === "threads" ? "threads" : "facebook")} disabled={connecting !== null} className="inline-flex items-center gap-1 rounded-lg border border-borderSoft bg-card px-2 py-1 text-[10px] font-semibold text-primary transition hover:bg-white/10">
+                          <button onClick={() => startConnect(account.platform === "threads" ? "threads" : "facebook")} disabled={connecting !== null} className="inline-flex items-center gap-1 rounded-lg border border-borderSoft bg-card px-2 py-1 text-[10px] font-semibold text-primary transition hover:bg-surfaceMuted">
                             <RefreshCw className="h-3 w-3" /> Reconnect
                           </button>
                         ) : (
@@ -238,7 +238,7 @@ export function MetaConnectModal({ isOpen, onClose, onConnected }: MetaConnectMo
         </div>
 
         <div className="mt-6 flex justify-end border-t border-borderSoft pt-4">
-          <button onClick={onClose} className="rounded-xl border border-borderSoft bg-surface px-4 py-2 text-xs font-semibold text-ink transition hover:bg-white/10">Close</button>
+          <button onClick={onClose} className="rounded-xl border border-borderSoft bg-surface px-4 py-2 text-xs font-semibold text-ink transition hover:bg-surfaceMuted">Close</button>
         </div>
       </div>
     </div>

@@ -112,7 +112,7 @@ export function PostTable({ csvRows }: { csvRows?: CsvRow[] }) {
           <thead className="text-xs text-mutedText">
             <tr>
               {["Platform", "Content", "Date", "Likes", "Comments", "Shares", "Reach", "Status"].map((column) => (
-                <th className="px-3 py-2 font-medium" key={column}>
+                <th className="px-3 py-2 font-medium sticky top-0 z-10 bg-surface" key={column}>
                   {column}
                 </th>
               ))}
@@ -129,7 +129,7 @@ export function PostTable({ csvRows }: { csvRows?: CsvRow[] }) {
                   exit={{ opacity: 0, y: -6 }}
                   transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
                 >
-                  <td className="rounded-l-xl px-3 py-3 font-medium text-ink">{post.platform}</td>
+                  <td className="sticky left-0 z-10 rounded-l-xl bg-surface px-3 py-3 font-medium text-ink shadow-[2px_0_4px_rgba(0,0,0,0.04)]">{post.platform}</td>
                   <td className="max-w-[280px] px-3 py-3 text-ink">{post.post}</td>
                   <td className="px-3 py-3 tabular-nums">{post.date}</td>
                   <td className="px-3 py-3 tabular-nums">{post.likes}</td>

@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Indexes IG/FB/Threads engagement into persistent memory, then tells you what to post and when.",
     start_url: "/dashboard",
     display: "standalone",
-    background_color: "#ffffff",
-    theme_color: "#7c3aed",
+    background_color: "#faf7f0",
+    theme_color: "#c8552b",
     icons: [
       { src: "/icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },
       { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },

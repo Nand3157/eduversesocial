@@ -94,7 +94,7 @@ export function AuthForm({ mode, next }: { mode: Mode; next?: string }) {
       {mode === "signup" && (
         <Link
           href="/demo"
-          className="flex items-center justify-center gap-1.5 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2.5 text-xs font-medium text-amber-700 transition hover:bg-amber-500/15"
+          className="flex items-center justify-center gap-1.5 rounded-xl border border-warning/20 bg-warning/10 px-3 py-2.5 text-xs font-medium text-warning transition hover:bg-warning/15"
         >
           <Eye className="h-3.5 w-3.5" /> Explore Live Demo — no signup required
         </Link>

@@ -72,11 +72,11 @@ export function TiltCard({
       onPointerEnter={() => setIsHovered(true)}
       onPointerLeave={handlePointerLeave}
       onPointerMove={handlePointerMove}
-      style={{ rotateX: sx, rotateY: sy, transformPerspective: perspective, transformStyle: "preserve-3d" }}
+      style={{ rotateX: sx, rotateY: sy, transformPerspective: perspective, transformStyle: "preserve-3d", willChange: isHovered && !reduceMotion ? "transform" : "auto" } as React.CSSProperties}
       transition={spring}
       variants={variants}
       whileHover={reduceMotion ? undefined : { scale }}
-      className={cn("relative will-change-transform rounded-2xl", className)}
+      className={cn("relative rounded-2xl", className)}
     >
       {children}
       {spotlight && (

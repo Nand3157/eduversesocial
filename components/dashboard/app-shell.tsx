@@ -101,48 +101,51 @@ export function AppShell({ children, email, profile }: { children: React.ReactNo
           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary text-background">
             <Sparkles className="h-4 w-4" />
           </span>
-          <span className={cn("overflow-hidden whitespace-nowrap font-display text-[1.05rem] font-semibold tracking-tight text-ink transition-[clip-path,opacity] duration-300 ease-out", collapsed ? "clip-path-[inset(0_100%_0_0)] opacity-0" : "clip-path-[inset(0_0_0_0)] opacity-100")}>
+          <span aria-hidden={collapsed} className={cn("overflow-hidden whitespace-nowrap font-display text-[1.05rem] font-semibold tracking-tight text-ink transition-[clip-path,opacity] duration-300 ease-out", collapsed ? "clip-path-[inset(0_100%_0_0)] opacity-0" : "clip-path-[inset(0_0_0_0)] opacity-100")}>
             EduVerse
           </span>
         </Link>
-        <button aria-label="Collapse navigation" className="hidden text-faintText hover:text-ink lg:block" onClick={toggleSidebar}>
+        <button aria-label="Collapse navigation" className="hidden min-h-11 min-w-11 place-items-center text-faintText hover:text-ink lg:grid" onClick={toggleSidebar}>
           {collapsed ? <ChevronLeft className="h-4 w-4 rotate-180" /> : <ChevronLeft className="h-4 w-4" />}
         </button>
       </div>
 
       <nav aria-label="Dashboard navigation" className="mt-5 space-y-1">
-        {navigation.map(([label, href, Icon]) => {
+        {navigation.map(([label, href, Icon], idx) => {
           const active = pathname === href;
+          const showDivider = (idx === 3 || idx === 6) && !collapsed;
           return (
-            <Link
-              className={cn(
-                "relative flex min-h-10 items-center gap-3 rounded-full px-3.5 text-sm font-medium transition-colors duration-150",
-                active ? "text-white" : "text-mutedText hover:text-ink"
-              )}
-              href={href}
-              key={href}
-              onClick={() => setOpen(false)}
-              title={collapsed ? label : undefined}
-            >
-              {active && (
-                <motion.span
-                  aria-hidden="true"
-                  className="absolute inset-0 rounded-full bg-primary"
-                  layoutId={pillLayoutId}
-                  transition={SPRING_SOFT}
-                />
-              )}
-              <motion.span
-                animate={active ? { scale: 1.08 } : { scale: 1 }}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                transition={SPRING_SOFT}
-                className="grid shrink-0 place-items-center"
+            <div key={href}>
+              <Link
+                className={cn(
+                  "relative flex min-h-11 items-center gap-3 rounded-full px-3.5 text-sm font-medium transition-colors duration-150",
+                  active ? "text-white" : "text-mutedText hover:text-ink"
+                )}
+                href={href}
+                onClick={() => setOpen(false)}
+                title={collapsed ? label : undefined}
               >
-                <Icon className="h-4 w-4" />
-              </motion.span>
-              <span className={cn("relative z-10 overflow-hidden transition-[clip-path,opacity] duration-300 ease-out", collapsed ? "clip-path-[inset(0_100%_0_0)] opacity-0" : "clip-path-[inset(0_0_0_0)] opacity-100")}>{label}</span>
-            </Link>
+                {active && (
+                  <motion.span
+                    aria-hidden="true"
+                    className="absolute inset-0 rounded-full bg-primary"
+                    layoutId={pillLayoutId}
+                    transition={SPRING_SOFT}
+                  />
+                )}
+                <motion.span
+                  animate={active ? { scale: 1.08 } : { scale: 1 }}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  transition={SPRING_SOFT}
+                  className="grid shrink-0 place-items-center"
+                >
+                  <Icon className="h-4 w-4" />
+                </motion.span>
+                <span aria-hidden={collapsed} className={cn("relative z-10 overflow-hidden transition-[clip-path,opacity] duration-300 ease-out", collapsed ? "clip-path-[inset(0_100%_0_0)] opacity-0 pointer-events-none" : "clip-path-[inset(0_0_0_0)] opacity-100")}>{label}</span>
+              </Link>
+              {showDivider && <div aria-hidden="true" className="mx-3 my-1 h-px bg-borderSoft/60" />}
+            </div>
           );
         })}
       </nav>

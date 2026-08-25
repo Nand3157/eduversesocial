@@ -65,8 +65,9 @@ const jsonLd = {
 const productLinks = [
   { label: "Dashboard", href: "/dashboard" },
   { label: "Analytics", href: "/dashboard/analytics" },
-  { label: "Memory", href: "/dashboard/memory" },
   { label: "Content", href: "/dashboard/content" },
+  { label: "Memory", href: "/dashboard/memory" },
+  { label: "Recommendations", href: "/dashboard/recommendations" },
   { label: "AI Chat", href: "/dashboard/chat" }
 ];
 
@@ -181,7 +182,7 @@ export default function Home() {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\u003c") }}
       />
       <LandingPage />
       <Footer />

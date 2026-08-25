@@ -19,7 +19,7 @@ const tooltipStyle = {
   fontVariantNumeric: "tabular-nums",
 } as const;
 const axisTick = { fill: "var(--faint)", fontSize: 12, fontVariantNumeric: "tabular-nums" } as const;
-const COLORS = ["#C8552B", "#3E7D5A", "#B7791F", "#7C6A5A"];
+const COLORS = ["var(--accent)", "var(--ok)", "var(--warn)", "var(--muted)"];
 
 export function DemoDashboard() {
   const snap = DEMO_SNAPSHOT;
@@ -27,16 +27,16 @@ export function DemoDashboard() {
   return (
     <div className="space-y-6">
       {/* Demo banner */}
-      <Card className="border-amber-500/25 bg-amber-500/10">
+      <Card className="border-warning/25 bg-warning/10">
         <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex gap-3">
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-amber-500/15 text-amber-600">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-warning/15 text-warning">
               <Eye className="h-4 w-4" />
             </span>
             <div>
               <p className="flex items-center gap-2 text-sm font-semibold text-ink">
                 Sandbox preview — simulated data
-                <Badge variant="warning" className="bg-amber-500/15 text-amber-700 border-amber-500/20">Demo</Badge>
+                <Badge variant="warning" className="bg-warning/15 text-warning border-warning/20">Demo</Badge>
               </p>
               <p className="mt-1 max-w-xl text-xs leading-relaxed text-mutedText">
                 This is a read-only mock dashboard so you can explore the layout before connecting Meta. Connect your own accounts to replace this with live Graph API data.
@@ -104,16 +104,16 @@ export function DemoDashboard() {
                 <AreaChart data={snap.engagementData}>
                   <defs>
                     <linearGradient id="demo-engagement" x1="0" x2="0" y1="0" y2="1">
-                      <stop offset="5%" stopColor="#C8552B" stopOpacity={0.28} />
-                      <stop offset="95%" stopColor="#C8552B" stopOpacity={0.02} />
+                      <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.28} />
+                      <stop offset="95%" stopColor="var(--accent)" stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid stroke="var(--line)" strokeOpacity={0.5} vertical={false} />
                   <XAxis dataKey="label" axisLine={false} tickLine={false} tick={axisTick} />
                   <YAxis hide />
                   <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: "var(--line)" }} />
-                  <Area dataKey="engagement" fill="url(#demo-engagement)" stroke="#C8552B" strokeWidth={2.5} type="monotone" />
-                  <Line dataKey="comments" dot={false} stroke="#3E7D5A" strokeWidth={2} type="monotone" />
+                  <Area dataKey="engagement" fill="url(#demo-engagement)" stroke="var(--accent)" strokeWidth={2.5} type="monotone" />
+                  <Line dataKey="comments" dot={false} stroke="var(--ok)" strokeWidth={2} type="monotone" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -169,7 +169,7 @@ export function DemoDashboard() {
                   <XAxis dataKey="label" axisLine={false} tickLine={false} tick={axisTick} />
                   <YAxis hide />
                   <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "var(--accent-soft)" }} />
-                  <Bar dataKey="value" fill="#C8552B" radius={[6, 6, 2, 2]} />
+                  <Bar dataKey="value" fill="var(--accent)" radius={[6, 6, 2, 2]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -188,7 +188,7 @@ export function DemoDashboard() {
                   <XAxis dataKey="label" axisLine={false} tickLine={false} tick={axisTick} />
                   <YAxis hide />
                   <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: "var(--line)" }} />
-                  <Line dataKey="followers" dot={{ r: 4, fill: "#3E7D5A", strokeWidth: 0 }} stroke="#3E7D5A" strokeWidth={2.5} type="monotone" />
+                  <Line dataKey="followers" dot={{ r: 4, fill: "var(--ok)", strokeWidth: 0 }} stroke="var(--ok)" strokeWidth={2.5} type="monotone" />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -205,14 +205,14 @@ export function DemoDashboard() {
                 <AreaChart data={snap.sentimentData}>
                   <defs>
                     <linearGradient id="demo-sentiment" x1="0" x2="0" y1="0" y2="1">
-                      <stop offset="5%" stopColor="#3E7D5A" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#3E7D5A" stopOpacity={0.02} />
+                      <stop offset="5%" stopColor="var(--ok)" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="var(--ok)" stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
                   <XAxis dataKey="label" axisLine={false} tickLine={false} tick={axisTick} />
                   <YAxis hide domain={[0, 1]} />
                   <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: "var(--line)" }} />
-                  <Area dataKey="score" fill="url(#demo-sentiment)" stroke="#3E7D5A" strokeWidth={2.5} type="monotone" />
+                  <Area dataKey="score" fill="url(#demo-sentiment)" stroke="var(--ok)" strokeWidth={2.5} type="monotone" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -356,7 +356,7 @@ export function DemoPreviewMini() {
     <div className="rounded-2xl border border-borderSoft bg-card p-4 shadow-glass">
       <div className="flex items-center justify-between">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-mutedText">Sandbox preview</p>
-        <Badge variant="warning" className="bg-amber-500/15 text-amber-700 border-amber-500/20 text-[10px]">Simulated</Badge>
+        <Badge variant="warning" className="bg-warning/15 text-warning border-warning/20 text-[10px]">Simulated</Badge>
       </div>
       <div className="mt-3 grid grid-cols-3 gap-2">
         {snap.metrics.slice(0, 3).map((m) => (
@@ -372,7 +372,7 @@ export function DemoPreviewMini() {
       <div className="mt-3 h-[88px]">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={snap.engagementData.slice(-7)}>
-            <Area dataKey="engagement" stroke="#C8552B" fill="#C8552B" fillOpacity={0.12} strokeWidth={2} type="monotone" />
+            <Area dataKey="engagement" stroke="var(--accent)" fill="var(--accent)" fillOpacity={0.12} strokeWidth={2} type="monotone" />
           </AreaChart>
         </ResponsiveContainer>
       </div>

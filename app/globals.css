@@ -9,7 +9,7 @@
   --surface-muted: #f3ede1;
   --ink: #221b13;
   --muted: #6e6051;
-  --faint: #9c8e7c;
+  --faint: #7e7261;
   --line: #e6dccb;
   --accent: #c8552b;
   --accent-strong: #a8431f;
@@ -28,7 +28,7 @@
   --surface-muted: #262119;
   --ink: #f1eada;
   --muted: #a79a89;
-  --faint: #7e7261;
+  --faint: #a09080;
   --line: #332a20;
   --accent: #e0693b;
   --accent-strong: #f07a4c;
@@ -351,11 +351,17 @@ button {
 
 .marquee {
   animation: marquee 32s linear infinite;
-  will-change: transform;
 }
 
-.marquee:hover {
+.marquee:hover,
+.marquee[data-paused="true"] {
   animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee {
+    animation-play-state: paused;
+  }
 }
 
 .marquee-mask {

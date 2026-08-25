@@ -87,6 +87,7 @@ export function LandingPage() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [marqueePaused, setMarqueePaused] = useState(false);
   const pageRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLElement>(null);
   // Gentle scroll parallax on the hero backdrop so the page feels alive while
@@ -425,7 +426,7 @@ export function LandingPage() {
         <section id="sandbox" className="mx-auto max-w-6xl scroll-mt-24 px-5 pb-16 pt-12 sm:px-8 sm:pb-20 sm:pt-16 lg:pb-24 lg:pt-20">
           <motion.div {...fadeUp} className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start lg:gap-10">
             <div>
-              <p className="inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-700">
+              <p className="inline-flex items-center gap-2 rounded-full border border-warning/20 bg-warning/10 px-3 py-1 text-xs font-semibold text-warning">
                 <Eye className="h-3.5 w-3.5" /> Interactive sandbox · no OAuth required
               </p>
               <h2 className="mt-4 text-balance font-display text-3xl font-medium leading-[1.08] tracking-tight text-ink sm:text-4xl">
@@ -473,7 +474,7 @@ export function LandingPage() {
               transition={{ duration: 0.6, ease: EASE }}
               className="relative self-start lg:sticky lg:top-24"
             >
-              <div className="absolute -inset-4 -z-10 rounded-[28px] bg-gradient-to-br from-amber-500/10 via-accent-soft to-transparent blur-xl" />
+              <div className="absolute -inset-4 -z-10 rounded-[28px] bg-gradient-to-br from-warning/10 via-accent-soft to-transparent blur-xl" />
               <Card className="overflow-hidden p-0 shadow-glass">
                 <div className="flex items-center justify-between border-b border-borderSoft bg-surface px-4 py-3">
                   <div className="flex items-center gap-1.5">
@@ -481,8 +482,8 @@ export function LandingPage() {
                     <span className="h-2.5 w-2.5 rounded-full bg-warning/70" />
                     <span className="h-2.5 w-2.5 rounded-full bg-success/70" />
                   </div>
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 text-[11px] font-medium text-amber-700">
-                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" /> Sandbox — simulated
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-warning/20 bg-warning/10 px-2.5 py-1 text-[11px] font-medium text-warning">
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-warning" /> Sandbox — simulated
                   </span>
                   <span className="hidden text-[11px] font-mono text-faintText sm:inline">/demo — no login</span>
                 </div>
@@ -597,11 +598,11 @@ export function LandingPage() {
                   }
                 }}
                 className={`interactive-card group rounded-2xl border bg-card p-6 shadow-glass outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-                  activeFeature === index ? "border-primary/60 shadow-glow" : "border-borderSoft"
+                  activeFeature === index ? "border-primary bg-accent-soft/40 shadow-glow" : "border-borderSoft hover:border-borderSoft/80"
                 }`}
               >
                 <motion.span
-                  className="grid h-11 w-11 place-items-center rounded-full bg-accent-soft text-primary transition-colors duration-200 group-hover:bg-primary group-hover:text-background"
+                  className={`grid h-11 w-11 place-items-center rounded-full transition-colors duration-200 ${activeFeature === index ? "bg-primary text-background" : "bg-accent-soft text-primary group-hover:bg-primary group-hover:text-background"}`}
                   whileTap={{ scale: 0.92 }}
                 >
                   <feature.icon className="h-5 w-5" strokeWidth={1.75} />
@@ -703,7 +704,7 @@ export function LandingPage() {
               <p className="mt-4 max-w-md text-sm leading-6 text-mutedText">Used EduVerse? Tell us what feels useful, confusing, or missing. Reviews are moderated and appear in the wall above after approval.</p>
             </div>
             <Card className="p-6">
-              {feedbackSent ? <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="grid min-h-48 place-items-center text-center"><div><span className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-success/15 text-success"><Check className="h-5 w-5" /></span><h3 className="mt-4 font-heading text-xl font-medium text-ink">Review submitted.</h3><p className="mt-2 text-sm text-mutedText">Thanks! Your review is pending moderation and will appear after approval.</p><Button className="mt-5" size="sm" variant="secondary" onClick={() => setFeedbackSent(false)}>Write another</Button></div></motion.div> : <form onSubmit={handleFeedbackSubmit} className="space-y-5"><div className="grid gap-3 sm:grid-cols-2"><div><label className="text-sm font-medium text-ink">Your name</label><input value={reviewerName} onChange={(event) => setReviewerName(event.target.value)} required maxLength={80} placeholder="e.g. Priya Sharma" className="mt-2 w-full rounded-xl border border-borderSoft bg-surface p-3 text-sm text-ink outline-none transition placeholder:text-faintText focus:border-primary" /></div><div><label className="text-sm font-medium text-ink">Role <span className="text-xs text-mutedText">(optional)</span></label><input value={reviewerRole} onChange={(event) => setReviewerRole(event.target.value)} maxLength={120} placeholder="e.g. Social Media Manager" className="mt-2 w-full rounded-xl border border-borderSoft bg-surface p-3 text-sm text-ink outline-none transition placeholder:text-faintText focus:border-primary" /></div></div><div><label className="text-sm font-medium text-ink">How is EduVerse feeling?</label><div className="mt-3 flex flex-wrap gap-2" role="radiogroup" aria-label="Review rating">{[1, 2, 3, 4, 5].map((rating) => <button key={rating} type="button" aria-label={`${rating} out of 5`} aria-pressed={feedbackRating === rating} onClick={() => setFeedbackRating(rating)} className={`grid h-10 w-10 place-items-center rounded-full border text-sm transition ${feedbackRating === rating ? "border-primary bg-primary text-background" : "border-borderSoft bg-surface text-mutedText hover:border-primary/50"}`}>{rating}</button>)}</div></div><div><label className="text-sm font-medium text-ink">Your review</label><textarea value={feedback} onChange={(event) => setFeedback(event.target.value)} required rows={4} maxLength={800} placeholder="What has your experience been like so far?" className="mt-2 w-full resize-none rounded-xl border border-borderSoft bg-surface p-3 text-sm text-ink outline-none transition placeholder:text-faintText focus:border-primary" /></div>{feedbackError && <p className="text-xs text-danger">{feedbackError}</p>}<div className="flex items-center justify-between gap-3"><span className="text-xs text-mutedText">Rating: {feedbackRating}/5</span><Button type="submit" disabled={feedbackSubmitting} className="bg-ink text-background hover:bg-ink/90"><MessageCircle className="h-4 w-4" />{feedbackSubmitting ? "Submitting…" : "Submit review"}</Button></div></form>}
+              {feedbackSent ? <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="grid min-h-48 place-items-center text-center"><div><span className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-success/15 text-success"><Check className="h-5 w-5" /></span><h3 className="mt-4 font-heading text-xl font-medium text-ink">Review submitted.</h3><p className="mt-2 text-sm text-mutedText">Thanks! Your review is pending moderation and will appear after approval.</p><Button className="mt-5" size="sm" variant="secondary" onClick={() => setFeedbackSent(false)}>Write another</Button></div></motion.div> : <form onSubmit={handleFeedbackSubmit} className="space-y-5"><div className="grid gap-3 sm:grid-cols-2"><div><label htmlFor="reviewer-name" className="text-sm font-medium text-ink">Your name <span aria-hidden="true" className="text-danger">*</span></label><input id="reviewer-name" value={reviewerName} onChange={(event) => setReviewerName(event.target.value)} required maxLength={80} placeholder="e.g. Priya Sharma" className="mt-2 w-full rounded-xl border border-borderSoft bg-surface p-3 text-sm text-ink outline-none transition placeholder:text-faintText focus:border-primary" /></div><div><label htmlFor="reviewer-role" className="text-sm font-medium text-ink">Role <span className="text-xs text-mutedText">(optional)</span></label><input id="reviewer-role" value={reviewerRole} onChange={(event) => setReviewerRole(event.target.value)} maxLength={120} placeholder="e.g. Social Media Manager" className="mt-2 w-full rounded-xl border border-borderSoft bg-surface p-3 text-sm text-ink outline-none transition placeholder:text-faintText focus:border-primary" /></div></div><div><label className="text-sm font-medium text-ink">How is EduVerse feeling?</label><div className="mt-3 flex flex-wrap gap-2" role="radiogroup" aria-label="Review rating" onKeyDown={(e)=>{ if(e.key==="ArrowRight"||e.key==="ArrowDown"){e.preventDefault(); setFeedbackRating(Math.min(5, feedbackRating+1))} if(e.key==="ArrowLeft"||e.key==="ArrowUp"){e.preventDefault(); setFeedbackRating(Math.max(1, feedbackRating-1))}}}>{[1, 2, 3, 4, 5].map((rating) => <button key={rating} type="button" role="radio" aria-checked={feedbackRating === rating} aria-label={`${rating} out of 5`} onClick={() => setFeedbackRating(rating)} className={`grid h-11 w-11 place-items-center rounded-full border text-sm transition ${feedbackRating === rating ? "border-primary bg-primary text-background" : "border-borderSoft bg-surface text-mutedText hover:border-primary/50"}`}>{rating}</button>)}</div></div><div><label htmlFor="review-content" className="text-sm font-medium text-ink">Your review <span aria-hidden="true" className="text-danger">*</span></label><textarea id="review-content" value={feedback} onChange={(event) => setFeedback(event.target.value)} required rows={4} maxLength={800} placeholder="What has your experience been like so far?" className="mt-2 w-full resize-none rounded-xl border border-borderSoft bg-surface p-3 text-sm text-ink outline-none transition placeholder:text-faintText focus:border-primary" /></div>{feedbackError && <p className="text-xs text-danger">{feedbackError}</p>}<div className="flex items-center justify-between gap-3"><span className="text-xs text-mutedText">Rating: {feedbackRating}/5</span><Button type="submit" disabled={feedbackSubmitting} className="bg-ink text-background hover:bg-ink/90"><MessageCircle className="h-4 w-4" />{feedbackSubmitting ? "Submitting…" : "Submit review"}</Button></div></form>}
             </Card>
           </motion.div>
         </section>

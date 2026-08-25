@@ -2,7 +2,7 @@
 
 import React, { FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
 import { Bot, ImageIcon, Send, Sparkles, Cpu, X } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SPRING_SOFT } from "@/components/motion-variants";
@@ -163,6 +163,7 @@ const FormattedMarkdown = React.memo(function FormattedMarkdown({ content }: { c
 });
 
 export function ChatInterface() {
+  const reduceMotion = useReducedMotion();
   const { data: analytics } = useAnalytics();
   const [messages, setMessages] = useState<Message[]>([welcome]);
   const [conversationId, setConversationId] = useState<string>();
@@ -243,7 +244,7 @@ export function ChatInterface() {
     prevMessageCountRef.current = messages.length;
     // Smooth-scroll only when a message is added; use the cheap auto scroll for
     // the frequent content updates during streaming.
-    bottomRef.current?.scrollIntoView({ behavior: isNewMessage ? "smooth" : "auto" });
+    bottomRef.current?.scrollIntoView({ behavior: reduceMotion ? "auto" : isNewMessage ? "smooth" : "auto" });
   }, [messages]);
 
   useEffect(() => {
@@ -468,6 +469,8 @@ export function ChatInterface() {
                   <div className="flex justify-end">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
+                      loading="lazy"
+                      decoding="async"
                       src={message.image}
                       alt="Attached image"
                       className="max-h-48 max-w-xs rounded-xl border border-borderSoft object-cover shadow"

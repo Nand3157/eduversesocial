@@ -88,7 +88,7 @@ export function DashboardHome() {
                   Connect Meta
                 </Button>
                 <Link href="/demo">
-                  <Button variant="secondary" size="sm" className="w-full sm:w-auto border-amber-500/20 bg-amber-500/10 text-amber-700 hover:bg-amber-500/15">
+                  <Button variant="secondary" size="sm" className="w-full sm:w-auto border-warning/20 bg-warning/10 text-warning hover:bg-warning/15">
                     <Eye className="h-3.5 w-3.5" /> Explore Live Demo
                   </Button>
                 </Link>

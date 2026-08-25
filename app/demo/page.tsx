@@ -23,7 +23,7 @@ export default function DemoPage() {
             <span className="font-display text-lg font-semibold tracking-tight text-ink">
               Edu<em className="font-normal text-primary">Verse</em>
             </span>
-            <span className="ml-2 hidden items-center gap-1.5 rounded-full border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 text-[11px] font-semibold text-amber-700 sm:inline-flex">
+            <span className="ml-2 hidden items-center gap-1.5 rounded-full border border-warning/20 bg-warning/10 px-2.5 py-1 text-[11px] font-semibold text-warning sm:inline-flex">
               <Eye className="h-3 w-3" /> Demo — simulated data
             </span>
           </Link>

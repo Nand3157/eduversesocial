@@ -15,9 +15,9 @@ const buttonVariants = cva(
         accent: "bg-primary text-background shadow-sm hover:bg-primary-strong hover:-translate-y-px hover:shadow-md"
       },
       size: {
-        default: "h-11 px-5",
-        sm: "h-9 rounded-full px-3.5 text-xs",
-        icon: "h-10 w-10 rounded-full p-0"
+        default: "h-11 px-5 min-h-[44px]",
+        sm: "h-10 min-h-[44px] min-w-[44px] rounded-full px-3.5 text-xs",
+        icon: "h-11 w-11 rounded-full p-0 min-h-[44px] min-w-[44px]"
       }
     },
     defaultVariants: {
@@ -35,7 +35,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, children, ...props }, ref) => {
     return (
       <button className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props}>
-        <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 -left-1/2 z-[-1] w-1/2 -skew-x-12 bg-white/20 opacity-0 transition-all duration-500 group-hover:left-[120%] group-hover:opacity-100" />
+        <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 -left-1/2 z-[-1] w-1/2 -skew-x-12 bg-background/20 opacity-0 transition-all duration-500 group-hover:left-[120%] group-hover:opacity-100" />
         {children}
       </button>
     );

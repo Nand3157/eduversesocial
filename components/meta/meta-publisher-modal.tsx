@@ -296,7 +296,7 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess, initialCaption,
                   {uploadedMedia.map((media, index) => (
                     <div key={media.url} className="group relative h-16 w-16 overflow-hidden rounded-xl border border-borderSoft bg-surface">
                       {/* eslint-disable-next-line @next/next/no-img-element -- base64 data URL preview, not an optimized remote asset */}
-                      <img src={media.preview} alt={`Uploaded media ${index + 1}`} className="h-full w-full object-cover" />
+                      <img src={media.preview} alt={`Uploaded media ${index + 1}`} loading="lazy" decoding="async" className="h-full w-full object-cover" />
                       <button
                         type="button"
                         aria-label={`Remove uploaded image ${index + 1}`}
