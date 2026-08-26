@@ -338,6 +338,23 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-tap-highlight-c
 ::view-transition-new(root) { animation: vt-in 0.32s cubic-bezier(0.16,1,0.3,1); }
 @keyframes vt-out { to { opacity: 0; transform: scale(0.985); } }
 @keyframes vt-in { from { opacity: 0; transform: translateY(8px) scale(0.985); } }
+/* — Site-wide hover & micro-interactions — galaxy/uiverse + magicui + react-bits + kokonutui + hyperui + eldora/indie/fancy/coss/shadcn — */
+a { transition: color 150ms ease, opacity 150ms ease, text-decoration-color 150ms ease; }
+a:hover { opacity: 0.88; }
+button { transition: transform 160ms cubic-bezier(0.16,1,0.3,1), box-shadow 160ms ease, background-color 160ms ease, border-color 160ms ease, color 160ms ease; }
+button:hover:not(:disabled) { transform: translateY(-1px); }
+button:active:not(:disabled) { transform: translateY(0) scale(0.985); }
+/* cards, surfaces, stats — kokonutui/coss/react-bits Spotlight */
+.card, [class*="rounded-"][class*="border"]:not(button):not(a) { transition: transform 200ms cubic-bezier(0.16,1,0.3,1), box-shadow 200ms ease, border-color 200ms ease; }
+.card:hover, [class*="rounded-"][class*="border"]:hover { transform: translateY(-2px); }
+/* inputs — indie-ui / shadcn focus (fancy) */
+input, textarea, select { transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease; }
+input:hover, textarea:hover, select:hover { border-color: color-mix(in srgb, var(--ink) 16%, var(--line)); }
+input:focus, textarea:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+/* uiverse galaxy — subtle button glow (eldoraui) */
+.bg-ink:hover, .bg-\[var\(--accent\)\]:hover { box-shadow: 0 4px 20px color-mix(in srgb, var(--accent) 18%, transparent); }
+.bg-surface:hover { border-color: color-mix(in srgb, var(--accent) 18%, var(--line)); }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
   .dashboard-card { animation: none; }
