@@ -84,46 +84,42 @@ const exploreLinks = [
 
 function Footer() {
   return (
-    <footer className="border-t border-borderSoft bg-surface px-5 py-14 sm:px-8">
-      <div className="mx-auto grid max-w-6xl gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
+    <footer className="relative overflow-hidden border-t border-[var(--line-ink)] bg-[var(--surface-ink)] px-5 py-14 sm:px-8 text-white">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-3 sprocket-track opacity-20" aria-hidden />
+      <div className="mx-auto grid max-w-[1280px] gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <div>
-          <Link aria-label="EduVerse home" className="inline-flex items-center gap-2.5" href="/">
-            <span className="grid h-8 w-8 place-items-center rounded-full bg-primary text-background">
+          <Link aria-label="EduVerse home" className="inline-flex items-center gap-3" href="/">
+            <span className="relative grid h-9 w-9 place-items-center rounded-[9px] bg-white text-ink">
               <Sparkles className="h-4 w-4" strokeWidth={2} />
+              <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-[var(--accent)] tally-dot" />
             </span>
-            <span className="font-display text-lg font-semibold tracking-tight text-ink">
-              Edu<em className="font-normal text-primary">Verse</em>
+            <span className="font-display text-lg font-semibold tracking-tight text-white">
+              Edu<span className="font-normal text-[var(--accent)]">Verse</span>
+            </span>
+            <span className="hidden sm:inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-mono tracking-widest text-white/60">
+              EDIT BAY
             </span>
           </Link>
-          <p className="mt-4 max-w-xs text-sm leading-6 text-mutedText">
-            AI that helps you learn, build, and grow with social intelligence that remembers your
-            audience.
+          <p className="mt-4 max-w-xs text-sm leading-6 text-white/60">
+            Social intelligence that remembers your audience — live-only, provenance for every recommendation.
           </p>
           <div className="mt-6 space-y-2.5 text-sm">
-            <a
-              className="inline-flex items-center gap-2 text-mutedText transition-colors hover:text-ink"
-              href="mailto:hello@eduverse.app"
-            >
-              <Mail className="h-4 w-4 text-primary" />
-              hello@eduverse.app
+            <a className="inline-flex items-center gap-2 text-white/60 hover:text-white" href="mailto:hello@eduverse.app">
+              <Mail className="h-4 w-4 text-[var(--accent)]" /> hello@eduverse.app
             </a>
             <br />
-            <a
-              className="inline-flex items-center gap-2 text-mutedText transition-colors hover:text-ink"
-              href="tel:+15550123456"
-            >
-              <Phone className="h-4 w-4 text-primary" />
-              +1 (555) 012-3456
+            <a className="inline-flex items-center gap-2 text-white/60 hover:text-white" href="tel:+15550123456">
+              <Phone className="h-4 w-4 text-[var(--accent)]" /> +1 (555) 012-3456
             </a>
           </div>
         </div>
 
         <nav aria-label="Product">
-          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-faintText">Product</p>
+          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-white/40">Product</p>
           <ul className="mt-4 space-y-2.5 text-sm">
             {productLinks.map((link) => (
               <li key={link.href}>
-                <Link className="text-mutedText transition-colors hover:text-ink" href={link.href}>
+                <Link className="text-white/60 hover:text-white" href={link.href}>
                   {link.label}
                 </Link>
               </li>
@@ -132,11 +128,11 @@ function Footer() {
         </nav>
 
         <nav aria-label="Explore">
-          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-faintText">Explore</p>
+          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-white/40">Explore</p>
           <ul className="mt-4 space-y-2.5 text-sm">
             {exploreLinks.map((link) => (
               <li key={link.href}>
-                <Link className="text-mutedText transition-colors hover:text-ink" href={link.href}>
+                <Link className="text-white/60 hover:text-white" href={link.href}>
                   {link.label}
                 </Link>
               </li>
@@ -145,18 +141,20 @@ function Footer() {
         </nav>
 
         <div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-faintText">Trusted by</p>
-          <ul className="mt-4 space-y-2.5 text-sm text-mutedText">
-            <li>Official Meta Graph OAuth</li>
+          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-white/40">Trusted by</p>
+          <ul className="mt-4 space-y-2.5 text-sm text-white/60">
+            <li className="inline-flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-success" /> Official Meta Graph OAuth
+            </li>
             <li>Instagram · Facebook · Threads</li>
             <li>Encrypted, revocable anytime</li>
             <li>
-              <Link href="/privacy" className="font-medium text-primary hover:underline">
+              <Link href="/privacy" className="font-medium text-[var(--accent)] hover:underline">
                 Privacy & Data Security
               </Link>
             </li>
             <li>
-              <Link href="/demo" className="font-medium text-primary hover:underline">
+              <Link href="/demo" className="font-medium text-[var(--accent)] hover:underline">
                 Explore Live Demo (no login)
               </Link>
             </li>
@@ -164,16 +162,16 @@ function Footer() {
         </div>
       </div>
 
-      <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-borderSoft pt-6 text-xs text-mutedText sm:flex-row">
+      <div className="mx-auto mt-12 flex max-w-[1280px] flex-col items-center justify-between gap-3 border-t border-white/10 pt-6 text-xs text-white/40 sm:flex-row">
         <p>© <CurrentYear /> EduVerse. All rights reserved.</p>
         <div className="flex flex-wrap items-center gap-4">
-          <Link href="/privacy" className="font-medium text-mutedText hover:text-ink">
+          <Link href="/privacy" className="font-medium text-white/40 hover:text-white">
             Privacy Policy
           </Link>
-          <Link href="/demo" className="font-medium text-mutedText hover:text-ink">
+          <Link href="/demo" className="font-medium text-white/40 hover:text-white">
             Live Demo
           </Link>
-          <span className="font-mono">Social intelligence that remembers your audience.</span>
+          <span className="font-mono">TC 00:42:11:04 · LIVE MEMORY ONLY</span>
         </div>
       </div>
     </footer>

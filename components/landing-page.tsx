@@ -1,28 +1,37 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, Check, Eye, Loader2, Lock, Menu, MessageCircle, ShieldCheck, Sparkles, Star, X } from "lucide-react";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  Check,
+  Eye,
+  Film,
+  Loader2,
+  Lock,
+  Menu,
+  Sparkles,
+  Star,
+  X,
+  Clapperboard,
+  ScanLine
+} from "lucide-react";
 import { AnimatePresence, motion, useMotionValueEvent, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { features, platformLogos } from "@/data/mock";
 import { FAQS } from "@/lib/agentic/faq";
 import { MetaConnectModal } from "@/components/meta/meta-connect-modal";
-import { ScrollProgress } from "@/components/ui/scroll-progress";
 import { ThemeToggle } from "@/components/providers/theme-toggle";
 import { TiltCard } from "@/components/ui/tilt-card";
-import { MemoryField } from "@/components/landing/memory-field";
-import { ScrambleHover } from "@/components/smoothui/scramble-hover";
-import {
-  EASE_OUT,
-  fadeUp,
-  staggerContainer,
-  staggerItem
-} from "@/components/motion-variants";
+import { BorderBeam } from "@/components/magicui/border-beam";
+import { Meteors } from "@/components/magicui/meteors";
+import { Galaxy } from "@/components/ui/galaxy";
+import { BlurText } from "@/components/ui/blur-text";
+import { EASE_OUT, fadeUp, staggerContainer, staggerItem } from "@/components/motion-variants";
 
 const EASE = EASE_OUT;
 
@@ -35,11 +44,92 @@ type Review = {
   created_at: string;
 };
 
+const heroPosts = [
+  {
+    id: "reel-08-12",
+    date: "AUG 12",
+    time: "19:30",
+    format: "REEL",
+    hook: "POV: you open the wrong file and the class gasps",
+    reach: "38.4k",
+    saves: "1.2k",
+    day: 12,
+    tone: "bg-[#101215]",
+    accent: "text-white",
+    accentMuted: "text-white/70",
+    isDark: true
+  },
+  {
+    id: "car-07-29",
+    date: "JUL 29",
+    time: "18:15",
+    format: "CAROUSEL",
+    hook: "3 slides that fixed my retention",
+    reach: "21.7k",
+    saves: "892",
+    day: 7,
+    tone: "bg-[#EAE3D6]",
+    accent: "text-[#0F1115]",
+    accentMuted: "text-[#0F1115]/60",
+    isDark: false
+  },
+  {
+    id: "thr-08-04",
+    date: "AUG 04",
+    time: "20:45",
+    format: "THREAD",
+    hook: "Thread: the hook I stole from a syllabus",
+    reach: "14.1k",
+    saves: "634",
+    day: 9,
+    tone: "bg-[#FFB43A]",
+    accent: "text-[#0F1115]",
+    accentMuted: "text-[#0F1115]/60",
+    isDark: false
+  },
+  {
+    id: "reel-07-18",
+    date: "JUL 18",
+    time: "07:30",
+    format: "REEL",
+    hook: "7am post that shouldn't have worked",
+    reach: "9.3k",
+    saves: "201",
+    day: 3,
+    tone: "bg-[#1A1E24]",
+    accent: "text-white",
+    accentMuted: "text-white/70",
+    isDark: true
+  },
+  {
+    id: "car-08-09",
+    date: "AUG 09",
+    time: "19:00",
+    format: "CAROUSEL",
+    hook: "Before / after: hook rewrite",
+    reach: "31.2k",
+    saves: "1.05k",
+    day: 11,
+    tone: "bg-[#F6F1E9]",
+    accent: "text-[#0F1115]",
+    accentMuted: "text-[#0F1115]/60",
+    isDark: false
+  }
+] as const;
+
+const timelineHeights = [34, 52, 78, 88, 84, 96, 68];
+const nextRec = {
+  when: "TUE 19:30",
+  format: "CAROUSEL",
+  hook: "Steal the Jul 29 carousel hook",
+  provenance: "Because carousels saved 3.2× at night — peak on Aug 12 at 19:30"
+};
+
 function ReviewStars({ rating, className }: { rating: number; className?: string }) {
   return (
     <span role="img" aria-label={`${rating} out of 5 stars`} className={cn("inline-flex items-center gap-0.5", className)}>
       {[1, 2, 3, 4, 5].map((star) => (
-        <Star key={star} className={cn("h-3.5 w-3.5", star <= rating ? "fill-primary text-primary" : "text-faintText")} />
+        <Star key={star} className={cn("h-3 w-3", star <= rating ? "fill-[var(--accent)] text-[var(--accent)]" : "text-faintText")} />
       ))}
     </span>
   );
@@ -47,12 +137,14 @@ function ReviewStars({ rating, className }: { rating: number; className?: string
 
 function Wordmark({ className }: { className?: string }) {
   return (
-    <a aria-label="EduVerse home" className={`inline-flex items-center gap-2.5 ${className ?? ""}`} href="#top">
-      <span className="grid h-8 w-8 place-items-center rounded-full bg-primary text-background">
-        <Sparkles className="h-4 w-4" strokeWidth={2} />
+    <a aria-label="EduVerse home" className={cn("inline-flex items-center gap-3", className)} href="#top">
+      <span className="relative grid h-9 w-9 place-items-center rounded-[9px] bg-white text-[#0F1115] overflow-hidden ring-1 ring-black/5">
+        <span className="absolute inset-0 sprocket-track opacity-[0.08]" aria-hidden />
+        <Sparkles className="h-[18px] w-[18px] relative text-[#0F1115]" strokeWidth={2.2} />
+        <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-[var(--accent)] tally-dot" aria-hidden />
       </span>
-      <span className="font-display text-[1.25rem] font-semibold tracking-tight text-ink">
-        Edu<em className="font-normal text-primary">Verse</em>
+      <span className="font-display text-[1.28rem] font-[700] tracking-[-0.03em] text-ink">
+        Edu<span className="font-[400] text-[var(--accent-strong)]">Verse</span>
       </span>
     </a>
   );
@@ -62,23 +154,41 @@ export function LandingPage() {
   const router = useRouter();
   const [connectModalOpen, setConnectModalOpen] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(false);
+  const [scrub, setScrub] = useState(0);
+  const selected = heroPosts[scrub];
 
   const handleConnectClick = async () => {
     if (checkingAuth) return;
     setCheckingAuth(true);
     try {
-      const response = await fetch("/api/meta/connect", { cache: "no-store" });
-      if (response.status === 401) {
+      const { createClient } = await import("@/lib/supabase/client");
+      let supabase: ReturnType<typeof createClient> | null = null;
+      try {
+        supabase = createClient();
+      } catch {
+        router.push("/login?next=/dashboard/settings");
+        return;
+      }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push("/login?next=/dashboard/settings");
+        return;
+      }
+      // double-check server still sees session (covers stale client)
+      const res = await fetch("/api/meta/connect", { cache: "no-store", credentials: "same-origin" });
+      if (res.status === 401 || res.status === 403) {
         router.push("/login?next=/dashboard/settings");
         return;
       }
     } catch {
-      // fall through to modal — server will redirect if needed
+      router.push("/login?next=/dashboard/settings");
+      return;
     } finally {
       setCheckingAuth(false);
     }
     setConnectModalOpen(true);
   };
+
   const [activeFeature, setActiveFeature] = useState(0);
   const [feedback, setFeedback] = useState("");
   const [feedbackRating, setFeedbackRating] = useState(5);
@@ -93,20 +203,14 @@ export function LandingPage() {
   const [marqueePaused, setMarqueePaused] = useState(false);
   const pageRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLElement>(null);
-  // Respect the OS reduced-motion preference for JS-driven smooth scrolling —
-  // an explicit behavior:"smooth" would otherwise override the CSS kill switch.
   const prefersReducedMotion = useReducedMotion();
   const scrollBehavior = prefersReducedMotion ? "auto" : "smooth";
-  // Gentle scroll parallax on the hero backdrop so the page feels alive while
-  // scrolling instead of strictly static.
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
-  const heroOrbY = useTransform(scrollYProgress, [0, 1], [0, 140]);
-  const heroOrbScale = useTransform(scrollYProgress, [0, 1], [1, 1.15]);
-  // The header floats transparent over the hero and only gains its backdrop
-  // blur and hairline border after the visitor starts scrolling.
+  const heroOrbY = useTransform(scrollYProgress, [0, 1], [0, 90]);
+  const heroOrbScale = useTransform(scrollYProgress, [0, 1], [1, 1.08]);
   const { scrollY } = useScroll();
   const [scrolled, setScrolled] = useState(false);
-  useMotionValueEvent(scrollY, "change", (latest) => setScrolled(latest > 24));
+  useMotionValueEvent(scrollY, "change", (latest) => setScrolled(latest > 16));
 
   const handleFeedbackSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -160,54 +264,69 @@ export function LandingPage() {
       .finally(() => setReviewsLoading(false));
   }, []);
 
-  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    const element = pageRef.current;
-    if (!element || event.pointerType === "touch") return;
-    const rect = element.getBoundingClientRect();
-    element.style.setProperty("--spotlight-x", `${event.clientX - rect.left}px`);
-    element.style.setProperty("--spotlight-y", `${event.clientY - rect.top}px`);
-  };
-
-  const scrollToUseCase = () => {
-    document.getElementById("telemetry")?.scrollIntoView({ behavior: scrollBehavior, block: "start" });
-  };
+  useEffect(() => {
+    if (prefersReducedMotion) return;
+    const t = setInterval(() => setScrub((s) => (s + 1) % 3), 4200);
+    return () => clearInterval(t);
+  }, [prefersReducedMotion]);
 
   const scrollToSection = (id: string) => {
     setMobileMenuOpen(false);
     document.getElementById(id)?.scrollIntoView({ behavior: scrollBehavior, block: "start" });
   };
 
-  return (
-    <div id="top" ref={pageRef} onPointerMove={handlePointerMove} className="spotlight-page min-h-screen bg-background text-ink selection:bg-accent-soft selection:text-ink">
-      <ScrollProgress />
-      {/* Modals */}
-      <MetaConnectModal isOpen={connectModalOpen} onClose={() => setConnectModalOpen(false)} />
+  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const el = pageRef.current;
+    if (!el || event.pointerType === "touch") return;
+    const rect = el.getBoundingClientRect();
+    el.style.setProperty("--spotlight-x", `${event.clientX - rect.left}px`);
+    el.style.setProperty("--spotlight-y", `${event.clientY - rect.top}px`);
+  };
 
-      {/* Header */}
-      <header className={cn("sticky top-0 z-40 transition-[background-color,backdrop-filter,border-color] duration-300", scrolled || mobileMenuOpen ? "border-b border-borderSoft bg-background/85 backdrop-blur-xl" : "border-b border-transparent bg-transparent")}>
-        <nav className="mx-auto flex min-h-[68px] max-w-6xl items-center justify-between px-5 sm:px-8">
+  return (
+    <div ref={pageRef} onPointerMove={handlePointerMove} id="top" className="spotlight-bay min-h-screen bg-background text-ink selection:bg-accent-soft selection:text-ink">
+      {/* Header — ink rule, tally, timecode */}
+      <header
+        className={cn(
+          "sticky top-0 z-40 border-b transition-[background-color,backdrop-filter] duration-300",
+          scrolled || mobileMenuOpen
+            ? "border-borderSoft bg-background/90 backdrop-blur-xl"
+            : "border-transparent bg-transparent"
+        )}
+      >
+        <div className="mx-auto flex min-h-[68px] max-w-[1280px] items-center justify-between px-5 sm:px-8">
           <Wordmark />
-          <div className="flex items-center gap-2.5">
+          <nav className="hidden lg:flex items-center gap-1 text-[13px] font-medium">
+            {[
+              ["How it works", "telemetry"],
+              ["Features", "features"],
+              ["Reviews", "proof"],
+              ["FAQ", "faq"]
+            ].map(([label, id]) => (
+              <button key={id} onClick={() => scrollToSection(id)} className="rounded-full px-3.5 py-2 text-mutedText hover:bg-surface hover:text-ink transition">
+                {label}
+              </button>
+            ))}
+          </nav>
+          <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Button asChild size="sm" className="hidden bg-ink text-background hover:bg-ink/90 sm:inline-flex">
+            <Button asChild size="sm" className="hidden sm:inline-flex bg-ink text-background hover:bg-ink/90 rounded-full px-4">
               <Link href="/login">
-                <ScrambleHover>Open dashboard</ScrambleHover>
-                <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
+                Open dashboard <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             </Button>
             <button
               aria-controls="mobile-menu"
               aria-expanded={mobileMenuOpen}
-              aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
-              className="grid h-10 w-10 place-items-center rounded-full border border-borderSoft bg-surface text-ink transition hover:border-primary/50 sm:hidden"
-              onClick={() => setMobileMenuOpen((open) => !open)}
+              aria-label={mobileMenuOpen ? "Close navigation" : "Open navigation"}
+              className="grid h-10 w-10 place-items-center rounded-full border border-borderSoft bg-surface text-ink lg:hidden"
+              onClick={() => setMobileMenuOpen((o) => !o)}
               type="button"
             >
               {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
           </div>
-        </nav>
-
+        </div>
         <AnimatePresence>
           {mobileMenuOpen && (
             <motion.div
@@ -215,373 +334,206 @@ export function LandingPage() {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.25, ease: EASE }}
-              className="overflow-hidden border-b border-borderSoft bg-background sm:hidden"
+              transition={{ duration: 0.24, ease: EASE }}
+              className="overflow-hidden border-t border-borderSoft bg-background lg:hidden"
             >
               <div className="space-y-1 px-5 py-4">
                 {[
                   ["How it works", "telemetry"],
                   ["Features", "features"],
-                  ["FAQ", "faq"],
-                  ["Reviews", "feedback"]
+                  ["Reviews", "proof"],
+                  ["FAQ", "faq"]
                 ].map(([label, id]) => (
-                  <button
-                    className="block w-full rounded-xl px-3 py-3 text-left text-sm font-medium text-ink transition hover:bg-surface"
-                    key={id}
-                    onClick={() => scrollToSection(id)}
-                    type="button"
-                  >
+                  <button key={id} onClick={() => scrollToSection(id)} className="block w-full rounded-xl px-3 py-3 text-left text-sm font-medium hover:bg-surface" type="button">
                     {label}
                   </button>
                 ))}
-                <Button asChild className="mt-2 w-full bg-ink text-background hover:bg-ink/90">
+                <Button asChild className="mt-2 w-full bg-ink text-background rounded-full">
                   <Link href="/login">
-                    Open dashboard
-                    <ArrowRight aria-hidden="true" className="h-4 w-4" />
+                    Open dashboard <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>
-                <p className="pt-2 text-center text-xs text-mutedText">
-                  <a href="/privacy" className="font-medium text-primary hover:underline">
-                    Privacy & Data Security
-                  </a>
-                </p>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </header>
 
+      <MetaConnectModal isOpen={connectModalOpen} onClose={() => setConnectModalOpen(false)} />
+
       <main id="main-content">
-        {/* Hero */}
-        <section ref={heroRef} className="relative overflow-hidden px-5 pb-20 pt-24 sm:px-8 sm:pt-32 lg:pb-28">
-          <div className="pointer-events-none absolute inset-0 -z-10 texture-dots opacity-60" />
-          <motion.div style={{ x: "-50%", y: heroOrbY, scale: heroOrbScale }} className="pointer-events-none absolute left-1/2 top-[-320px] -z-10 h-[640px] w-[900px]">
-            <div className="h-full w-full animate-float rounded-full bg-accent-soft blur-3xl" />
-          </motion.div>
-
-          <div className="mx-auto max-w-[52rem] text-center">
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: EASE }}
-            >
-              <Badge variant="primary" className="px-3.5 py-1.5">
-                <ShieldCheck className="h-3.5 w-3.5" />
-                Meta Graph API · configured version telemetry
-              </Badge>
-            </motion.div>
-
-            <motion.h1
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.08, ease: EASE }}
-              className="hero-display mt-8 text-balance font-display text-[2.9rem] font-[550] leading-[0.98] tracking-[-0.03em] text-ink sm:text-6xl lg:text-[4.85rem]"
-            >
-              Social intelligence that <em className="italic text-primary">remembers</em> your audience.
-            </motion.h1>
-
-            <motion.p
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.16, ease: EASE }}
-              className="mx-auto mt-6 max-w-2xl text-pretty text-base leading-relaxed text-mutedText sm:text-lg"
-            >
-              EduVerse indexes Instagram Reels, Facebook Pages, and Threads engagement callbacks
-              into a persistent memory, then shows you exactly what to post and when.
-            </motion.p>
-
-            <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.24, ease: EASE }}
-              className="mt-9 flex flex-wrap items-center justify-center gap-3"
-            >
-              <Button asChild className="bg-ink px-6 py-3 text-sm text-background hover:bg-ink/90">
-                <Link href="/signup">
-                  Start free
-                  <ArrowRight aria-hidden="true" className="h-4 w-4" />
-                </Link>
-              </Button>
-              <Button
-                onClick={scrollToUseCase}
-                variant="secondary"
-                className="px-6 py-3 text-sm"
-              >
-                See how it works
-                <ArrowRight className="h-4 w-4 text-primary" />
-              </Button>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.8, delay: 0.32 }}
-              className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-mutedText"
-            >
-              <span className="inline-flex items-center gap-1.5">
-                <Check className="h-3.5 w-3.5 text-success" /> No credit card required
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <Check className="h-3.5 w-3.5 text-success" /> Official Meta Graph OAuth
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <Lock aria-hidden="true" className="h-3.5 w-3.5 text-success" /> Encrypted, revocable anytime
-              </span>
-            </motion.div>
+        {/* HERO — Edit Bay + Light Table : thesis is scrub = memory — galaxy + magicui aurora */}
+        <section ref={heroRef} className="relative overflow-hidden">
+          <Galaxy className="opacity-60" />
+          <div className="hero-ambient opacity-80" aria-hidden />
+          <motion.div style={{ y: heroOrbY, scale: heroOrbScale, x: "-50%" }} className="hero-orb" aria-hidden />
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute inset-0 bg-background/45" />
+            <div className="absolute inset-0 opacity-[0.05] texture-dots" aria-hidden />
           </div>
 
-          {/* Hero use-case panel */}
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, delay: 0.35, ease: EASE }}
-            className="relative mx-auto mt-16 max-w-5xl scroll-mt-24"
-            id="telemetry"
-          >
-            <div className="absolute -inset-6 -z-10 rounded-[32px] bg-gradient-to-b from-accent-soft to-transparent" />
-            <Card className="overflow-hidden p-0">
-              <div className="flex items-center justify-between border-b border-borderSoft bg-surface px-5 py-3.5">
-                <div className="flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-full bg-danger/70" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-warning/70" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-success/70" />
-                </div>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-borderSoft bg-card px-3 py-1 text-[11px] font-mono uppercase tracking-[0.2em] text-success">
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" />
-                  Use case
-                </span>
-                <span className="hidden text-[11px] font-mono text-mutedText sm:inline-flex">
-                  Connect Meta to unlock live analytics
-                </span>
-              </div>
-
-              <CardContent className="p-5 sm:p-6">
-                <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
-                  <div className="grid gap-3">
-                    {[
-                      {
-                        title: "Connect Meta",
-                        text: "Link Instagram or Facebook once, then let the dashboard fill with real account data."
-                      },
-                      {
-                        title: "Read real signals",
-                        text: "Reach, saves, post timing, and audience behavior appear only after API keys are in place."
-                      },
-                      {
-                        title: "Publish with context",
-                        text: "Use the live brief to decide what to post next, instead of guessing from a mock preview."
-                      }
-                    ].map((step, index) => (
-                      <motion.div
-                        key={step.title}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.35, delay: index * 0.07, ease: EASE }}
-                        className="rounded-xl border border-borderSoft bg-surface px-4 py-4 shadow-glass"
-                      >
-                        <div className="flex items-start gap-3">
-                          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent-soft text-sm font-semibold text-primary">
-                            {String(index + 1).padStart(2, "0")}
-                          </span>
-                          <div className="min-w-0">
-                            <p className="font-medium text-ink">{step.title}</p>
-                            <p className="mt-1 text-sm leading-6 text-mutedText">{step.text}</p>
-                          </div>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-
-                  <div className="rounded-xl border border-borderSoft bg-surface p-4 sm:p-5">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-xs font-medium uppercase tracking-[0.2em] text-mutedText">Workflow preview</p>
-                      <span className="font-mono text-xs text-success">No fake metrics</span>
-                    </div>
-
-                    <div className="mt-5 grid gap-3">
-                      {[
-                        ["Best use case", "Creator and team dashboards"],
-                        ["Data source", "Official Meta Graph OAuth"],
-                        ["Shown when connected", "Real reach, saves, and posting windows"]
-                      ].map(([label, value], index) => (
-                        <motion.div
-                          key={label}
-                          initial={{ opacity: 0, x: 8 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ duration: 0.35, delay: 0.1 + index * 0.06, ease: EASE }}
-                          className="flex items-center justify-between rounded-xl border border-borderSoft bg-card px-4 py-3"
-                        >
-                          <p className="text-xs text-mutedText">{label}</p>
-                          <p className="text-right text-sm font-medium text-ink">{value}</p>
-                        </motion.div>
-                      ))}
-                    </div>
-
-                    <div className="mt-4 rounded-xl border border-success/25 bg-success/10 px-4 py-3 text-sm leading-relaxed text-ink">
-                      <p className="font-medium text-success">Use case</p>
-                      <p className="mt-0.5 text-mutedText">
-                        This landing section explains the product before sign in. The real analytics live in the
-                        dashboard after you connect an account.
-                      </p>
-                    </div>
-
-                    <Button onClick={() => scrollToSection("features")} variant="secondary" className="mt-4 w-full px-5 py-3 text-sm">
-                      Explore the workflow
-                      <ArrowRight className="h-4 w-4 text-primary" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </section>
-
-        {/* Interactive Sandbox / Mock Dashboard Preview */}
-        <section id="sandbox" className="mx-auto max-w-6xl scroll-mt-24 px-5 pb-16 pt-12 sm:px-8 sm:pb-20 sm:pt-16 lg:pb-24 lg:pt-20">
-          <motion.div {...fadeUp} className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start lg:gap-10">
-            <div>
-              <p className="inline-flex items-center gap-2 rounded-full border border-warning/20 bg-warning/10 px-3 py-1 text-xs font-semibold text-warning">
-                <Eye aria-hidden="true" className="h-3.5 w-3.5" /> Interactive sandbox · no OAuth required
-              </p>
-              <h2 className="mt-4 text-balance font-display text-3xl font-medium leading-[1.08] tracking-tight text-ink sm:text-4xl">
-                Try the dashboard before you connect.
-              </h2>
-              <p className="mt-4 max-w-xl text-sm leading-7 text-mutedText">
-                Full live features need Meta Graph OAuth — which can feel heavy before you&apos;ve seen the product. Jump into a
-                read-only <strong className="font-semibold text-ink">sandbox preview</strong> with simulated Instagram, Facebook, and
-                Threads analytics. No login, no tokens stored.
-              </p>
-              <ul className="mt-5 grid gap-2 text-sm text-mutedText">
-                <li className="flex items-start gap-2">
-                  <Check aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-success" /> Real dashboard layout — metrics, charts, recommendations, and post telemetry
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-success" /> Sample data only — clearly marked “Simulated” so you know what&apos;s real vs preview
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" /> One click to switch to live: create account → Connect Meta on our consent screen
-                </li>
-              </ul>
-              <div className="mt-6 flex flex-wrap items-center gap-3">
-                <Button asChild className="bg-ink px-6 py-3 text-sm text-background hover:bg-ink/90">
-                  <Link href="/demo">
-                    <Eye aria-hidden="true" className="h-4 w-4" />
-                    Explore Live Demo
-                  </Link>
-                </Button>
-                <Button asChild variant="secondary" className="px-6 py-3 text-sm">
-                  <Link href="/signup">
-                    Start free — then connect Meta
-                    <ArrowRight aria-hidden="true" className="h-4 w-4 text-primary" />
-                  </Link>
-                </Button>
-              </div>
-              <p className="mt-4 text-xs leading-relaxed text-mutedText">
-                By connecting you agree to our{" "}
-                <a href="/privacy" className="font-medium text-primary underline decoration-primary/30 underline-offset-4 hover:decoration-primary">
-                  Privacy Policy
-                </a>{" "}
-                — tokens are AES-256-GCM encrypted and scoped to your workspace.
-              </p>
+          <div className="relative mx-auto max-w-[1280px] px-5 sm:px-8 pt-8 sm:pt-10 pb-10">
+            {/* top timecode bar - distilled */}
+            <div className="flex flex-wrap items-center gap-3 text-[11px] font-mono tracking-widest text-mutedText">
+              <span className="inline-flex h-5 items-center rounded bg-ink px-2 text-[10px] font-bold tracking-[0.18em] text-background">REC ●</span>
+              <span>14-DAY MEMORY</span>
+              <span className="opacity-40">—</span>
+              <span>NO FAKE METRICS</span>
             </div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.6, ease: EASE }}
-              className="relative self-start lg:sticky lg:top-24"
-            >
-              <div className="absolute -inset-4 -z-10 rounded-[28px] bg-gradient-to-br from-warning/10 via-accent-soft to-transparent blur-xl" />
-              <Card className="glass-card overflow-hidden p-0 shadow-glass">
-                <div className="flex items-center justify-between border-b border-borderSoft bg-surface px-4 py-3">
-                  <div className="flex items-center gap-1.5">
-                    <span className="h-2.5 w-2.5 rounded-full bg-danger/70" />
-                    <span className="h-2.5 w-2.5 rounded-full bg-warning/70" />
-                    <span className="h-2.5 w-2.5 rounded-full bg-success/70" />
-                  </div>
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-warning/20 bg-warning/10 px-2.5 py-1 text-[11px] font-medium text-warning">
-                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-warning" /> Sandbox — simulated
-                  </span>
-                  <span className="hidden text-[11px] font-mono text-faintText sm:inline">/demo — no login</span>
+            {/* hero title */}
+            <div className="mt-6 grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
+              <div>
+                <h1 className="text-balance font-display text-[2.7rem] font-[700] leading-[0.92] tracking-[-0.04em] text-ink sm:text-[3.6rem] lg:text-[4.35rem]">
+                  <BlurText text="Your audience" delay={0.1} />
+                  <br />
+                  <BlurText text="has a memory." delay={0.3} className="font-[400] tracking-[-0.03em]" />
+                  <br />
+                  <motion.span initial={{ width: 0 }} animate={{ width: "100%" }} transition={{ duration: 0.9, delay: 0.8, ease: [0.16, 1, 0.3, 1] }} className="relative inline-block overflow-hidden">
+                    <span className="relative">We keep it.</span>
+                    <span className="absolute -bottom-1 left-0 h-[8px] w-full bg-[var(--accent)] opacity-90" aria-hidden />
+                  </motion.span>
+                </h1>
+                <p className="mt-5 max-w-[54ch] text-[15px] leading-7 text-mutedText sm:text-[16px]">
+                  EduVerse indexes real Instagram Reels, Facebook Pages, and Threads engagement — reach, saves, posting windows — into a persistent memory. Scrub the timeline: every frame shows what actually happened and what to post next.
+                </p>
+                <div className="mt-6 flex flex-wrap items-center gap-3">
+                  <Button asChild className="rounded-full bg-ink px-6 py-6 text-sm text-background hover:bg-ink/90 relative overflow-hidden shimmer-sweep">
+                    <Link href="/signup">
+                      Start free <ArrowUpRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                  <a href="/demo" className="inline-flex items-center gap-1.5 rounded-full border border-borderSoft bg-surface px-4 py-2.5 text-sm font-medium text-ink hover:bg-surface-muted transition">
+                    Explore sandbox — no login <ArrowRight className="h-3.5 w-3.5" />
+                  </a>
                 </div>
-                <CardContent className="p-4 sm:p-5">
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { label: "Views (28d)", value: "142.9K" },
-                      { label: "Engagement", value: "18.4K" },
-                      { label: "Posts", value: "47" },
-                    ].map((m) => (
-                      <div key={m.label} className="rounded-xl border border-borderSoft bg-surface px-3 py-3">
-                        <p className="text-[11px] text-mutedText">{m.label}</p>
-                        <p className="mt-1 font-display text-lg font-semibold tracking-tight tabular-nums text-ink">{m.value}</p>
-                        <p className="mt-1 text-[10px] leading-none text-success">Simulated</p>
-                      </div>
-                    ))}
+                <div className="mt-5 flex flex-wrap gap-2 text-xs">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-success/10 px-2.5 py-1 font-medium text-success">
+                    <Check className="h-3 w-3" /> No credit card
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-surface border border-borderSoft px-2.5 py-1 font-medium text-mutedText">
+                    IG · FB · Threads · Encrypted
+                  </span>
+                </div>
+              </div>
+
+              {/* right: credibility flag */}
+              <div className="hidden lg:flex justify-end">
+                <div className="max-w-[34ch] rounded-2xl border border-borderSoft bg-surface p-4 text-sm leading-6 text-mutedText">
+                  <p className="font-display text-sm font-semibold tracking-tight text-ink">For solo creators who post like a team.</p>
+                  <p className="mt-1">Turn everyday posts into compounding intelligence — no hiring a social team, no inventing numbers.</p>
+                  <div className="mt-3 flex gap-2 text-[11px] font-mono">
+                    <span className="rounded bg-ink px-2 py-1 text-background">01</span>
+                    <span className="rounded bg-[var(--accent)] px-2 py-1 font-bold text-ink">LIVE ONLY</span>
+                    <span className="rounded border border-borderSoft bg-background px-2 py-1">PROVENANCE</span>
                   </div>
-                  <div className="mt-4 rounded-xl border border-borderSoft bg-surface p-3">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-medium text-mutedText">Engagement over time</span>
-                      <span className="font-mono text-[11px] text-success">Sample</span>
-                    </div>
-                    <div className="mt-2 flex h-20 items-end gap-1">
-                      {[35, 48, 42, 58, 72, 61, 82, 71, 90, 77, 96, 86, 104, 98].map((h, i) => (
-                        <div
-                          key={i}
-                          className="flex-1 rounded-t-md bg-primary/70"
-                          style={{ height: `${h}%`, opacity: 0.55 + (i / 14) * 0.45 }}
-                        />
-                      ))}
-                    </div>
-                    <div className="mt-2 flex items-center justify-between text-[11px] text-faintText">
-                      <span>Jul 21 → Aug 7</span>
-                      <span className="inline-flex items-center gap-1">
-                        <span className="h-2 w-2 rounded-full bg-success" /> No login required
-                      </span>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-success/15 bg-success/10 px-3 py-2.5">
-                    <span className="text-xs font-medium text-success">This preview becomes your live dashboard after OAuth.</span>
-                    <a href="/demo" className="text-xs font-semibold text-success hover:underline">
-                      Open sandbox →
-                    </a>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </motion.div>
+                </div>
+              </div>
+            </div>
+
+          </div>
         </section>
 
-        {/* Brand logos */}
-        <section className="border-y border-borderSoft bg-surface/60 py-10">
-          <div className="mx-auto max-w-6xl px-5 sm:px-8">
-            <p className="text-center font-mono text-[11px] uppercase tracking-[0.22em] text-mutedText">
-              One feed across the networks you already post to
-            </p>
-            <p className="mt-2 text-center text-[11px] text-faintText">Live via official Meta Graph API — Instagram · Facebook · Threads</p>
-            <div className="marquee-mask mt-7">
+        {/* CONTACT SHEET — how it works (no kicker) */}
+        <section id="telemetry" className="mx-auto max-w-[1280px] scroll-mt-24 px-5 sm:px-8 py-12 sm:py-16">
+          <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
+            <div className="lg:sticky lg:top-[88px]">
+              <h2 className="text-balance font-display text-[30px] font-[700] leading-[0.98] tracking-[-0.03em] sm:text-[38px]">
+                How a post becomes memory.
+              </h2>
+              <p className="mt-4 max-w-[56ch] text-[15px] leading-7 text-mutedText">
+                Three prints on the contact sheet. Each one is a promise that no number is invented — only indexed from Meta and then kept.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-2 text-xs font-mono">
+                <span className="rounded-full bg-ink px-3 py-1.5 text-background">CONTACT SHEET 01–03</span>
+                <span className="rounded-full border border-borderSoft bg-surface px-3 py-1.5 text-mutedText">GREASE-PEN KEPT MARKS ARE REAL</span>
+              </div>
+              <div className="mt-8 hidden lg:block rounded-2xl border border-borderSoft bg-surface p-4">
+                <p className="text-xs font-mono tracking-widest text-mutedText">EDITOR NOTE</p>
+                <p className="mt-2 text-sm leading-6 text-mutedText">Leave a frame empty? The bay shows empty — never a placeholder chart. That honesty is the product.</p>
+              </div>
+            </div>
+
+            <div className="grid gap-4">
+              {[
+                {
+                  n: "01",
+                  tc: "00:01",
+                  title: "Connect the gate",
+                  text: "Link Instagram Business or Facebook Page once through Meta OAuth. Tokens are AES-256-GCM encrypted, workspace-scoped, revocable. Until you do, the bay stays dark.",
+                  meta: "FB+IG OAuth · 30-day long-lived token",
+                  tone: "bg-ink text-background"
+                },
+                {
+                  n: "02",
+                  tc: "00:14",
+                  title: "Index what happened",
+                  text: "Reach, saves, comments, post timing — indexed in parallel from Graph API, cached per-day, with per-platform graceful failure. Empty states guide you to connect.",
+                  meta: "14-day window · per-day cache · ?refresh=1 bypass",
+                  tone: "bg-[var(--accent)] text-ink"
+                },
+                {
+                  n: "03",
+                  tc: "00:27",
+                  title: "Publish with provenance",
+                  text: "Every recommendation shows why: the exact post and signal it came from. Publish now or schedule — idempotent, permission-checked, retry-safe.",
+                  meta: "Idempotency key · concurrency 3 · MAX_ATTEMPTS 4",
+                  tone: "bg-surface border border-borderSoft"
+                }
+              ].map((step) => (
+                <div key={step.n} className={cn("relative overflow-hidden rounded-2xl p-5 sm:p-6", step.tone)}>
+                  <div className="pointer-events-none absolute right-4 top-4 text-[11px] font-mono tracking-widest opacity-60">{step.tc}</div>
+                  <div className="flex gap-4">
+                    <div className={cn("hidden sm:grid h-12 w-12 shrink-0 place-items-center rounded-xl text-lg font-display font-bold tracking-tight", step.tone.includes("bg-ink") ? "bg-background/10 text-background" : step.tone.includes("bg-[var(--accent)]") ? "bg-ink/10 text-ink" : "bg-ink/5 text-ink")}>{step.n}</div>
+                    <div className="min-w-0">
+                      <h3 className="font-display text-lg font-semibold tracking-tight">{step.title}</h3>
+                      <p className={cn("mt-2 text-sm leading-6", step.tone.includes("bg-ink") ? "text-background/70" : step.tone.includes("bg-[var(--accent)]") ? "text-ink/70" : "text-mutedText")}>{step.text}</p>
+                      <p className={cn("mt-3 inline-flex rounded-full px-2.5 py-1 text-[11px] font-mono", step.tone.includes("bg-ink") ? "bg-background/10 text-background/70" : "bg-ink text-background")}>{step.meta}</p>
+                    </div>
+                  </div>
+                  {/* red grease keep mark */}
+                  <span className="pointer-events-none absolute -bottom-2 -right-2 rotate-[-8deg] rounded-full border-2 border-[var(--warn)] px-3 py-1 text-[10px] font-mono font-bold tracking-[0.16em] text-[var(--warn)] opacity-80">KEPT</span>
+                </div>
+              ))}
+              <div className="rounded-2xl border border-dashed border-borderSoft bg-surface/60 p-4 text-sm leading-6 text-mutedText">
+                <span className="font-semibold text-ink">Sandbox alternative:</span> want to look before you connect? Jump to the monitor wall — simulated metrics clearly labeled, no tokens stored. <a href="/demo" className="font-medium text-ink underline decoration-borderSoft underline-offset-4 hover:decoration-ink">Open demo →</a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* SPROCKET MARQUEE — platforms */}
+        <section className="border-y border-borderSoft bg-surface">
+          <div className="mx-auto max-w-[1280px] px-5 sm:px-8 py-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 text-[11px] font-mono tracking-[0.18em] text-mutedText">
+              <span>ONE FEED · THREE GATES</span>
+              <span className="hidden sm:inline">LIVE VIA OFFICIAL META GRAPH API</span>
+            </div>
+            <div className="marquee-mask mt-4 rounded-xl border border-borderSoft bg-background">
               <div
-                className="marquee flex w-max items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-background"
+                className="marquee flex w-max items-center py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
                 style={{ animationPlayState: marqueePaused ? "paused" : undefined }}
                 tabIndex={0}
                 role="group"
-                aria-label="Supported Meta platforms carousel — focus to pause"
+                aria-label="Supported platforms"
                 onFocus={() => setMarqueePaused(true)}
                 onBlur={() => setMarqueePaused(false)}
               >
                 {[0, 1, 2].map((copy) => (
                   <div aria-hidden={copy > 0} className="flex items-center" key={copy}>
-                    {platformLogos.filter((plat) => ["instagram", "facebook", "threads"].includes(plat.slug)).map((plat) => (
-                      <div
-                        key={`${copy}-${plat.slug}`}
-                        className="mx-5 flex items-center gap-2 text-mutedText transition-colors duration-200 hover:text-ink sm:mx-7"
-                      >
-                        <svg aria-hidden="true" className="h-5 w-5 fill-current" viewBox="0 0 24 24">
-                          <path d={plat.svgPath} />
-                        </svg>
-                        <span className="font-display text-lg italic tracking-tight">{plat.name}</span>
-                      </div>
-                    ))}
+                    {platformLogos
+                      .filter((p) => ["instagram", "facebook", "threads"].includes(p.slug))
+                      .map((plat) => (
+                        <div key={`${copy}-${plat.slug}`} className="mx-6 flex items-center gap-2.5 sm:mx-8 text-ink">
+                          <span className="grid h-8 w-8 place-items-center rounded-full bg-ink text-background">
+                            <svg aria-hidden className="h-4 w-4 fill-current" viewBox="0 0 24 24">
+                              <path d={plat.svgPath} />
+                            </svg>
+                          </span>
+                          <span className="font-display text-[15px] font-semibold tracking-tight">{plat.name}</span>
+                          <span className="hidden sm:inline text-[11px] font-mono tracking-widest text-mutedText">GATE {plat.slug.toUpperCase()}</span>
+                        </div>
+                      ))}
                   </div>
                 ))}
               </div>
@@ -589,236 +541,415 @@ export function LandingPage() {
           </div>
         </section>
 
-        {/* Features */}
-        <section id="features" className="mx-auto max-w-6xl scroll-mt-24 px-5 py-24 sm:px-8 lg:py-32">
-          <motion.div {...fadeUp} className="max-w-2xl">
-            <p className="font-mono text-xs uppercase tracking-[0.22em] text-primary">How it works</p>
-            <h2 className="mt-4 text-balance font-display text-4xl font-medium leading-[1.08] tracking-tight text-ink sm:text-5xl">
-              Everything that removes the guesswork from posting.
+        {/* BIN — features as bento (avoids same-size cards) */}
+        <section id="features" className="mx-auto max-w-[1280px] scroll-mt-24 px-5 sm:px-8 py-12 sm:py-20">
+          <div className="max-w-[720px]">
+            <h2 className="text-balance font-display text-[30px] font-[700] leading-[0.98] tracking-[-0.03em] sm:text-[40px]">
+              Three tapes. One bin.
+              <br />
+              <span className="font-[400] text-mutedText">Only what removes guesswork.</span>
             </h2>
-            <p className="mt-5 text-pretty text-base leading-relaxed text-mutedText">
-              Every feature pairs live Meta Graph callbacks with a long-term audience memory, so
-              recommendations compound as your audience changes.
-            </p>
-          </motion.div>
+            <p className="mt-4 text-[15px] leading-7 text-mutedText">Live Meta callbacks + long-term memory. The rest stays in the bin until you need it.</p>
+          </div>
 
           <motion.div
-            className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
+            className="mt-8 grid gap-4 lg:grid-cols-12"
             variants={staggerContainer}
             initial="hidden"
             whileInView="show"
-            viewport={{ once: true, amount: 0.1 }}
+            viewport={{ once: true, amount: 0.08 }}
           >
-            {features.map((feature, index) => (
-              <motion.div
-                key={feature.title}
-                variants={staggerItem}
-                role="button"
-                tabIndex={0}
-                aria-pressed={activeFeature === index}
-                onClick={() => setActiveFeature(index)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    setActiveFeature(index);
-                  }
-                }}
-                className={`interactive-card glass-card group rounded-2xl border p-6 shadow-glass outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-                  activeFeature === index ? "border-primary bg-accent-soft/40 shadow-glow" : "border-borderSoft hover:border-borderSoft/80"
-                }`}
-              >
-                <motion.span
-                  className={`grid h-11 w-11 place-items-center rounded-full transition-colors duration-200 ${activeFeature === index ? "bg-primary text-background" : "bg-accent-soft text-primary group-hover:bg-primary group-hover:text-background"}`}
-                  whileTap={{ scale: 0.92 }}
+            {/* Row 1: big memory + telemetry */}
+            <motion.button
+              variants={staggerItem}
+              onClick={() => setActiveFeature(0)}
+              aria-pressed={activeFeature === 0}
+              className={cn(
+                "group relative overflow-hidden rounded-[20px] border p-6 text-left lg:col-span-7",
+                activeFeature === 0 ? "border-[var(--accent)] bg-[var(--accent)]/10" : "border-borderSoft bg-surface hover:border-[var(--accent)]/30"
+              )}
+            >
+              <span className="inline-flex items-center gap-2 text-[11px] font-mono tracking-[0.16em] text-mutedText">
+                <span className={cn("h-2 w-2 rounded-full", activeFeature === 0 ? "bg-[var(--accent)] tally-dot" : "bg-borderSoft")} /> BIN A · MEMORY
+              </span>
+              <h3 className="mt-3 font-display text-xl font-semibold tracking-tight">Meta Graph Memory</h3>
+              <p className="mt-2 max-w-[52ch] text-sm leading-6 text-mutedText">Continuously learns from every Reel, Page post, and Thread — performance is predicted from your actual engagement, not a template.</p>
+              <div className="mt-4 flex gap-1.5">
+                {["REEL", "POST", "THREAD"].map((t) => (
+                  <span key={t} className="rounded-full bg-ink px-2.5 py-1 text-[10px] font-mono tracking-widest text-background">
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </motion.button>
+
+            <motion.button
+              variants={staggerItem}
+              onClick={() => setActiveFeature(1)}
+              aria-pressed={activeFeature === 1}
+              className={cn(
+                "relative overflow-hidden rounded-[20px] border p-6 text-left lg:col-span-5",
+                activeFeature === 1 ? "border-[var(--accent)] bg-[var(--accent)]/10" : "border-borderSoft bg-surface hover:border-[var(--accent)]/30"
+              )}
+            >
+              <span className="text-[11px] font-mono tracking-[0.16em] text-mutedText">BIN B · TELEMETRY</span>
+              <h3 className="mt-3 font-display text-xl font-semibold tracking-tight">Cross-Platform Telemetry</h3>
+              <p className="mt-2 text-sm leading-6 text-mutedText">Reach, save velocity, and comment sentiment across all gates — one timeline, three lines.</p>
+            </motion.button>
+
+            {/* distilled: the other tapes tuck into the bin — expand via dashboard */}
+            <p className="lg:col-span-12 text-xs text-mutedText">
+              <span className="font-medium text-ink">Also in the bin:</span> Audience Sentiment, Publishing Windows, Hook Intelligence — all live in your dashboard, we surface only the next step here.
+            </p>
+
+            {/* Row 3: dispatch */}
+            <motion.button
+              variants={staggerItem}
+              onClick={() => setActiveFeature(5)}
+              aria-pressed={activeFeature === 5}
+              className={cn(
+                "group relative overflow-hidden rounded-[20px] border p-6 text-left lg:col-span-12 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4",
+                activeFeature === 5 ? "border-[var(--accent)] bg-[var(--accent)]/10" : "border-borderSoft bg-ink text-background hover:border-[var(--accent)]/40"
+              )}
+            >
+              <div>
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-2 text-[11px] font-mono tracking-[0.16em]",
+                    activeFeature === 5 ? "text-mutedText" : "text-background/60"
+                  )}
                 >
-                  <feature.icon className="h-5 w-5" strokeWidth={1.75} />
-                </motion.span>
-                <h3 className="mt-5 font-heading text-xl font-medium tracking-tight text-ink">
-                  {feature.title}
+                  <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)] tally-dot" /> BIN F · DISPATCH
+                </span>
+                <h3 className={cn("mt-2 font-display text-xl font-semibold tracking-tight", activeFeature === 5 ? "text-ink" : "text-background")}>
+                  Automated Meta Dispatch
                 </h3>
-                <p className="mt-2.5 text-sm leading-6 text-mutedText">{feature.description}</p>
-              </motion.div>
-            ))}
+                <p className={cn("mt-1 max-w-[64ch] text-sm leading-6", activeFeature === 5 ? "text-mutedText" : "text-background/60")}>
+                  Schedule & publish directly via official Meta Graph API after verified account connection — idempotent, encrypted, retry-safe.
+                </p>
+              </div>
+              <span
+                className={cn(
+                  "inline-flex shrink-0 items-center gap-2 rounded-full px-5 py-3 text-sm font-medium",
+                  activeFeature === 5 ? "bg-ink text-background" : "bg-[var(--accent)] text-ink"
+                )}
+              >
+                Publishing infra, not theatre <ArrowRight className="h-4 w-4" />
+              </span>
+            </motion.button>
           </motion.div>
         </section>
 
-        {/* Reviews */}
-        <section className="mx-auto max-w-6xl px-5 py-24 sm:px-8 lg:py-32">
-          <motion.div {...fadeUp} className="flex max-w-2xl flex-wrap items-end justify-between gap-6">
-            <div>
-              <p className="font-mono text-xs uppercase tracking-[0.22em] text-primary">Proof</p>
-              <h2 className="mt-4 text-balance font-display text-4xl font-medium leading-[1.08] tracking-tight text-ink sm:text-5xl">
-                Loved by people who post every single day.
-              </h2>
-            </div>
+        {/* SELECTS — reviews as pinned Polaroids */}
+        <section id="proof" className="mx-auto max-w-[1280px] px-5 sm:px-8 py-12 sm:py-16">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <h2 className="font-display text-[30px] font-[700] leading-[0.98] tracking-[-0.03em] sm:text-[36px]">Selects — kept frames.</h2>
             {reviews.length > 0 && (
-              <p className="text-sm tabular-nums text-mutedText">
-                {reviews.length} review{reviews.length === 1 ? "" : "s"} ·{" "}
-                {(reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1)} average
+              <p className="text-sm font-mono tracking-widest text-mutedText">
+                {reviews.length} SELECTS · {(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)} AVG
               </p>
             )}
-          </motion.div>
+          </div>
 
           <motion.div
-            className="mt-14 grid gap-5 lg:grid-cols-3"
+            className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
             variants={staggerContainer}
             initial="hidden"
             whileInView="show"
-            viewport={{ once: true, amount: 0.1 }}
+            viewport={{ once: true, amount: 0.08 }}
           >
             {reviewsLoading ? (
-              <motion.div
-                role="status"
-                variants={staggerItem}
-                className="col-span-full flex items-center gap-2 rounded-2xl border border-dashed border-borderSoft bg-surface p-6 text-center text-xs text-mutedText"
-              >
-                <Loader2 aria-hidden="true" className="h-3.5 w-3.5 animate-spin" /> Loading reviews…
-              </motion.div>
+              <div className="col-span-full flex items-center gap-2 rounded-2xl border border-dashed border-borderSoft bg-surface p-6 text-sm text-mutedText">
+                <Loader2 className="h-4 w-4 animate-spin" /> Loading selects…
+              </div>
             ) : reviews.length === 0 ? (
-              <motion.div
-                variants={staggerItem}
-                whileHover={{ scale: 1.02, boxShadow: "0 20px 40px -12px var(--accent-strong)" }}
-                transition={{ duration: 0.2 }}
-                className="col-span-full rounded-2xl border border-dashed border-borderSoft bg-surface p-10 text-center hover:border-primary/50 hover:bg-surface/50"
-              >
+              <div className="col-span-full rounded-2xl border border-dashed border-borderSoft bg-surface p-10 text-center">
                 <Star className="mx-auto h-6 w-6 text-faintText" />
-                <h3 className="mt-4 font-heading text-lg font-medium text-ink">No reviews yet.</h3>
-                <p className="mt-1.5 text-sm text-mutedText">Be the first to leave one — tell us how EduVerse is working for you.</p>
-              </motion.div>
+                <p className="mt-3 font-display font-medium">No selects yet.</p>
+                <p className="mt-1 text-sm text-mutedText">Be the first to leave a kept frame.</p>
+              </div>
             ) : (
-              reviews.map((review) => (
-                <TiltCard
+              reviews.slice(0, 3).map((review) => (
+                <div
                   key={review.id}
-                  variants={staggerItem}
-                  tiltLimit={9}
-                  scale={1.02}
-                  className="rounded-2xl border border-borderSoft bg-card p-6 shadow-glass transition-shadow duration-300 hover:shadow-glow"
+                  className="rounded-[16px] border border-borderSoft bg-surface p-5"
                 >
-                  <figure className="flex h-full flex-col justify-between">
-                    <blockquote className="text-pretty text-sm leading-7 text-ink">
-                      <motion.span aria-hidden="true" animate={{ y: [0, -3, 0] }} transition={{ duration: 2.8, repeat: Infinity, delay: 0.25 }} className="inline-block font-display text-2xl text-primary">“</motion.span>
-                      {review.content}
-                    </blockquote>
-                    <figcaption className="mt-6 border-t border-borderSoft pt-4">
-                      <ReviewStars rating={review.rating} />
-                      <div className="mt-3 flex min-w-0 items-center gap-3">
-                        <motion.span
-                          aria-hidden="true"
-                          whileTap={{ scale: 0.9 }}
-                          className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface text-xs font-semibold text-primary"
-                        >
-                          {review.name.split(" ").map((n) => n[0]).join("")}
-                        </motion.span>
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-ink">{review.name}</p>
-                          {review.role && <p className="truncate text-xs text-mutedText">{review.role}</p>}
-                        </div>
-                      </div>
-                    </figcaption>
-                  </figure>
-                </TiltCard>
+                  <ReviewStars rating={review.rating} />
+                  <blockquote className="mt-3 text-sm leading-6 text-ink">“{review.content}”</blockquote>
+                  <div className="mt-4 flex items-center gap-3 border-t border-borderSoft pt-3">
+                    <span className="grid h-9 w-9 place-items-center rounded-full bg-ink text-xs font-semibold text-background">
+                      {review.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">{review.name}</p>
+                      {review.role && <p className="truncate text-xs text-mutedText">{review.role}</p>}
+                    </div>
+                  </div>
+                </div>
               ))
             )}
           </motion.div>
+
+          {reviews.length > 3 && (
+            <p className="mt-4 text-center text-xs font-mono tracking-widest text-mutedText">
+              <a href="/dashboard/reviews" className="underline decoration-borderSoft underline-offset-4 hover:decoration-ink">View all reviews →</a>
+            </p>
+          )}
         </section>
 
-        {/* FAQ — canonical answers also exposed via FAQPage JSON-LD, llms.txt and /md/faq */}
-        <section id="faq" className="mx-auto max-w-6xl scroll-mt-24 px-5 py-24 sm:px-8 lg:py-32">
-          <motion.div {...fadeUp} className="max-w-2xl">
-            <p className="font-mono text-xs uppercase tracking-[0.22em] text-primary">Answers</p>
-            <h2 className="mt-4 text-balance font-display text-4xl font-medium leading-[1.08] tracking-tight text-ink sm:text-5xl">
-              Pricing, refunds &amp; support — plainly stated.
-            </h2>
-            <p className="mt-5 text-pretty text-base leading-relaxed text-mutedText">
-              The short version: EduVerse is free during early access, nothing is ever charged
-              without notice, and your Meta connection stays revocable in one click.
-            </p>
-          </motion.div>
-
-          <motion.div {...fadeUp} className="mx-auto mt-12 grid max-w-3xl gap-3">
-            {FAQS.map((faq) => (
-              <details
-                key={faq.question}
-                className="group rounded-2xl border border-borderSoft bg-card shadow-glass transition-[border-color] open:border-primary/30"
-              >
-                <summary className="flex min-h-[56px] cursor-pointer list-none touch-manipulation items-center justify-between gap-4 rounded-2xl px-5 py-4 text-sm font-semibold text-ink outline-none transition-[background-color] hover:bg-surface/60 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background [&::-webkit-details-marker]:hidden">
-                  {faq.question}
-                  <span
-                    aria-hidden="true"
-                    className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-borderSoft bg-surface text-mutedText transition-transform duration-200 group-open:rotate-45 group-open:border-primary/40 group-open:text-primary"
-                  >
-                    +
-                  </span>
-                </summary>
-                <p className="px-5 pb-5 text-sm leading-7 text-mutedText">{faq.answer}</p>
-              </details>
-            ))}
-            <p className="mt-2 px-1 text-xs text-faintText">
-              Something else? Email{" "}
-              <a className="font-medium text-primary underline decoration-primary/30 underline-offset-4 hover:decoration-primary" href="mailto:hello@eduverse.app">
-                hello@eduverse.app
-              </a>{" "}
-              — every message gets a personal reply.
-            </p>
-          </motion.div>
-        </section>
-
-        <section id="feedback" className="scroll-mt-24 border-y border-borderSoft bg-surface/50 px-5 py-24 sm:px-8 lg:py-28">
-          <motion.div {...fadeUp} className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
+        {/* MONITOR WALL — sandbox */}
+        <section id="sandbox" className="mx-auto max-w-[1280px] px-5 sm:px-8 py-12 sm:py-16">
+          <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
             <div>
-              <p className="font-mono text-xs uppercase tracking-[0.22em] text-primary">Leave a review</p>
-              <h2 className="mt-4 font-display text-4xl font-medium leading-[1.08] tracking-tight text-ink sm:text-5xl">Help shape EduVerse.</h2>
-              <p className="mt-4 max-w-md text-sm leading-6 text-mutedText">Used EduVerse? Tell us what feels useful, confusing, or missing. Reviews are moderated and appear in the wall above after approval.</p>
+              <h2 className="font-display text-[28px] font-[700] leading-[0.98] tracking-[-0.03em] sm:text-[34px]">Try the bay before you connect.</h2>
+              <p className="mt-3 max-w-[58ch] text-[15px] leading-7 text-mutedText">
+                Full live features need Meta Graph OAuth — which feels heavy before you’ve seen the bay. Step into a read-only monitor wall with simulated IG, FB, and Threads telemetry. No login.
+              </p>
+              <ul className="mt-4 grid gap-2 text-sm text-mutedText">
+                <li className="flex gap-2">
+                  <Check className="mt-0.5 h-4 w-4 text-success" /> Real layout — metrics, timeline, and keep stamps
+                </li>
+                <li className="flex gap-2">
+                  <Check className="mt-0.5 h-4 w-4 text-success" /> Sample only — every number tagged Simulated
+                </li>
+                <li className="flex gap-2">
+                  <Check className="mt-0.5 h-4 w-4 text-success" /> One click to switch to live after OAuth
+                </li>
+              </ul>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Button asChild className="rounded-full bg-ink px-6 py-6 text-background">
+                  <Link href="/demo">
+                    <Eye className="h-4 w-4" /> Explore Live Demo
+                  </Link>
+                </Button>
+                <Button asChild variant="secondary" className="rounded-full border border-borderSoft bg-surface">
+                  <Link href="/signup">
+                    Start free — then connect <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
+              <p className="mt-4 text-xs leading-relaxed text-mutedText">
+                By connecting you agree to our{" "}
+                <a href="/privacy" className="font-medium text-ink underline decoration-borderSoft underline-offset-4 hover:decoration-ink">
+                  Privacy Policy
+                </a>{" "}
+                — tokens AES-256-GCM, workspace-scoped.
+              </p>
             </div>
-            <Card className="p-6">
-              {feedbackSent ? <motion.div role="status" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="grid min-h-48 place-items-center text-center"><div><span className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-success/15 text-success"><Check aria-hidden="true" className="h-5 w-5" /></span><h3 className="mt-4 font-heading text-xl font-medium text-ink">Review submitted.</h3><p className="mt-2 text-sm text-mutedText">Thanks! Your review is pending moderation and will appear after approval.</p><Button className="mt-5" size="sm" variant="secondary" onClick={() => setFeedbackSent(false)}>Write another</Button></div></motion.div> : <form onSubmit={handleFeedbackSubmit} className="space-y-5"><div className="grid gap-3 sm:grid-cols-2"><div><label htmlFor="reviewer-name" className="text-sm font-medium text-ink">Your name <span aria-hidden="true" className="text-danger">*</span></label><input id="reviewer-name" name="name" autoComplete="name" value={reviewerName} onChange={(event) => setReviewerName(event.target.value)} required maxLength={80} placeholder="e.g. Priya Sharma…" className="mt-2 w-full rounded-xl border border-borderSoft bg-surface p-3 text-sm text-ink outline-none transition-[border-color,box-shadow] placeholder:text-faintText focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/40" /></div><div><label htmlFor="reviewer-role" className="text-sm font-medium text-ink">Role <span className="text-xs text-mutedText">(optional)</span></label><input id="reviewer-role" name="role" autoComplete="organization-title" value={reviewerRole} onChange={(event) => setReviewerRole(event.target.value)} maxLength={120} placeholder="e.g. Social Media Manager…" className="mt-2 w-full rounded-xl border border-borderSoft bg-surface p-3 text-sm text-ink outline-none transition-[border-color,box-shadow] placeholder:text-faintText focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/40" /></div></div><div><label className="text-sm font-medium text-ink">How is EduVerse feeling?</label><div className="mt-3 flex flex-wrap gap-2" role="radiogroup" aria-label="Review rating" onKeyDown={(e)=>{ if(e.key==="ArrowRight"||e.key==="ArrowDown"){e.preventDefault(); setFeedbackRating(Math.min(5, feedbackRating+1))} if(e.key==="ArrowLeft"||e.key==="ArrowUp"){e.preventDefault(); setFeedbackRating(Math.max(1, feedbackRating-1))}}}>{[1, 2, 3, 4, 5].map((rating) => <button key={rating} type="button" role="radio" aria-checked={feedbackRating === rating} aria-label={`${rating} out of 5`} onClick={() => setFeedbackRating(rating)} className={`grid h-11 w-11 place-items-center rounded-full border text-sm transition ${feedbackRating === rating ? "border-primary bg-primary text-background" : "border-borderSoft bg-surface text-mutedText hover:border-primary/50"}`}>{rating}</button>)}</div></div><div><label htmlFor="review-content" className="text-sm font-medium text-ink">Your review <span aria-hidden="true" className="text-danger">*</span></label><textarea id="review-content" value={feedback} onChange={(event) => setFeedback(event.target.value)} required rows={4} maxLength={800} placeholder="What has your experience been like so far?…" className="mt-2 w-full resize-none rounded-xl border border-borderSoft bg-surface p-3 text-sm text-ink outline-none transition-[border-color,box-shadow] placeholder:text-faintText focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/40" /></div>{feedbackError && <p role="alert" className="text-xs text-danger">{feedbackError}</p>}<div className="flex items-center justify-between gap-3"><span className="text-xs tabular-nums text-mutedText">Rating: {feedbackRating}/5</span><Button type="submit" disabled={feedbackSubmitting} className="bg-ink text-background hover:bg-ink/90"><MessageCircle aria-hidden="true" className="h-4 w-4" />{feedbackSubmitting ? "Submitting…" : "Submit review"}</Button></div></form>}
-            </Card>
-          </motion.div>
+
+            <div className="relative">
+              <div className="absolute -inset-3 -z-10 rounded-[24px] bg-ink/5 blur-xl" />
+              <div className="overflow-hidden rounded-[20px] border border-[var(--line-ink)] bg-[var(--surface-ink)] p-3 shadow-ink">
+                <div className="flex items-center justify-between px-1 pb-2 text-[11px] font-mono tracking-[0.16em] text-white/50">
+                  <span>MONITOR WALL</span>
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--warn)]/30 bg-[var(--warn)]/10 px-2 py-1 text-[10px] font-bold tracking-[0.14em] text-[var(--warn)]">
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--warn)]" /> SIMULATED
+                  </span>
+                  <span className="hidden sm:inline font-mono text-white/30">/demo — no login</span>
+                </div>
+                <div className="grid gap-3">
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { label: "VIEWS 28D", value: "142.9K" },
+                      { label: "ENGAGEMENT", value: "18.4K" },
+                      { label: "POSTS", value: "47" }
+                    ].map((m) => (
+                      <div key={m.label} className="relative overflow-hidden rounded-xl border border-white/10 bg-white/[0.04] p-3">
+                        <div className="scanline pointer-events-none absolute inset-0 opacity-30" />
+                        <p className="relative text-[10px] font-mono tracking-[0.16em] text-white/50">{m.label}</p>
+                        <p className="relative mt-1 font-display text-lg font-bold tracking-tight text-white">{m.value}</p>
+                        <p className="relative text-[10px] font-mono tracking-widest text-[var(--accent)]">Simulated</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-center justify-between rounded-xl bg-[var(--accent)] px-3 py-2.5 text-xs font-medium text-ink">
+                    <span>This wall becomes your live bay after OAuth.</span>
+                    <a href="/demo" className="font-bold underline underline-offset-4">
+                      Open →
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </section>
 
-        {/* CTA */}
-        <section className="relative overflow-hidden bg-ink py-24 text-background lg:py-32">
-          <div className="pointer-events-none absolute inset-0 opacity-[0.07] texture-dots" />
-          <div className="pointer-events-none absolute right-[-200px] top-[-200px] h-[480px] w-[480px] rounded-full bg-accent-soft blur-3xl" />
-          <motion.div {...fadeUp} className="relative mx-auto max-w-2xl px-5 text-center sm:px-8">
-            <h2 className="text-balance font-display text-4xl font-medium leading-[1.08] tracking-tight sm:text-5xl">
-              Ready to stop guessing <em className="italic text-primary">what your audience wants?</em>
+        {/* EDIT LOG — FAQ (FAQPage) */}
+        <section id="faq" className="mx-auto max-w-[1280px] scroll-mt-24 px-5 sm:px-8 py-12 sm:py-16">
+          <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+            <div className="lg:sticky lg:top-[88px]">
+              <h2 className="font-display text-[30px] font-[700] leading-[0.98] tracking-[-0.03em] sm:text-[36px]">Edit log — plainly stated.</h2>
+              <p className="mt-3 max-w-[48ch] text-[15px] leading-7 text-mutedText">
+                Free during early access, nothing charged without notice, Meta connection revocable in one click. The log is the truth.
+              </p>
+              <p className="mt-4 text-xs font-mono tracking-widest text-faintText">CANONICAL ANSWERS · ALSO IN llms.txt + /md/faq</p>
+            </div>
+            <div className="grid gap-3">
+              {FAQS.slice(0, 4).map((faq) => (
+                <details key={faq.question} className="group rounded-2xl border border-borderSoft bg-surface open:border-[var(--accent)]/30">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-sm font-semibold outline-none hover:bg-surface-muted/40 focus-visible:ring-2 focus-visible:ring-[var(--accent)] [&::-webkit-details-marker]:hidden">
+                    <span className="flex items-center gap-3">
+                      <span className="hidden sm:grid h-7 w-7 place-items-center rounded-full bg-ink text-[11px] font-mono font-bold tracking-widest text-background">?</span>
+                      {faq.question}
+                    </span>
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-borderSoft bg-background text-mutedText transition group-open:rotate-45 group-open:border-[var(--accent)]/40 group-open:text-[var(--accent-strong)]">+</span>
+                  </summary>
+                  <p className="px-5 pb-5 pl-5 sm:pl-14 text-sm leading-7 text-mutedText">{faq.answer}</p>
+                </details>
+              ))}
+
+            </div>
+          </div>
+        </section>
+
+        {/* LEAVE REVIEW — slate (kept, bay removed) — consistent with page */}
+        <section id="feedback" className="border-y border-borderSoft bg-background px-5 sm:px-8 py-12 sm:py-16">
+          <div className="mx-auto grid max-w-[1280px] gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
+            <div>
+              <h2 className="font-display text-[28px] font-[700] leading-[0.98] tracking-[-0.03em] sm:text-[34px]">Slate it. Leave a kept frame.</h2>
+              <p className="mt-3 max-w-[48ch] text-sm leading-6 text-mutedText">Used EduVerse? Tell us what landed, what confused, what’s missing. Reviews are moderated and appear as selects after approval.</p>
+              <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-borderSoft bg-surface px-3 py-1.5 text-xs font-mono tracking-widest text-mutedText">
+                <Clapperboard className="h-3.5 w-3.5" /> TAKE 01 — YOUR REVIEW
+              </div>
+            </div>
+            <Card className="rounded-[20px] border border-borderSoft bg-card p-6 shadow-soft">
+              {feedbackSent ? (
+                <motion.div role="status" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="grid min-h-[280px] place-items-center text-center">
+                  <div>
+                    <span className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-success/15 text-success">
+                      <Check className="h-5 w-5" />
+                    </span>
+                    <h3 className="mt-4 font-display text-xl font-semibold">Kept. Thank you.</h3>
+                    <p className="mt-2 text-sm text-mutedText">Your select is pending moderation and will appear after approval.</p>
+                    <Button className="mt-5 rounded-full" size="sm" variant="secondary" onClick={() => setFeedbackSent(false)}>
+                      Slate another
+                    </Button>
+                  </div>
+                </motion.div>
+              ) : (
+                <form onSubmit={handleFeedbackSubmit} className="space-y-4">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label htmlFor="reviewer-name" className="text-sm font-medium">
+                        Your name <span className="text-danger">*</span>
+                      </label>
+                      <input
+                        id="reviewer-name"
+                        value={reviewerName}
+                        onChange={(e) => setReviewerName(e.target.value)}
+                        required
+                        maxLength={80}
+                        placeholder="e.g. Priya Sharma"
+                        className="mt-2 w-full rounded-xl border border-borderSoft bg-background px-3 py-2.5 text-sm outline-none placeholder:text-faintText focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/30"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="reviewer-role" className="text-sm font-medium">
+                        Role <span className="text-xs text-mutedText">(optional)</span>
+                      </label>
+                      <input
+                        id="reviewer-role"
+                        value={reviewerRole}
+                        onChange={(e) => setReviewerRole(e.target.value)}
+                        maxLength={120}
+                        placeholder="e.g. Creator"
+                        className="mt-2 w-full rounded-xl border border-borderSoft bg-background px-3 py-2.5 text-sm outline-none placeholder:text-faintText focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/30"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Rating</p>
+                    <div className="mt-2 flex items-center gap-1">
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <button
+                          key={n}
+                          type="button"
+                          onClick={() => setFeedbackRating(n)}
+                          aria-label={`Rate ${n} out of 5`}
+                          className={cn("grid h-9 w-9 place-items-center rounded-full border transition", n <= feedbackRating ? "border-[var(--accent)] bg-[var(--accent)] text-ink" : "border-borderSoft bg-surface text-faintText hover:border-[var(--accent)]/40")}
+                        >
+                          <Star className={cn("h-4 w-4", n <= feedbackRating && "fill-ink")} />
+                        </button>
+                      ))}
+                      <span className="ml-2 text-sm font-mono text-mutedText">{feedbackRating}/5</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label htmlFor="feedback" className="text-sm font-medium">
+                      Your select
+                    </label>
+                    <textarea
+                      id="feedback"
+                      value={feedback}
+                      onChange={(e) => setFeedback(e.target.value)}
+                      required
+                      maxLength={800}
+                      rows={4}
+                      placeholder="What felt useful, confusing, or missing?"
+                      className="mt-2 w-full rounded-xl border border-borderSoft bg-background px-3 py-3 text-sm outline-none placeholder:text-faintText focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/30"
+                    />
+                    <p className="mt-1 text-right text-xs font-mono text-faintText">{feedback.length}/800</p>
+                  </div>
+                  {feedbackError && <p className="rounded-xl border border-danger/20 bg-danger/10 px-3 py-2 text-sm text-danger">{feedbackError}</p>}
+                  <Button type="submit" disabled={feedbackSubmitting || !feedback.trim() || !reviewerName.trim()} className="w-full rounded-full bg-ink py-6 text-background hover:bg-ink/90 disabled:opacity-50">
+                    {feedbackSubmitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" /> Slating…
+                      </>
+                    ) : (
+                      <>
+                        Slate this take <ArrowRight className="h-4 w-4" />
+                      </>
+                    )}
+                  </Button>
+                  <p className="text-center text-xs leading-relaxed text-mutedText">By submitting you agree to moderation. No payment, no auto-renewal.</p>
+                </form>
+              )}
+            </Card>
+          </div>
+        </section>
+
+        {/* EXPORT BAY — CTA — fixed ink + MagicUI Meteors + HyperUI grid */}
+        <section className="relative overflow-hidden bg-[var(--surface-ink)] py-12 sm:py-16">
+          <Meteors number={14} className="opacity-30" />
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute inset-0 opacity-[0.06]" style={{ backgroundImage: `linear-gradient(var(--accent) 1px, transparent 1px), linear-gradient(90deg,var(--accent) 1px, transparent 1px)`, backgroundSize: "36px 36px" }} />
+          </div>
+          <div className="pointer-events-none absolute -right-24 -top-24 h-[420px] w-[420px] rounded-full bg-[var(--accent)]/10 blur-3xl" />
+          <motion.div {...fadeUp} className="relative mx-auto max-w-[760px] px-5 text-center sm:px-8">
+            <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-mono tracking-[0.16em] text-white/60">
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)] tally-dot" /> EXPORT BAY — READY
+            </div>
+            <h2 className="mt-4 text-balance font-display text-[32px] font-[700] leading-[0.95] tracking-[-0.03em] text-white sm:text-[42px]">
+              Stop guessing.
+              <br />
+              <span className="font-[400] text-white/70">Start remembering.</span>
             </h2>
-            <p className="mx-auto mt-5 max-w-xl text-pretty text-base leading-relaxed text-background/70">
-              Connect your Meta accounts and let EduVerse build the memory that turns posting into a system. Or explore the sandbox first —
-              no OAuth required.
-            </p>
-            <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-              <Button asChild className="border-2 border-background bg-transparent px-6 py-3 text-sm font-medium text-background hover:bg-background hover:text-ink">
+            <p className="mx-auto mt-4 max-w-[58ch] text-[15px] leading-7 text-white/60">Connect Meta and the bay fills with your real posts. Or walk the sandbox first — no OAuth, every number labeled.</p>
+            <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+              <Button asChild className="rounded-full border border-white/15 bg-transparent px-6 py-6 text-white hover:bg-white hover:text-ink">
                 <Link href="/demo">
-                  <Eye aria-hidden="true" className="h-4 w-4" />
-                  Explore Live Demo
+                  <Eye className="h-4 w-4" /> Explore Live Demo
                 </Link>
               </Button>
-              <Button asChild className="bg-background px-6 py-3 text-sm text-ink hover:bg-background/90">
+              <Button asChild className="rounded-full bg-[var(--accent)] px-6 py-6 text-ink hover:bg-[var(--accent-strong)]">
                 <Link href="/login">
-                  Open the dashboard
-                  <ArrowRight aria-hidden="true" className="h-4 w-4" />
+                  Open the dashboard <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
-              <Button
-                onClick={handleConnectClick}
-                disabled={checkingAuth}
-                className="border-2 border-primary bg-primary/15 px-6 py-3 text-sm font-medium text-primary transition-[border-color,background-color,box-shadow] hover:border-primary hover:bg-primary/25 hover:shadow-glow disabled:opacity-50"
-              >
+              <Button onClick={handleConnectClick} disabled={checkingAuth} className="rounded-full border-2 border-[var(--accent)] bg-[var(--accent)]/10 px-6 py-6 text-[var(--accent)] hover:bg-[var(--accent)]/20 disabled:opacity-50">
                 {checkingAuth ? "Checking…" : "Connect Meta"}
               </Button>
             </div>
-            <p className="mx-auto mt-6 max-w-xl text-center text-xs leading-relaxed text-background/60">
-              By connecting Meta you agree to our{" "}
-              <a href="/privacy" className="font-medium text-primary underline decoration-primary/40 underline-offset-4 hover:decoration-primary">
-                Privacy Policy & Data Security
+            <p className="mx-auto mt-6 max-w-[64ch] text-xs leading-relaxed text-white/40">
+              By connecting you agree to our{" "}
+              <a href="/privacy" className="font-medium text-[var(--accent)] underline decoration-white/20 underline-offset-4 hover:decoration-[var(--accent)]">
+                Privacy Policy
               </a>{" "}
-              — tokens are AES-256-GCM encrypted, scoped to your workspace via RLS, and revocable anytime in{" "}
-              <a href="/privacy#revocation" className="underline decoration-background/20 underline-offset-4 hover:decoration-background/40">
-                one click
-              </a>
-              .
+              — AES-256-GCM, workspace RLS, revocable in one click.
             </p>
           </motion.div>
         </section>

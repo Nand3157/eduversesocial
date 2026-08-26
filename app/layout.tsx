@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { headers } from "next/headers";
-import { Fraunces, JetBrains_Mono, Space_Grotesk } from "next/font/google";
+import { JetBrains_Mono, Public_Sans, Sora } from "next/font/google";
 import { MotionConfig } from "framer-motion";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { buildOrganizationJsonLd } from "@/lib/agentic/site";
@@ -36,21 +36,20 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#faf7f0" },
-    { media: "(prefers-color-scheme: dark)", color: "#15120e" }
+    { media: "(prefers-color-scheme: light)", color: "#F6F1E9" },
+    { media: "(prefers-color-scheme: dark)", color: "#0F1115" }
   ]
 };
 
-const sans = Space_Grotesk({
+const sans = Public_Sans({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-sans"
 });
 
-const display = Fraunces({
+const display = Sora({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  style: ["normal", "italic"],
+  weight: ["400", "500", "600", "700", "800"],
   variable: "--font-display"
 });
 
@@ -90,6 +89,8 @@ export default async function RootLayout({
         </Script>
       </head>
       <body className={`${sans.variable} ${display.variable} ${mono.variable}`}>
+        {/* THESIS: Your timeline is your memory — refuses warm-cream floating-card + hero-metric. OWN-WORLD: Ink #0F1115 + off-white #F6F1E9 + amber #FFB43A 40% committed; sprocket tape, light-table kraft, monitor bezel, KEPT grease, tally dot, mono timecode; Sora + Public Sans + JetBrains Mono; offset blur shadows. STORY: Solo creator sees live memory is indexed not invented, believes provenance via scrub, acts: sandbox or start free → connect. FIRST VIEWPORT: Timecode bar atop, ink bay split 60/40 — left light table 5 frames + 14-day playhead timeline, right loupe 168px detail + amber NEXT stamp; actions on stamp; headline 4.35rem. FORM: Edit Bay + Light Table #1/7 (Recorder, Light Table, Riso, Monitor, Pinboard, Control Wall, Notebook) seed 7c9ea9a5 user-pinned beats assigned Lab Notebook. FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance */}
+        <div dangerouslySetInnerHTML={{ __html: `<!-- THESIS: Your timeline is your memory — refuses warm-cream floating-card + hero-metric. OWN-WORLD: Ink #0F1115 + off-white #F6F1E9 + amber #FFB43A 40% committed; sprocket tape, light-table kraft, monitor bezel, KEPT grease, tally dot, mono timecode; Sora + Public Sans + JetBrains Mono. STORY: Solo creator sees live memory is indexed not invented, believes provenance via scrub, acts: sandbox or start free → connect. FIRST VIEWPORT: Timecode bar atop, ink bay 60/40 — left 5-frame light table + 14-day playhead timeline, right 168px loupe + amber NEXT stamp; actions on stamp; headline 4.35rem. FORM: Edit Bay + Light Table #1/7 seed 7c9ea9a5 user-pinned beats assigned Lab Notebook. FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance -->` }} />
         <ThemeProvider>
           <a href="#main-content" className="skip-link">
             Skip to content
