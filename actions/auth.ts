@@ -6,7 +6,18 @@ import { cookies, headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { checkRateLimit } from "@/lib/rate-limit";
 
-const credentialsSchema = z.object({ email: z.string().trim().email("Enter a valid email address"), password: z.string().min(8, "Use at least 8 characters") });
+const PASSWORD_MIN = 12;
+const passwordSchema = z
+  .string()
+  .min(PASSWORD_MIN, `Use at least ${PASSWORD_MIN} characters`)
+  .max(128, "Password must be at most 128 characters")
+  .refine((v) => /[a-z]/.test(v) && /[A-Z]/.test(v) && /\d/.test(v), {
+    message: "Include upper and lower case letters and a number",
+  })
+  .refine((v) => !/\s/.test(v), { message: "Password cannot contain spaces" });
+
+const credentialsSchema = z.object({ email: z.string().trim().email("Enter a valid email address"), password: passwordSchema });
+const signupSchema = z.object({ email: z.string().trim().email("Enter a valid email address"), password: passwordSchema });
 const emailSchema = z.object({ email: z.string().trim().email("Enter a valid email address") });
 const nameSchema = z.string().trim().min(1, "Enter your name").max(120).optional();
 export type AuthResult = { error?: string; message?: string };
@@ -55,7 +66,7 @@ export async function signIn(_: AuthResult, formData: FormData): Promise<AuthRes
 }
 
 export async function signUp(_: AuthResult, formData: FormData): Promise<AuthResult> {
-  const parsed = credentialsSchema.safeParse(Object.fromEntries(formData));
+  const parsed = signupSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message };
   if (!(await checkRateLimit(`signup:ip:${await clientIp()}`, 10, 60 * 60_000)).allowed) {
     return { error: RATE_LIMITED };
@@ -89,7 +100,7 @@ export async function requestPasswordReset(_: AuthResult, formData: FormData): P
 }
 
 export async function updatePassword(_: AuthResult, formData: FormData): Promise<AuthResult> {
-  const password = z.string().min(8, "Use at least 8 characters").safeParse(formData.get("password"));
+  const password = passwordSchema.safeParse(formData.get("password"));
   if (!password.success) return { error: password.error.issues[0]?.message };
   const supabase = await createClient();
   if (!supabase) return { error: "Supabase is not configured. Add the environment variables to enable authentication." };
@@ -99,6 +110,7 @@ export async function updatePassword(_: AuthResult, formData: FormData): Promise
   // by a recovery code exchange (HttpOnly pw_recovery cookie) — a session
   // cookie alone never bypasses re-authentication.
   const cookieStore = await cookies();
+  // Cookie is path-scoped to /reset-password (set in app/auth/callback/route.ts:29)
   const isRecoverySession = cookieStore.get("pw_recovery")?.value === "1";
   const current = formData.get("current");
   if (typeof current !== "string" || !current) {
@@ -111,8 +123,18 @@ export async function updatePassword(_: AuthResult, formData: FormData): Promise
   }
   const { error } = await supabase.auth.updateUser({ password: password.data });
   if (error) return { error: error.message };
+  // Invalidate all other sessions so a stolen refresh token does not survive a
+  // password reset. The current session remains valid for this response.
+  try {
+    await supabase.auth.signOut({ scope: "others" } as never);
+  } catch {
+    // fall back to global if the client does not support `others`
+    try {
+      await supabase.auth.signOut();
+    } catch {}
+  }
   cookieStore.delete("pw_recovery");
-  return { message: "Password updated successfully." };
+  return { message: "Password updated. Other sessions have been signed out." };
 }
 
 export async function updateProfile(_: AuthResult, formData: FormData): Promise<AuthResult> {

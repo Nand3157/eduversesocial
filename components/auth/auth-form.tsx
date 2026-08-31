@@ -63,13 +63,18 @@ export function AuthForm({ mode, next }: { mode: Mode; next?: string }) {
       {hasPassword && (
         <label className="block text-sm font-medium text-mutedText">
           {mode === "reset" ? "New password" : "Password"}
+          {(mode === "signup" || mode === "reset") && (
+            <span className="block text-[11px] font-normal text-faintText">At least 12 characters — mix upper, lower and number.</span>
+          )}
           <span className="relative block">
             <input
               autoComplete={mode === "reset" ? "new-password" : mode === "signup" ? "new-password" : "current-password"}
               className={`${inputClass} pr-11`}
-              minLength={8}
+              minLength={mode === "login" ? 8 : 12}
               name="password"
               required
+              pattern={mode === "login" ? undefined : "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{12,}$"}
+              title={mode === "login" ? undefined : "At least 12 characters with upper, lower and number"}
               type={showPassword ? "text" : "password"}
             />
             <button

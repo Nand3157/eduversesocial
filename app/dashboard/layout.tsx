@@ -12,6 +12,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const supabase = await createClient();
   const { data: { user } } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
   if (!supabase || !user) redirect("/login?next=/dashboard");
+  if (!user.email_confirmed_at) redirect("/verify-email");
 
   let profile: { display_name?: string | null; role?: string | null; bio?: string | null } | null = null;
   if (supabase) {

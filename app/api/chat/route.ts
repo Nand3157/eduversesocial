@@ -152,16 +152,19 @@ export async function POST(request: Request) {
   const parsed = requestSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return Response.json({ error: "Invalid chat request." }, { status: 400 });
   const supabase = await createClient();
-  const { data: { user } } = supabase ? await supabase.auth.getUser().catch(() => ({ data: { user: null } })) : { data: { user: null } };
-  if (supabase && !user) return Response.json({ error: "Unauthorized." }, { status: 401 });
-  const rateKey = user?.id ?? request.headers.get("x-forwarded-for") ?? "local-demo";
+  if (!supabase) return Response.json({ error: "Service unavailable." }, { status: 503 });
+  const { data: { user } } = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
+  if (!user) return Response.json({ error: "Unauthorized." }, { status: 401 });
+  // Email verification gate matches proxy.ts/dashboard/layout.tsx
+  if (!user.email_confirmed_at) return Response.json({ error: "Verify your email to use chat." }, { status: 403 });
+  const rateKey = user.id;
   if (!(await checkRateLimit(`chat:${rateKey}`, 60, 60_000)).allowed) return Response.json({ error: "Too many requests. Please try again in a minute." }, { status: 429 });
 
   let conversationId: string | undefined;
   let persistenceUnavailable = false;
   const latest = parsed.data.messages.at(-1)!;
 
-  if (supabase && user) {
+  {
     const workspaceId = await getWorkspaceId(supabase, user.id);
     if (!workspaceId) persistenceUnavailable = true;
     else try {
@@ -177,14 +180,14 @@ export async function POST(request: Request) {
   // Self-harm safe completion: if latest user message signals distress, return
   // a supportive, resource-rich response without calling the LLM. Logs for audit.
   if (isSelfHarmMessage(latest.content)) {
-    logger.warn("chat_self_harm_safe_response", { userId: user?.id ?? "anonymous" });
+    logger.warn("chat_self_harm_safe_response", { userId: user.id });
     const encoder = new TextEncoder();
     const safeAnswer = SELF_HARM_SAFE_RESPONSE;
     // Persist the safe assistant response if possible so history remains consistent
     const body = new ReadableStream({
       async start(controller) {
         controller.enqueue(encoder.encode(safeAnswer));
-        if (supabase && conversationId) {
+        if (conversationId) {
           try {
             await supabase.from("chat_messages").insert({ conversation_id: conversationId, role: "assistant", content: safeAnswer });
             await supabase.from("chat_conversations").update({ updated_at: new Date().toISOString() }).eq("id", conversationId);
@@ -208,7 +211,7 @@ export async function POST(request: Request) {
     });
   }
 
-  const workspaceContext = await getLiveWorkspaceContext(user?.id);
+  const workspaceContext = await getLiveWorkspaceContext(user.id);
   let stream: AsyncGenerator<string>;
   const provider: Provider = "gemini";
   try {
@@ -230,7 +233,7 @@ export async function POST(request: Request) {
           answer += chunk;
           controller.enqueue(encoder.encode(chunk));
         }
-        if (supabase && conversationId && answer.trim()) {
+        if (conversationId && answer.trim()) {
           try {
             await supabase.from("chat_messages").insert({ conversation_id: conversationId, role: "assistant", content: answer.trim() });
             await supabase.from("chat_conversations").update({ updated_at: new Date().toISOString() }).eq("id", conversationId);

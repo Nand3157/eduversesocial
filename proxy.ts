@@ -70,6 +70,13 @@ export async function proxy(request: NextRequest) {
     loginUrl.searchParams.set("next", request.nextUrl.pathname + request.nextUrl.search);
     return mergeVary(NextResponse.redirect(loginUrl));
   }
+  // Email verification gate: signed-in but unverified users must verify
+  // before accessing the app. Supabase may issue a session before
+  // confirmation depending on project settings; the app enforces it here.
+  if (request.nextUrl.pathname.startsWith("/dashboard") && user && !user.email_confirmed_at) {
+    const verifyUrl = new URL("/verify-email", request.url);
+    return mergeVary(NextResponse.redirect(verifyUrl));
+  }
   if (csp) response.headers.set("Content-Security-Policy", csp);
   return mergeVary(response);
 }

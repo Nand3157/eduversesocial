@@ -28,10 +28,10 @@ export async function GET(request: NextRequest) {
   if (destination.pathname === "/reset-password") {
     response.cookies.set("pw_recovery", "1", {
       httpOnly: true,
-      sameSite: "lax",
+      sameSite: "strict",
       secure: process.env.NODE_ENV === "production",
       maxAge: 600,
-      path: "/"
+      path: "/reset-password",
     });
   }
   return response;
