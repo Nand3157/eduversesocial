@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
-import { getWorkspaceContext, EDUVERSE_SYSTEM_PROMPT } from "@/lib/ai/eduverse-prompt";
+import { getWorkspaceContext, EDUVERSE_SYSTEM_PROMPT, isSelfHarmMessage, SELF_HARM_SAFE_RESPONSE } from "@/lib/ai/eduverse-prompt";
 import { fetchMetaAnalytics } from "@/lib/meta-analytics";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
@@ -172,6 +172,40 @@ export async function POST(request: Request) {
       conversationId = undefined;
       persistenceUnavailable = true;
     }
+  }
+
+  // Self-harm safe completion: if latest user message signals distress, return
+  // a supportive, resource-rich response without calling the LLM. Logs for audit.
+  if (isSelfHarmMessage(latest.content)) {
+    logger.warn("chat_self_harm_safe_response", { userId: user?.id ?? "anonymous" });
+    const encoder = new TextEncoder();
+    const safeAnswer = SELF_HARM_SAFE_RESPONSE;
+    // Persist the safe assistant response if possible so history remains consistent
+    const body = new ReadableStream({
+      async start(controller) {
+        controller.enqueue(encoder.encode(safeAnswer));
+        if (supabase && conversationId) {
+          try {
+            await supabase.from("chat_messages").insert({ conversation_id: conversationId, role: "assistant", content: safeAnswer });
+            await supabase.from("chat_conversations").update({ updated_at: new Date().toISOString() }).eq("id", conversationId);
+          } catch (e) {
+            logger.warn("chat_safe_answer_persist_failed", { conversationId, reason: e instanceof Error ? e.message : "unknown" });
+          }
+        }
+        controller.close();
+      }
+    });
+    return new Response(body, {
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff",
+        "X-AI-Provider": "gemini",
+        "X-Self-Harm-Safe": "1",
+        "X-Chat-Persistence": persistenceUnavailable ? "unavailable" : "saved",
+        ...(conversationId ? { "X-Conversation-ID": conversationId } : {})
+      }
+    });
   }
 
   const workspaceContext = await getLiveWorkspaceContext(user?.id);
