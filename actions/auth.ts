@@ -3,10 +3,14 @@
 import { z } from "zod";
 import { redirect } from "next/navigation";
 import { cookies, headers } from "next/headers";
+import { createHash } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 
 const PASSWORD_MIN = 12;
+
+// --- Password strength rules (signup / reset only) ---
 const passwordSchema = z
   .string()
   .min(PASSWORD_MIN, `Use at least ${PASSWORD_MIN} characters`)
@@ -14,12 +18,77 @@ const passwordSchema = z
   .refine((v) => /[a-z]/.test(v) && /[A-Z]/.test(v) && /\d/.test(v), {
     message: "Include upper and lower case letters and a number",
   })
-  .refine((v) => !/\s/.test(v), { message: "Password cannot contain spaces" });
+  .refine((v) => !/\s/.test(v), { message: "Password cannot contain spaces" })
+  .refine((v) => !isCommonPassword(v), { message: "That password is too common — choose a harder one" });
 
-const credentialsSchema = z.object({ email: z.string().trim().email("Enter a valid email address"), password: passwordSchema });
+// Login accepts any password (existing users may have 8-char legacy passwords)
+const loginSchema = z.object({ email: z.string().trim().email("Enter a valid email address"), password: z.string().min(1, "Enter your password") });
 const signupSchema = z.object({ email: z.string().trim().email("Enter a valid email address"), password: passwordSchema });
 const emailSchema = z.object({ email: z.string().trim().email("Enter a valid email address") });
 const nameSchema = z.string().trim().min(1, "Enter your name").max(120).optional();
+
+// Top 30 breached/common passwords — blocks the worst choices instantly without a network call
+const COMMON_PASSWORDS = new Set([
+  "password",
+  "123456",
+  "123456789",
+  "qwerty",
+  "abc123",
+  "password123",
+  "admin",
+  "letmein",
+  "welcome",
+  "monkey",
+  "dragon",
+  "12345678",
+  "qwerty123",
+  "password1",
+  "123123",
+  "admin123",
+  "welcome123",
+  "iloveyou",
+  "princess",
+  "sunshine",
+  "football",
+  "1234",
+  "12345",
+  "000000",
+  "654321",
+  "charlie",
+  "aa123456",
+  "donald",
+  "password!",
+]);
+
+function isCommonPassword(v: string): boolean {
+  return COMMON_PASSWORDS.has(v.toLowerCase()) || /^(.)\1{5,}$/.test(v);
+}
+
+// HaveIBeenPwned k-anonymity check — SHA-1, send 5-char prefix, never full password/hash
+async function isPwnedPassword(password: string): Promise<boolean> {
+  // Skip in test or when explicitly disabled
+  if (process.env.DISABLE_PWNED_CHECK === "1") return false;
+  try {
+    const sha1 = createHash("sha1").update(password).digest("hex").toUpperCase();
+    const prefix = sha1.slice(0, 5);
+    const suffix = sha1.slice(5);
+    const res = await fetch(`https://api.pwnedpasswords.com/range/${prefix}`, {
+      headers: { "Add-Padding": "true" },
+      signal: AbortSignal.timeout(2500),
+      cache: "no-store",
+    });
+    if (!res.ok) {
+      logger.warn("pwned_check_unavailable", { status: res.status });
+      return false; // fail-open so HIBP downtime doesn't block signup
+    }
+    const body = await res.text();
+    // Body is newline-delimited Suffix:count ; padding lines may be present
+    return body.split("\n").some((line) => line.split(":")[0]?.trim().toUpperCase() === suffix);
+  } catch (e) {
+    logger.warn("pwned_check_failed", { reason: e instanceof Error ? e.message : "unknown" });
+    return false;
+  }
+}
 export type AuthResult = { error?: string; message?: string };
 
 async function clientIp(): Promise<string> {
@@ -35,7 +104,7 @@ async function clientIp(): Promise<string> {
 const RATE_LIMITED = "Too many attempts. Please try again later.";
 
 export async function signIn(_: AuthResult, formData: FormData): Promise<AuthResult> {
-  const parsed = credentialsSchema.safeParse(Object.fromEntries(formData));
+  const parsed = loginSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message };
   // Per-IP throttles credential spraying; the per-email key slows targeted
   // brute force even when it comes from rotating IP pools.
@@ -68,8 +137,15 @@ export async function signIn(_: AuthResult, formData: FormData): Promise<AuthRes
 export async function signUp(_: AuthResult, formData: FormData): Promise<AuthResult> {
   const parsed = signupSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message };
+  // Confirm-password check for signup (prevents typos locking users out)
+  const confirm = String(formData.get("confirmPassword") ?? "");
+  if (confirm && confirm !== parsed.data.password) return { error: "Passwords do not match" };
   if (!(await checkRateLimit(`signup:ip:${await clientIp()}`, 10, 60 * 60_000)).allowed) {
     return { error: RATE_LIMITED };
+  }
+  // Breached-password check (HaveIBeenPwned k-anonymity) — in-code, not just dashboard toggle
+  if (await isPwnedPassword(parsed.data.password)) {
+    return { error: "This password appeared in a data breach — choose a different one. See haveibeenpwned.com/Passwords" };
   }
   const name = nameSchema.safeParse(formData.get("name") ?? undefined);
   const supabase = await createClient();
@@ -102,6 +178,11 @@ export async function requestPasswordReset(_: AuthResult, formData: FormData): P
 export async function updatePassword(_: AuthResult, formData: FormData): Promise<AuthResult> {
   const password = passwordSchema.safeParse(formData.get("password"));
   if (!password.success) return { error: password.error.issues[0]?.message };
+  const confirm = String(formData.get("confirmPassword") ?? "");
+  if (confirm && confirm !== password.data) return { error: "Passwords do not match" };
+  if (await isPwnedPassword(password.data)) {
+    return { error: "This password appeared in a data breach — choose a different one. See haveibeenpwned.com/Passwords" };
+  }
   const supabase = await createClient();
   if (!supabase) return { error: "Supabase is not configured. Add the environment variables to enable authentication." };
   // The settings form verifies the current password before the change; the

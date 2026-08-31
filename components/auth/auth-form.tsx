@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useActionState, useEffect, useRef, useState } from "react";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Check, Eye, EyeOff, Loader2, X } from "lucide-react";
 import { signIn, signUp, requestPasswordReset, updatePassword, type AuthResult } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
 
@@ -37,6 +37,24 @@ export function AuthForm({ mode, next }: { mode: Mode; next?: string }) {
 
   // Optional show/hide for the password field — saves typos, costs nothing.
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [pwd, setPwd] = useState("");
+  const [confirmPwd, setConfirmPwd] = useState("");
+
+  const isSignupOrReset = mode === "signup" || mode === "reset";
+  const rules = isSignupOrReset
+    ? [
+        { label: "At least 12 characters", ok: pwd.length >= 12 },
+        { label: "Lowercase letter", ok: /[a-z]/.test(pwd) },
+        { label: "Uppercase letter", ok: /[A-Z]/.test(pwd) },
+        { label: "Number", ok: /\d/.test(pwd) },
+        { label: "No spaces", ok: pwd.length === 0 || !/\s/.test(pwd) },
+        { label: "Not a common password", ok: pwd.length < 3 || !["password", "123456", "qwerty", "abc123", "letmein", "welcome", "admin", "password123"].includes(pwd.toLowerCase()) },
+      ]
+    : [];
+  const strength = !pwd ? 0 : [pwd.length >= 12, /[a-z]/.test(pwd) && /[A-Z]/.test(pwd), /\d/.test(pwd), pwd.length >= 16, /[^A-Za-z0-9]/.test(pwd)].filter(Boolean).length;
+  const strengthLabel = ["", "Weak", "Fair", "Good", "Strong", "Very strong"][strength] ?? "";
+  const strengthColor = ["bg-transparent", "bg-danger", "bg-warning", "bg-warning", "bg-success", "bg-success"][strength] ?? "bg-transparent";
 
   return (
     <form ref={formRef} action={formAction} className="mt-7 space-y-4">
@@ -63,9 +81,6 @@ export function AuthForm({ mode, next }: { mode: Mode; next?: string }) {
       {hasPassword && (
         <label className="block text-sm font-medium text-mutedText">
           {mode === "reset" ? "New password" : "Password"}
-          {(mode === "signup" || mode === "reset") && (
-            <span className="block text-[11px] font-normal text-faintText">At least 12 characters — mix upper, lower and number.</span>
-          )}
           <span className="relative block">
             <input
               autoComplete={mode === "reset" ? "new-password" : mode === "signup" ? "new-password" : "current-password"}
@@ -76,6 +91,9 @@ export function AuthForm({ mode, next }: { mode: Mode; next?: string }) {
               pattern={mode === "login" ? undefined : "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{12,}$"}
               title={mode === "login" ? undefined : "At least 12 characters with upper, lower and number"}
               type={showPassword ? "text" : "password"}
+              value={hasPassword ? pwd : undefined}
+              onChange={hasPassword ? (e) => setPwd(e.target.value) : undefined}
+              aria-describedby={isSignupOrReset ? "pwd-rules" : undefined}
             />
             <button
               aria-label={showPassword ? "Hide password" : "Show password"}
@@ -87,6 +105,66 @@ export function AuthForm({ mode, next }: { mode: Mode; next?: string }) {
               {showPassword ? <EyeOff aria-hidden="true" className="h-4 w-4" /> : <Eye aria-hidden="true" className="h-4 w-4" />}
             </button>
           </span>
+          {isSignupOrReset && pwd.length > 0 && (
+            <span className="mt-2 flex items-center gap-1.5" aria-hidden="true">
+              <span className="flex flex-1 gap-1">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <span key={i} className={`h-1 flex-1 rounded-full transition-colors ${i < strength ? strengthColor : "bg-borderSoft"}`} />
+                ))}
+              </span>
+              <span className={`text-[11px] font-medium ${strength <= 2 ? "text-danger" : strength === 3 ? "text-warning" : "text-success"}`}>{strengthLabel}</span>
+            </span>
+          )}
+          {isSignupOrReset && (
+            <ul id="pwd-rules" className="mt-2 grid grid-cols-2 gap-1 text-[11px] leading-4">
+              {rules.map((r) => (
+                <li key={r.label} className={`flex items-center gap-1 ${r.ok ? "text-success" : "text-mutedText"}`}>
+                  {r.ok ? <Check aria-hidden="true" className="h-3 w-3 shrink-0" /> : <X aria-hidden="true" className="h-3 w-3 shrink-0 opacity-50" />}
+                  {r.label}
+                </li>
+              ))}
+              <li className="col-span-2 flex items-center gap-1 text-[11px] text-faintText">
+                <span className="h-1 w-1 rounded-full bg-faintText" aria-hidden="true" /> Checked against HaveIBeenPwned breach list on submit
+              </li>
+            </ul>
+          )}
+        </label>
+      )}
+      {isSignupOrReset && (
+        <label className="block text-sm font-medium text-mutedText">
+          Confirm password
+          <span className="relative block">
+            <input
+              autoComplete="new-password"
+              className={`${inputClass} pr-11 ${confirmPwd && confirmPwd !== pwd ? "border-danger focus-visible:border-danger focus-visible:ring-danger/40" : ""}`}
+              minLength={12}
+              name="confirmPassword"
+              required
+              type={showConfirm ? "text" : "password"}
+              value={confirmPwd}
+              onChange={(e) => setConfirmPwd(e.target.value)}
+              aria-describedby="confirm-help"
+            />
+            <button
+              aria-label={showConfirm ? "Hide password" : "Show password"}
+              aria-pressed={showConfirm}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-faintText transition hover:text-ink"
+              onClick={() => setShowConfirm((visible) => !visible)}
+              type="button"
+            >
+              {showConfirm ? <EyeOff aria-hidden="true" className="h-4 w-4" /> : <Eye aria-hidden="true" className="h-4 w-4" />}
+            </button>
+          </span>
+          <span id="confirm-help" className={`mt-1 block text-[11px] ${!confirmPwd ? "text-faintText" : confirmPwd === pwd ? "text-success" : "text-danger"}`}>
+            {!confirmPwd ? "Re-enter the same password" : confirmPwd === pwd ? "Passwords match" : "Passwords do not match"}
+          </span>
+        </label>
+      )}
+      {mode === "reset" && (
+        <label className="block text-sm font-medium text-mutedText">
+          Current password
+          <span className="block text-[11px] font-normal text-faintText">Skip if you arrived via the emailed reset link.</span>
+          <input autoComplete="current-password" className={inputClass} name="current" type="password" placeholder="Leave blank when using a recovery link" />
         </label>
       )}
       {mode === "login" && (
