@@ -390,8 +390,8 @@ export function ChatInterface() {
 
   return (
     <div className="grid min-h-[calc(100vh-150px)] overflow-hidden rounded-2xl border border-[#D6DFE8] bg-white shadow-sm dark:border-[#1F2A44] dark:bg-[#141E32] lg:grid-cols-[240px_1fr]">
-      {/* Sidebar - ice to match Atlas */}
-      <aside className="hidden border-r border-[#D6DFE8] bg-[#EEF3F9] p-4 dark:border-[#1F2A44] dark:bg-[#0E1424] lg:block">
+      {/* Sidebar - ice to match Atlas, with separation */}
+      <aside className="hidden border-r-2 border-[#D6DFE8] bg-[#F8FAFC] p-4 shadow-[inset_-1px_0_0_rgba(11,18,32,0.06)] dark:border-[#1F2A44] dark:bg-[#0E1424] lg:block">
         <Button
           className="w-full bg-ink text-background hover:bg-ink/90"
           onClick={() => {

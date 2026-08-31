@@ -161,18 +161,22 @@ export function DashboardHome() {
           <div className="catalog-card overflow-hidden flex flex-col h-full w-full">
             <div className="flex items-center justify-between gap-3 border-b border-[#D6DFE8] bg-[#EEF3F9] px-4 py-3 dark:bg-[#0E1424] dark:border-[#1F2A44]">
               <div className="flex items-center gap-2">
-                <span className="mono text-[10px] tracking-[0.14em] text-[#8A7D6B]">FAC 022 · TIMELINE</span>
-                <span className="h-1 w-1 rounded-full bg-[#D4A85A]" aria-hidden="true" />
-                <span className="text-sm font-semibold tracking-tight text-[#0B1220]">14-day engagement contour</span>
+                <span className="mono text-[10px] tracking-[0.14em] text-mutedText">FAC 022 · TIMELINE</span>
+                <span className="h-1 w-1 rounded-full bg-amber-500" aria-hidden="true" />
+                <span className="text-sm font-semibold tracking-tight text-ink">14-day engagement contour</span>
               </div>
             </div>
             <div className="p-3 sm:p-4 flex-1 flex flex-col min-h-[280px]"><EngagementChartCard /></div>
           </div>
         </div>
-          <Card className="catalog-card overflow-hidden border-[#D6DFE8] shadow-card flex flex-col h-full dark:border-[#1F2A44]">
-          <CardHeader className="bg-[#EEF3F9] border-b border-[#D6DFE8] px-4 py-3 dark:bg-[#0E1424] dark:border-[#1F2A44]"><CardTitle className="text-[#0B1220] text-[15px] dark:text-[#E6EEF6]">Channel telemetry</CardTitle><CardDescription className="text-[#6B7A9A] mono text-xs tracking-[0.04em]">Share across IG · FB · Threads</CardDescription></CardHeader>
-          <CardContent className="bg-white p-3 sm:p-4 dark:bg-[#141E32] flex-1 flex flex-col"><div className="flex-1 flex items-center"><PlatformBreakdownCard /></div></CardContent>
-        </Card>
+          <div className="catalog-card overflow-hidden flex flex-col h-full w-full">
+            <div className="flex items-center gap-2 border-b border-[#D6DFE8] bg-[#EEF3F9] px-4 py-3 dark:bg-[#0E1424] dark:border-[#1F2A44]">
+              <span className="mono text-[10px] tracking-[0.14em] text-mutedText">FAC 014 · TELEMETRY</span>
+              <span className="h-1 w-1 rounded-full bg-amber-500" aria-hidden="true" />
+              <span className="text-sm font-semibold tracking-tight text-ink">Channel telemetry</span>
+            </div>
+            <div className="bg-white p-3 sm:p-4 dark:bg-[#141E32] flex-1 flex flex-col min-h-[280px]"><div className="flex-1 flex items-center"><PlatformBreakdownCard /></div></div>
+          </div>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-3">
@@ -183,11 +187,15 @@ export function DashboardHome() {
 
       <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
         <div className="catalog-card overflow-hidden">
-          <div className="flex items-center justify-between gap-3 border-b border-[#D6DFE8] bg-[#EEF3F9] px-4 py-3">
-            <div className="flex items-center gap-2"><span className="mono text-[10px] tracking-[0.14em] text-[#8A7D6B]">FAC 041</span><h2 className="text-sm font-semibold tracking-tight text-[#0B1220]">Recommendations — pin to rail</h2></div>
-            {recommendations.length > 0 && <Badge className="rounded-full bg-[#1A140F] text-[#D4A85A] border border-[#2E2416] mono text-[10px] tracking-[0.10em]">READY TO PIN</Badge>}
+          <div className="flex items-center justify-between gap-3 border-b border-[#D6DFE8] bg-[#EEF3F9] px-4 py-3 dark:bg-[#0E1424] dark:border-[#1F2A44]">
+            <div className="flex items-center gap-2">
+              <span className="mono text-[10px] tracking-[0.14em] text-mutedText">FAC 041 · RECOMMENDATIONS</span>
+              <span className="h-1 w-1 rounded-full bg-amber-500" aria-hidden="true" />
+              <span className="text-sm font-semibold tracking-tight text-ink">Pin to rail</span>
+            </div>
+            {recommendations.length > 0 && <Badge className="rounded-full bg-ink text-background border border-borderSoft mono text-[10px] tracking-[0.10em]">READY TO PIN</Badge>}
           </div>
-          <div className="p-4 sm:p-5 space-y-4 bg-[#F7F3E8]">
+          <div className="p-4 sm:p-5 space-y-4 bg-white dark:bg-[#141E32]">
             {recommendations.length ? recommendations.map(([title, timing, detail], i) => (
               <div key={title} className="relative overflow-hidden rounded-[12px] border border-[#D6DFE8] bg-white p-4 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
                 <div className="absolute left-0 top-0 h-full w-1 bg-[#D4A85A]" aria-hidden="true" />
@@ -198,7 +206,7 @@ export function DashboardHome() {
                 <Button onClick={() => setPublisherModalOpen(true)} className="mt-3 rounded-full bg-[#1A140F] text-[#F7F3E8] hover:bg-[#232019] text-xs"><Sparkles aria-hidden="true" className="h-3.5 w-3.5" /> Generate draft & schedule</Button>
               </div>
             )) : (
-              <div className="rounded-[10px] border border-dashed border-[#DDD2B6] bg-white/60 p-5 mono text-xs leading-6 tracking-[0.04em] text-[#8A7D6B]">EDUVERSE DOES NOT INVENT RECOMMENDATIONS. ONCE META RETURNS ENOUGH HISTORY, A GROUNDED NEXT STEP IS PINNED HERE WITH A RED FLAG.</div>
+              <div className="rounded-[10px] border border-dashed border-[#D6DFE8] dark:border-[#1F2A44] bg-white dark:bg-[#1E293B] p-5 mono text-xs leading-6 tracking-[0.04em] text-mutedText">EDUVERSE DOES NOT INVENT RECOMMENDATIONS. ONCE META RETURNS ENOUGH HISTORY, A GROUNDED NEXT STEP IS PINNED HERE WITH A RED FLAG.</div>
             )}
           </div>
         </div>
@@ -208,7 +216,7 @@ export function DashboardHome() {
             <span className="mono text-[10px] tracking-[0.14em] text-[#8A7D6B]">FAC 022 · MEMORY</span>
             <span className="ml-auto mono text-[10px] tracking-[0.10em] text-[#5FB48A]">{memoryItems.length ? `${memoryItems.length} CARDS FILED` : "EMPTY DRAWER"}</span>
           </div>
-          <div className="flex-1 bg-[#F7F3E8] p-4 sm:p-5">
+          <div className="flex-1 bg-white dark:bg-[#141E32] p-4 sm:p-5">
             {memoryItems.length ? (
               <div className="space-y-3">
                 {memoryItems.map((item, index) => (
@@ -223,7 +231,7 @@ export function DashboardHome() {
                 ))}
               </div>
             ) : (
-              <div className="rounded-[10px] border border-dashed border-[#DDD2B6] bg-white/60 p-5 mono text-xs leading-6 tracking-[0.04em] text-[#8A7D6B]">AUDIENCE MEMORY FILES AFTER LIVE META CONTENT IS ANALYZED — EACH CARD IS A TYPED CATALOG ENTRY, NOT A GENERATED CLAIM.</div>
+              <div className="rounded-[10px] border border-dashed border-[#D6DFE8] dark:border-[#1F2A44] bg-white dark:bg-[#1E293B] p-5 mono text-xs leading-6 tracking-[0.04em] text-mutedText">AUDIENCE MEMORY FILES AFTER LIVE META CONTENT IS ANALYZED — EACH CARD IS A TYPED CATALOG ENTRY, NOT A GENERATED CLAIM.</div>
             )}
           </div>
         </div>
@@ -234,7 +242,7 @@ export function DashboardHome() {
           <div className="flex items-center gap-2"><span className="mono text-[10px] tracking-[0.14em] text-[#8A7D6B]">FAC 030 · LEDGER</span><span className="text-sm font-semibold tracking-tight text-[#0B1220]">Recent posts — telemetry ledger</span></div>
           <span className="mono text-[10px] tracking-[0.10em] text-[#8A7D6B]">{analytics?.recentPosts?.length ?? 0} ROWS</span>
         </div>
-        <div className="bg-[#F7F3E8] p-3 sm:p-4"><PostTable /></div>
+        <div className="bg-white dark:bg-[#141E32] p-3 sm:p-4"><PostTable /></div>
       </div>
     </div>
   );

@@ -30,8 +30,8 @@ function Section({ icon: Icon, title, children, id }: { icon: React.ElementType;
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-30 border-b border-borderSoft bg-background/85 backdrop-blur-xl">
+    <div className="min-h-screen bg-[#EEF3F9] dark:bg-[#0A0F1E]">
+      <header className="sticky top-0 z-30 border-b border-[#D6DFE8] dark:border-[#1F2A44] bg-white/85 dark:bg-[#0B1220]/85 backdrop-blur-xl">
         <div className="mx-auto flex h-[68px] max-w-5xl items-center justify-between px-5 sm:px-8">
           <Link href="/" className="inline-flex items-center gap-2.5">
             <span className="grid h-8 w-8 place-items-center rounded-full bg-primary text-background">
