@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, Clock3, Database, Eye, KeyRound, Lock, Mail, ShieldCheck, Trash2, Users } from "lucide-react";
+import { ArrowLeft, Bot, Clock3, Database, Eye, FileText, KeyRound, Lock, Mail, Share2, ShieldCheck, Sparkles, Trash2, Users } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/providers/theme-toggle";
@@ -9,10 +9,10 @@ import { SITE } from "@/lib/agentic/site";
 export const metadata: Metadata = {
   title: "Privacy Policy & Data Security",
   description:
-    "How EduVerse handles your Meta Graph data: permissions requested, how tokens are encrypted and stored, retention, revocation, and your rights.",
+    "How EduVerse collects user data, uses AI (Google Gemini), and shares data with third parties (Supabase, Meta, Google, Vercel): permissions requested, how tokens are encrypted and stored, retention, revocation, and your rights.",
 };
 
-const lastUpdated = "August 13, 2026";
+const lastUpdated = "August 31, 2026";
 
 function Section({ icon: Icon, title, children, id }: { icon: React.ElementType; title: string; children: React.ReactNode; id?: string }) {
   return (
@@ -75,10 +75,22 @@ export default function PrivacyPage() {
             <CardContent className="p-5">
               <p className="text-sm font-semibold text-ink">TL;DR — the 30-second version</p>
               <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-mutedText">
+                <li>
+                  <strong className="text-ink">We collect user data</strong> you provide (account, workspace, chat messages & images, posts, media)
+                  and data from Meta when you connect.
+                </li>
+                <li>
+                  <strong className="text-ink">We use AI</strong> — every chat message and a live analytics snapshot is sent to Google
+                  Gemini ({process.env.GEMINI_MODEL || "gemini-3.5-flash"}) to generate answers. No training on your data without consent.
+                </li>
+                <li>
+                  <strong className="text-ink">We share data with third parties only when needed:</strong> Supabase (database/auth/storage),
+                  Meta (Graph API), Google (Gemini), Vercel (hosting), and Upstash Redis (rate limiting, if configured).
+                </li>
                 <li>OAuth happens on Meta&apos;s screen — EduVerse never sees your Meta password.</li>
-                <li>Access tokens are encrypted with AES-256-GCM and are scoped to your workspace via Supabase RLS.</li>
+                <li>Access tokens are encrypted with AES-256-GCM and scoped to your workspace via Supabase RLS.</li>
                 <li>You can disconnect or revoke anytime from Settings or from Meta → Business integrations.</li>
-                <li>We never sell data and only call the Graph API your token authorizes.</li>
+                <li>We never sell data. See full details below.</li>
                 <li>
                   Try the <Link href="/demo" className="font-medium text-primary hover:underline">sandbox demo</Link> to preview without OAuth.
                 </li>
@@ -87,6 +99,86 @@ export default function PrivacyPage() {
           </Card>
 
           <div className="mt-10 grid gap-10">
+            <Section icon={FileText} title="Data we collect — what user data we collect" id="collect">
+              <p>
+                <strong className="font-semibold text-ink">We collect user data</strong> in three categories. We only collect what is needed to
+                run EduVerse and we never sell it.
+              </p>
+              <div className="grid gap-3">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">1. Information you provide directly</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0 text-xs leading-6 text-mutedText">
+                    <ul className="list-disc space-y-1 pl-4">
+                      <li>
+                        <strong className="text-ink">Account:</strong> email, display name, avatar URL, role, bio — from sign-up and your
+                        profile.
+                      </li>
+                      <li>
+                        <strong className="text-ink">Workspace content:</strong> workspace name/slug, posts and captions you draft, scheduled
+                        posts, media files you upload to the <code className="rounded bg-surface px-1 py-0.5">post-media</code> bucket, reviews
+                        you submit.
+                      </li>
+                      <li>
+                        <strong className="text-ink">Chat & memory:</strong> every message and optional image you send to Dashboard &gt; Chat,
+                        stored as <code className="rounded bg-surface px-1 py-0.5">chat_conversations</code> /{" "}
+                        <code className="rounded bg-surface px-1 py-0.5">chat_messages</code>, plus memory entries you save.
+                      </li>
+                      <li>
+                        <strong className="text-ink">Support:</strong> messages you send to {SITE.email} and phone inquiries to {SITE.phone}.
+                      </li>
+                    </ul>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">2. Information collected automatically</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0 text-xs leading-6 text-mutedText">
+                    <ul className="list-disc space-y-1 pl-4">
+                      <li>
+                        <strong className="text-ink">Usage & device:</strong> IP address (for rate limiting via{" "}
+                        <code className="rounded bg-surface px-1 py-0.5">x-forwarded-for</code>), browser, requested routes, and timestamps —
+                        used only for security and rate limits (<code className="rounded bg-surface px-1 py-0.5">chat: 60/min</code>,{" "}
+                        <code className="rounded bg-surface px-1 py-0.5">reviews: 5/min</code>).
+                      </li>
+                      <li>
+                        <strong className="text-ink">Cookies & storage:</strong> Supabase auth cookies (
+                        <code className="rounded bg-surface px-1 py-0.5">sb-auth-token</code>), OAuth state cookies (HttpOnly, SameSite=Lax,
+                        600–1,800s), and local app preferences. No third-party advertising cookies.
+                      </li>
+                      <li>
+                        <strong className="text-ink">Analytics cache:</strong> aggregated Graph insights copied into{" "}
+                        <code className="rounded bg-surface px-1 py-0.5">analytics_cache</code> for one day to avoid re-querying Meta on
+                        every page load.
+                      </li>
+                    </ul>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">3. Information from Meta when you connect</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0 text-xs leading-6 text-mutedText">
+                    <p>
+                      Only after you approve on Meta&apos;s consent screen: Facebook Pages you administer, linked Instagram Business accounts,
+                      Threads profile, and post/page insights (reach, engagement, impressions, saves) and media you authorize for publishing.
+                      Passwords and private messages are never requested.
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+              <p className="text-xs">
+                Legal basis (GDPR): performance of contract (provide EduVerse), legitimate interest (security, prevent abuse), and consent
+                (Meta connection, AI chat). You can request access/export or deletion at{" "}
+                <a href={`mailto:${SITE.email}`} className="font-medium text-primary hover:underline">
+                  {SITE.email}
+                </a>
+                .
+              </p>
+            </Section>
+
             <Section icon={Eye} title="What we access & why" id="access">
               <p>
                 When you click <strong className="font-semibold text-ink">Connect Facebook & Instagram</strong> or{" "}
@@ -173,6 +265,115 @@ export default function PrivacyPage() {
               </p>
             </Section>
 
+            <Section icon={Bot} title="How we use AI — we use AI to power chat" id="ai">
+              <p>
+                <strong className="font-semibold text-ink">We use AI</strong> (artificial intelligence) to provide the EduVerse Assistant in
+                Dashboard &gt; Chat and related content suggestions. Our provider is <strong className="font-semibold text-ink">Google</strong>{" "}
+                via the <code className="rounded bg-surface px-1 py-0.5">@google/genai</code> SDK, model{" "}
+                <code className="rounded bg-surface px-1 py-0.5">{process.env.GEMINI_MODEL || "gemini-3.5-flash"}</code> (configurable via{" "}
+                <code className="rounded bg-surface px-1 py-0.5">GEMINI_MODEL</code>).
+              </p>
+              <ul className="list-disc space-y-2 pl-5">
+                <li>
+                  <strong className="font-semibold text-ink">What is sent:</strong> your last up to 20 chat messages (text + optional
+                  base64 images, each truncated to 4 MB), plus a live workspace context snapshot: connected Meta account names/handles,
+                  follower counts, aggregated metrics, and recent post summaries from{" "}
+                  <code className="rounded bg-surface px-1 py-0.5">fetchMetaAnalytics()</code>. System instructions from{" "}
+                  <code className="rounded bg-surface px-1 py-0.5">lib/ai/eduverse-prompt.ts</code> are also included.
+                </li>
+                <li>
+                  <strong className="font-semibold text-ink">What is not sent:</strong> raw Meta access tokens, your password, or other
+                  workspaces&apos; data. Tokens never leave our server except to call the Meta Graph API directly.
+                </li>
+                <li>
+                  <strong className="font-semibold text-ink">Purpose & retention:</strong> solely to generate the assistant&apos;s reply for your
+                  request. Google&apos;s API processes the prompt transiently under its API terms; we do not allow training on your prompts
+                  without your explicit consent. Your chat history is stored in Supabase (
+                  <code className="rounded bg-surface px-1 py-0.5">chat_messages</code>) so you can revisit conversations — delete via
+                  Settings or by emailing {SITE.email}.
+                </li>
+                <li>
+                  <strong className="font-semibold text-ink">Human review & accuracy:</strong> AI output may be inaccurate or hallucinated.
+                  Do not rely on it for definitive analytics — the dashboard&apos;s live Meta metrics are the source of truth. We never claim a
+                  post was published or analyzed unless the Graph API returned that result.
+                </li>
+                <li>
+                  <strong className="font-semibold text-ink">How to opt out:</strong> simply do not use Dashboard &gt; Chat. All other features
+                  (analytics, scheduling, publishing) work without calling the AI provider. Contact {SITE.email} to request deletion of
+                  stored chat history.
+                </li>
+              </ul>
+              <p className="rounded-xl border border-borderSoft bg-surface px-4 py-3 text-xs">
+                Provider docs:{" "}
+                <a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noreferrer" className="font-medium text-primary hover:underline">
+                  Google Gemini API Terms
+                </a>{" "}
+                · Model and key are server-side only (<code className="rounded bg-surface px-1 py-0.5">GEMINI_API_KEY</code> never exposed to the
+                browser).
+              </p>
+            </Section>
+
+            <Section icon={Share2} title="Third parties we share data with" id="third-parties">
+              <p>
+                <strong className="font-semibold text-ink">We share data with third parties</strong> only as listed below and only to provide
+                EduVerse. We do not sell your data or share it for advertising.
+              </p>
+              <div className="overflow-x-auto rounded-xl border border-borderSoft">
+                <table className="w-full text-left text-xs leading-6">
+                  <thead className="bg-surface text-ink">
+                    <tr>
+                      <th className="px-3 py-2 font-semibold">Third party</th>
+                      <th className="px-3 py-2 font-semibold">Purpose</th>
+                      <th className="px-3 py-2 font-semibold">Data sent</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-borderSoft text-mutedText">
+                    <tr>
+                      <td className="px-3 py-2 font-medium text-ink">Supabase (Supabase, Inc.)</td>
+                      <td className="px-3 py-2">Database, authentication, and file storage (Postgres + Auth + Storage bucket post-media)</td>
+                      <td className="px-3 py-2">
+                        All account, workspace, chat, posts, analytics_cache rows, encrypted tokens, and uploaded media. Hosted per{" "}
+                        <code className="rounded bg-surface px-1 py-0.5">NEXT_PUBLIC_SUPABASE_URL</code>.
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="px-3 py-2 font-medium text-ink">Meta Platforms, Inc. (Graph API)</td>
+                      <td className="px-3 py-2">Fetch insights and publish on your behalf when you approve</td>
+                      <td className="px-3 py-2">
+                        Page-scoped access tokens, page/profile IDs, caption/media URLs, and publish requests to{" "}
+                        <code className="rounded bg-surface px-1 py-0.5">graph.facebook.com / {process.env.META_GRAPH_VERSION || "v26.0"}</code>.
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="px-3 py-2 font-medium text-ink">Google LLC (Google Gemini)</td>
+                      <td className="px-3 py-2">AI chat completion</td>
+                      <td className="px-3 py-2">
+                        Chat messages, optional images (inlineData), and live analytics snapshot (see AI section). Via{" "}
+                        <code className="rounded bg-surface px-1 py-0.5">@google/genai</code>.
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="px-3 py-2 font-medium text-ink">Vercel Inc.</td>
+                      <td className="px-3 py-2">Hosting and edge delivery of the Next.js app</td>
+                      <td className="px-3 py-2">HTTP requests, IP, headers, and rendered pages (as hosting processor).</td>
+                    </tr>
+                    <tr>
+                      <td className="px-3 py-2 font-medium text-ink">Upstash, Inc. (optional)</td>
+                      <td className="px-3 py-2">Distributed rate limiting, if configured</td>
+                      <td className="px-3 py-2">
+                        Rate-limit counters (<code className="rounded bg-surface px-1 py-0.5">eduverse:rl:*</code>) with IPs/keys hashed — only
+                        when <code className="rounded bg-surface px-1 py-0.5">UPSTASH_REDIS_REST_URL</code> is set; otherwise in-memory fallback.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-xs">
+                All processors are bound by their terms and, where required, a DPA. Subprocessors may change; material changes will be noted
+                in the version history below and, for active users, via email or in-app notice.
+              </p>
+            </Section>
+
             <Section icon={Database} title="What we store & where" id="storage">
               <ul className="list-disc space-y-2 pl-5">
                 <li>
@@ -246,10 +447,17 @@ export default function PrivacyPage() {
 
             <Section icon={Users} title="What we do not do" id="not-do">
               <ul className="list-disc space-y-1 pl-5">
-                <li>We do not sell, rent, or share your Meta data with third parties.</li>
+                <li>
+                  We do not sell or rent your data, and we do not share it with third parties beyond the five listed in{" "}
+                  <a href="#third-parties" className="font-medium text-primary hover:underline">
+                    Third parties we share data with
+                  </a>{" "}
+                  (Supabase, Meta, Google Gemini, Vercel, Upstash).
+                </li>
                 <li>We do not post without your explicit Publish / Schedule action.</li>
                 <li>We do not log raw tokens or place them in URLs, analytics, or error reports.</li>
                 <li>We do not invent metrics when Meta returns none — the dashboard shows an explicit empty state.</li>
+                <li>We do not train AI models on your content without explicit consent.</li>
               </ul>
             </Section>
 
@@ -281,10 +489,14 @@ export default function PrivacyPage() {
             <Card className="border-borderSoft bg-surface/50">
               <CardContent className="p-5 text-xs leading-6 text-mutedText">
                 <p className="font-semibold text-ink">Version history</p>
-                <p>
-                  {lastUpdated} — Added sandbox demo clarification and explicit encryption/RLS wording. Previous versions available on
-                  request at {SITE.email}.
-                </p>
+                <ul className="list-disc space-y-1 pl-4">
+                  <li>
+                    {lastUpdated} — Added explicit Data we collect, How we use AI (Google Gemini), and Third parties we share data with
+                    (Supabase, Meta, Google, Vercel, Upstash) disclosures to address audit findings.
+                  </li>
+                  <li>August 13, 2026 — Added sandbox demo clarification and explicit encryption/RLS wording.</li>
+                </ul>
+                <p className="mt-2">Previous versions available on request at {SITE.email}.</p>
               </CardContent>
             </Card>
           </div>
