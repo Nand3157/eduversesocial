@@ -93,11 +93,10 @@ export function AppShell({ children, email, profile }: { children: React.ReactNo
       {/* top brass plate */}
       <div className="shrink-0 border-b border-borderSoft bg-surface">
         <div className="flex items-center justify-between px-3 py-3.5">
-          <Link href="/dashboard" aria-label="EduVerse archive" className="flex items-center gap-3 overflow-hidden">
+          <Link href="/dashboard" aria-label="EduVerse" className="flex items-center gap-3 overflow-hidden">
             <img src="/icon.svg" alt="EduVerse" width={36} height={36} className="h-9 w-9 shrink-0 rounded-[9px] shadow-[0_1px_0_rgba(0,0,0,0.12)] object-cover" />
-            <span className={cn("overflow-hidden whitespace-nowrap transition-[clip-path,opacity] duration-300", collapsed ? "clip-path-[inset(0_100%_0_0)] opacity-0" : "opacity-100")}>
+            <span className={cn("overflow-hidden whitespace-nowrap flex items-center transition-[clip-path,opacity] duration-300", collapsed ? "clip-path-[inset(0_100%_0_0)] opacity-0" : "opacity-100")}>
               <span className="block font-display text-[15px] font-semibold tracking-tight leading-none">EduVerse</span>
-              <span className="mono text-[9px] tracking-[0.16em] text-faintText">ARCHIVE</span>
             </span>
           </Link>
           <button aria-label="Collapse cabinet" onClick={toggleSidebar} className="hidden h-8 w-8 place-items-center text-faintText hover:text-ink lg:grid">

@@ -29,17 +29,17 @@ export function DemoDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Demo banner */}
-      <Card className="border-warning/25 bg-warning/10">
-        <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+      {/* Demo banner — catalog-card style matching dashboard */}
+      <div className="catalog-card p-5 sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex gap-3">
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-warning/15 text-warning">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
               <Eye aria-hidden="true" className="h-4 w-4" />
             </span>
             <div>
               <p className="flex items-center gap-2 text-sm font-semibold text-ink">
                 Sandbox preview — simulated data
-                <Badge variant="warning" className="bg-warning/15 text-warning border-warning/20">Demo</Badge>
+                <Badge className="bg-amber-500 text-white border-0 mono text-[10px]">Demo</Badge>
               </p>
               <p className="mt-1 max-w-xl text-xs leading-relaxed text-mutedText">
                 This is a read-only mock dashboard so you can explore the layout before connecting Meta. Connect your own accounts to replace this with live Graph API data.
@@ -47,115 +47,137 @@ export function DemoDashboard() {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button asChild size="sm" className="bg-ink text-background hover:bg-ink/90">
+            <Button asChild size="sm" className="rounded-full bg-ink text-background hover:bg-ink/90">
               <Link href="/signup">
                 Create free account <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
               </Link>
             </Button>
-            <Button asChild size="sm" variant="secondary">
+            <Button asChild size="sm" variant="secondary" className="rounded-full">
               <Link href="/privacy">How data is handled</Link>
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Header */}
-      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
-        <div>
-          <div className="flex items-center gap-2 text-xs font-medium text-success">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" />
-            Demo workspace · no OAuth required
+      {/* Header — same as dashboard */}
+      <div className="flex flex-col justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-2 mono text-[10px] tracking-[0.14em] text-mutedText">
+          <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" aria-hidden="true" /> Demo workspace · no OAuth required</span>
+          <span className="h-3 w-px bg-borderSoft" aria-hidden="true" />
+          <span>ATLAS TABLE · SIMULATED</span>
+          <span className="h-3 w-px bg-borderSoft" aria-hidden="true" />
+          <span>{new Date().toLocaleDateString("en-GB", { day:"2-digit", month:"short", year:"numeric" }).toUpperCase()}</span>
+        </div>
+        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+          <div>
+            <h1 className="font-heading text-[28px] font-[600] tracking-tight leading-none text-ink sm:text-[36px]">
+              Good morning, <span className="text-primary">explorer.</span>
+            </h1>
+            <p className="mt-2 max-w-[60ch] text-sm leading-6 text-mutedText">This preview is populated with sample Meta analytics. Everything below becomes live after OAuth.</p>
           </div>
-          <h1 className="mt-2 font-heading text-3xl font-medium tracking-tight text-ink sm:text-4xl">Good morning, explorer.</h1>
-          <p className="mt-1.5 text-sm text-mutedText">This preview is populated with sample Meta analytics. Everything below becomes live after OAuth.</p>
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="primary" className="gap-1.5 rounded-full">
+              <Sparkles aria-hidden="true" className="h-3 w-3" /> Simulated Graph API
+            </Badge>
+            <Badge variant="success" className="gap-1.5 rounded-full">
+              <BadgeCheck aria-hidden="true" className="h-3 w-3" /> No tokens stored
+            </Badge>
+          </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Badge variant="primary" className="gap-1.5">
-            <Sparkles aria-hidden="true" className="h-3 w-3" /> Simulated Graph API
-          </Badge>
-          <Badge variant="success" className="gap-1.5">
-            <BadgeCheck aria-hidden="true" className="h-3 w-3" /> No tokens stored
-          </Badge>
+        <div className="brass-rule opacity-20" aria-hidden="true" />
+      </div>
+
+      {/* Metrics — punched windows like real dashboard */}
+      <div className="atlas-sheet overflow-hidden">
+        <div className="flex items-center gap-2 border-b border-[#D6DFE8] bg-[#EEF3F9] px-4 py-3 dark:bg-[#0E1424] dark:border-[#1F2A44]">
+          <span className="mono text-[10px] tracking-[0.14em] text-mutedText">TERRAIN READINGS · SIMULATED</span>
+          <span className="h-1 w-1 rounded-full bg-amber-500" aria-hidden="true" />
+          <span className="text-sm font-semibold tracking-tight text-ink">Demo metrics — sample data</span>
+        </div>
+        <div className="bg-[#F8FAFC] p-4 sm:p-5 dark:bg-[#0E1424]">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {snap.metrics.map((m) => (
+              <div key={m.label} className="catalog-card p-4">
+                <p className="mono text-[10px] tracking-[0.14em] text-mutedText">{m.label.toUpperCase()}</p>
+                <p className="mt-2 font-display text-[26px] font-[650] leading-none tracking-tight text-ink">
+                  <AnimatedNumber suffix={m.suffix} value={m.value} />
+                </p>
+                <p className="mt-1.5 mono text-[11px] tracking-[0.04em] text-success flex items-center gap-1.5"><span className="h-1 w-1 rounded-full bg-success" aria-hidden="true" />{m.detail}</p>
+                <p className="mt-1 mono text-[10px] tracking-[0.06em] text-faintText">Simulated · sample Graph data</p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Metrics */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {snap.metrics.map((m) => (
-          <Card key={m.label} className="transition-shadow hover:shadow-glow">
-            <CardContent className="p-5">
-              <p className="text-sm text-mutedText">{m.label}</p>
-              <p className="mt-2 font-display text-3xl font-medium tracking-tight text-ink">
-                <AnimatedNumber suffix={m.suffix} value={m.value} />
-              </p>
-              <p className="mt-2 text-xs font-medium text-success">{m.detail}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Charts */}
-      <div className="grid gap-5 xl:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Engagement over time</CardTitle>
-            <CardDescription>Simulated 14-day sample from Meta Graph API.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div role="img" aria-label="Area chart: engagement over the last 14 simulated days, with a comment-count overlay line." className="h-[280px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={snap.engagementData}>
-                  <defs>
-                    <linearGradient id="demo-engagement" x1="0" x2="0" y1="0" y2="1">
-                      <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.28} />
-                      <stop offset="95%" stopColor="var(--accent)" stopOpacity={0.02} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid stroke="var(--line)" strokeOpacity={0.5} vertical={false} />
-                  <XAxis dataKey="label" axisLine={false} tickLine={false} tick={axisTick} />
-                  <YAxis hide />
-                  <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: "var(--line)" }} />
-                  <Area dataKey="engagement" fill="url(#demo-engagement)" stroke="var(--accent)" strokeWidth={2.5} type="monotone" {...chartAnim} />
-                  <Line dataKey="comments" dot={false} stroke="var(--ok)" strokeWidth={2} type="monotone" {...chartAnim} />
-                </AreaChart>
-              </ResponsiveContainer>
+      {/* Charts — twin atlas sheets, aligned */}
+      <div className="grid gap-5 xl:grid-cols-3 items-stretch">
+        <div className="xl:col-span-2 flex">
+          <div className="catalog-card overflow-hidden flex flex-col h-full w-full">
+            <div className="flex items-center justify-between gap-3 border-b border-[#D6DFE8] bg-[#EEF3F9] px-4 py-3 dark:bg-[#0E1424] dark:border-[#1F2A44]">
+              <span className="mono text-[10px] tracking-[0.14em] text-mutedText">FAC 022 · TIMELINE</span>
+              <span className="text-sm font-semibold tracking-tight text-ink">Engagement over time</span>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Channel telemetry</CardTitle>
-            <CardDescription>Share of engagement across networks.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-5 lg:grid-cols-[220px_1fr] lg:items-center">
-              <div role="img" aria-label="Pie chart: share of engagement by network." className="h-[210px]">
+            <div className="p-3 sm:p-4 flex-1 flex flex-col min-h-[280px]">
+              <p className="mb-2 mono text-[11px] text-faintText">Simulated 14-day sample from Meta Graph API.</p>
+              <div role="img" aria-label="Area chart: engagement over the last 14 simulated days." className="flex-1 min-h-[220px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={snap.platformBreakdown} dataKey="value" innerRadius={54} outerRadius={82} paddingAngle={4} cx="50%" cy="50%" isAnimationActive={!reduceMotion}>
-                      {snap.platformBreakdown.map((entry, i) => (
-                        <Cell key={entry.name} fill={COLORS[i % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip contentStyle={tooltipStyle} />
-                  </PieChart>
+                  <AreaChart data={snap.engagementData}>
+                    <defs>
+                      <linearGradient id="demo-engagement" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.28} />
+                        <stop offset="95%" stopColor="var(--accent)" stopOpacity={0.02} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid stroke="var(--line)" strokeOpacity={0.5} vertical={false} />
+                    <XAxis dataKey="label" axisLine={false} tickLine={false} tick={axisTick} />
+                    <YAxis hide />
+                    <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: "var(--line)" }} />
+                    <Area dataKey="engagement" fill="url(#demo-engagement)" stroke="var(--accent)" strokeWidth={2.5} type="monotone" {...chartAnim} />
+                    <Line dataKey="comments" dot={false} stroke="var(--ok)" strokeWidth={2} type="monotone" {...chartAnim} />
+                  </AreaChart>
                 </ResponsiveContainer>
               </div>
-              <div className="grid gap-3">
-                {snap.platformBreakdown.map((p, i) => (
-                  <div key={p.name} className="flex items-center justify-between gap-3 text-sm">
-                    <span className="flex items-center gap-2 text-mutedText">
-                      <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                      {p.name}
-                    </span>
-                    <strong className="tabular-nums text-ink">{p.value}%</strong>
-                  </div>
-                ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="catalog-card overflow-hidden flex flex-col h-full dark:border-[#1F2A44]">
+          <div className="flex items-center gap-2 border-b border-[#D6DFE8] bg-[#EEF3F9] px-4 py-3 dark:bg-[#0E1424] dark:border-[#1F2A44]">
+            <span className="mono text-[10px] tracking-[0.14em] text-mutedText">FAC 014 · TELEMETRY</span>
+            <span className="text-sm font-semibold tracking-tight text-ink">Channel telemetry</span>
+          </div>
+          <div className="p-3 sm:p-4 flex-1 flex flex-col bg-white dark:bg-[#141E32]">
+            <p className="mono text-[11px] text-faintText">Share of engagement across networks.</p>
+            <div className="flex-1 min-h-[220px] grid place-items-center">
+              <div className="grid gap-5 lg:grid-cols-[200px_1fr] lg:items-center w-full">
+                <div role="img" aria-label="Pie chart: share of engagement by network." className="h-[180px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={snap.platformBreakdown} dataKey="value" innerRadius={48} outerRadius={72} paddingAngle={4} cx="50%" cy="50%" isAnimationActive={!reduceMotion}>
+                        {snap.platformBreakdown.map((entry, i) => (
+                          <Cell key={entry.name} fill={COLORS[i % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip contentStyle={tooltipStyle} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="grid gap-3">
+                  {snap.platformBreakdown.map((p, i) => (
+                    <div key={p.name} className="flex items-center justify-between gap-3 text-sm">
+                      <span className="flex items-center gap-2 text-mutedText">
+                        <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                        {p.name}
+                      </span>
+                      <strong className="tabular-nums text-ink">{p.value}%</strong>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-3">
@@ -231,7 +253,7 @@ export function DemoDashboard() {
               <CardTitle>Recommendation (simulated)</CardTitle>
               <CardDescription>How EduVerse turns live signals into a posting brief.</CardDescription>
             </div>
-            <Badge variant="success">Demo suggestion</Badge>
+            <Badge variant="success" className="rounded-full">Demo suggestion</Badge>
           </CardHeader>
           <CardContent className="space-y-5">
             {snap.recommendations.map(([title, timing, detail]) => (
@@ -242,12 +264,12 @@ export function DemoDashboard() {
                   <p className="mt-2 text-sm leading-relaxed text-mutedText">{detail}</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Button asChild className="bg-ink text-background hover:bg-ink/90">
+                  <Button asChild className="rounded-full bg-ink text-background hover:bg-ink/90">
                     <Link href="/signup">
                       <Sparkles aria-hidden="true" className="h-4 w-4" /> Sign up to generate your own
                     </Link>
                   </Button>
-                  <Button asChild variant="secondary">
+                  <Button asChild variant="secondary" className="rounded-full">
                     <Link href="/privacy">How recommendations use data</Link>
                   </Button>
                 </div>
@@ -300,13 +322,7 @@ export function DemoDashboard() {
               </thead>
               <tbody>
                 {snap.recentPosts.map((post, i) => (
-                  <motion.tr
-                    key={`${post.post}-${i}`}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.04 }}
-                    className="bg-surface text-mutedText"
-                  >
+                  <tr key={`${post.post}-${i}`} className="bg-surface text-mutedText">
                     <td className="rounded-l-xl px-3 py-3 font-medium text-ink">{post.platform}</td>
                     <td className="max-w-[280px] px-3 py-3 text-ink">{post.post}</td>
                     <td className="px-3 py-3 tabular-nums">{post.date}</td>
@@ -317,7 +333,7 @@ export function DemoDashboard() {
                     <td className="rounded-r-xl px-3 py-3">
                       <Badge variant="success">{post.status}</Badge>
                     </td>
-                  </motion.tr>
+                  </tr>
                 ))}
               </tbody>
             </table>
@@ -326,7 +342,7 @@ export function DemoDashboard() {
             <p className="text-xs leading-relaxed text-mutedText">
               Want this with your real posts? Connect Meta and your <span className="font-medium text-ink">reach, saves, and posting windows</span> populate automatically.
             </p>
-            <Button asChild size="sm" className="bg-primary text-background hover:bg-primary-strong">
+            <Button asChild size="sm" className="rounded-full bg-primary text-background hover:bg-primary-strong">
               <Link href="/signup">
                 Explore with your data <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
               </Link>
@@ -343,7 +359,7 @@ export function DemoDashboard() {
               Liked the preview? <strong className="text-ink">Create a free account</strong> and connect Meta for the live version. No credit card.
             </span>
           </div>
-          <Button asChild className="bg-ink text-background hover:bg-ink/90">
+          <Button asChild className="rounded-full bg-ink text-background hover:bg-ink/90">
             <Link href="/signup">Start free — no OAuth needed to peek</Link>
           </Button>
         </CardContent>

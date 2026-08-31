@@ -13,13 +13,11 @@ export const metadata: Metadata = {
 
 export default function DemoPage() {
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-30 border-b border-borderSoft bg-background/85 backdrop-blur-xl">
+    <div className="min-h-screen bg-[#EEF3F9] dark:bg-[#0A0F1E]">
+      <header className="sticky top-0 z-30 border-b border-[#D6DFE8] dark:border-[#1F2A44] bg-white/85 dark:bg-[#0B1220]/85 backdrop-blur-xl">
         <div className="mx-auto flex h-[68px] max-w-6xl items-center justify-between px-5 sm:px-8">
           <Link href="/" className="inline-flex items-center gap-2.5">
-            <span className="grid h-8 w-8 place-items-center rounded-full bg-primary text-background">
-              <Sparkles className="h-4 w-4" strokeWidth={2} />
-            </span>
+            <img src="/icon.svg" alt="EduVerse" width={32} height={32} className="h-8 w-8 rounded-[9px] shadow-sm object-cover" />
             <span className="font-display text-lg font-semibold tracking-tight text-ink">
               Edu<em className="font-normal text-primary">Verse</em>
             </span>
@@ -57,7 +55,7 @@ export default function DemoPage() {
         <DemoDashboard />
       </main>
 
-      <footer className="border-t border-borderSoft bg-surface px-5 py-8 sm:px-8">
+      <footer className="border-t border-[#D6DFE8] dark:border-[#1F2A44] bg-white dark:bg-[#0B1220] px-5 py-8 sm:px-8">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 text-xs text-mutedText sm:flex-row">
           <p>Demo uses synthetic data inspired by real Meta Graph API shapes. Connect your accounts for live numbers.</p>
           <div className="flex gap-4">
