@@ -39,6 +39,25 @@ export async function DELETE() {
       await service.from("workspace_members").delete().eq("workspace_id", workspaceId);
       await service.from("workspaces").delete().eq("id", workspaceId);
     }
+    // Purge user-uploaded objects from post-media so storage does not retain
+    // files after account deletion as promised in /privacy. Bucket uses
+    // path uploads/<userId>/<uuid>.<ext> — delete all under that prefix.
+    try {
+      const prefix = `uploads/${user.id}`;
+      const { data: listed } = await service.storage.from("post-media").list(prefix, { limit: 1000 });
+      if (listed && listed.length > 0) {
+        const paths = listed.map((o) => `${prefix}/${o.name}`).filter((p) => !p.endsWith("/"));
+        if (paths.length > 0) await service.storage.from("post-media").remove(paths);
+      }
+      // Also scrub any legacy uploads under user id without subfolder (defense in depth)
+      const { data: rootListed } = await service.storage.from("post-media").list("uploads", { limit: 1000 });
+      if (rootListed) {
+        const stray = rootListed.filter((o) => o.name.startsWith(user.id)).map((o) => `uploads/${o.name}`);
+        if (stray.length > 0) await service.storage.from("post-media").remove(stray).catch(() => undefined);
+      }
+    } catch (e) {
+      logger.warn("account_delete_storage_purge_failed", { userId: user.id, reason: e instanceof Error ? e.message : "unknown" });
+    }
     await service.from("profiles").delete().eq("id", user.id);
     // Supabase auth user deletion via admin API
     const { error: adminErr } = await service.auth.admin.deleteUser(user.id);

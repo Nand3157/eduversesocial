@@ -400,8 +400,9 @@ export default function PrivacyPage() {
               </ul>
               <p>
                 All tables are protected by RLS. Data is stored in Supabase Postgres; uploaded media for publishing goes to the{" "}
-                <code className="rounded bg-surface px-1.5 py-0.5">post-media</code> Storage bucket (public read, owner-scoped write:{" "}
-                <code className="rounded bg-surface px-1.5 py-0.5">foldername(name)[1] = auth.uid()</code>).
+                <code className="rounded bg-surface px-1.5 py-0.5">post-media</code> Storage bucket (private by default, owner-scoped read/write:{" "}
+                <code className="rounded bg-surface px-1.5 py-0.5">foldername(name)[1] = auth.uid()</code>; media is shared with Meta only via
+                time-limited signed URLs, not public bucket listing).
               </p>
             </Section>
 
@@ -491,7 +492,11 @@ export default function PrivacyPage() {
                 <p className="font-semibold text-ink">Version history</p>
                 <ul className="list-disc space-y-1 pl-4">
                   <li>
-                    {lastUpdated} — Added explicit Data we collect, How we use AI (Google Gemini), and Third parties we share data with
+                    {lastUpdated} — Fixed storage deletion (purge post-media on account delete), made post-media bucket private (signed URLs),
+                    and clarified testimonials are verified-only with no synthetic placeholders.
+                  </li>
+                  <li>
+                    August 31, 2026 — Added explicit Data we collect, How we use AI (Google Gemini), and Third parties we share data with
                     (Supabase, Meta, Google, Vercel, Upstash) disclosures to address audit findings.
                   </li>
                   <li>August 13, 2026 — Added sandbox demo clarification and explicit encryption/RLS wording.</li>

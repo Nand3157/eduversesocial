@@ -640,10 +640,16 @@ export function LandingPage() {
           </motion.div>
         </section>
 
-        {/* SELECTS — reviews as pinned Polaroids */}
+        {/* SELECTS — reviews as pinned Polaroids — verified only, no synthetic testimonials */}
         <section id="proof" className="mx-auto max-w-[1280px] px-5 sm:px-8 py-12 sm:py-16">
           <div className="flex flex-wrap items-end justify-between gap-4">
-            <h2 className="font-display text-[30px] font-[700] leading-[0.98] tracking-[-0.03em] sm:text-[36px]">Selects — kept frames.</h2>
+            <div>
+              <h2 className="font-display text-[30px] font-[700] leading-[0.98] tracking-[-0.03em] sm:text-[36px]">Selects — kept frames.</h2>
+              <p className="mt-1 text-xs leading-relaxed text-mutedText">
+                Verified user reviews only — moderated before publication. No synthetic, AI-generated, or paid testimonials. Every card below
+                was submitted via the form on this page and approved by a human moderator.
+              </p>
+            </div>
             {reviews.length > 0 && (
               <p className="text-sm font-mono tracking-widest text-mutedText">
                 {reviews.length} SELECTS · {(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)} AVG
@@ -665,8 +671,10 @@ export function LandingPage() {
             ) : reviews.length === 0 ? (
               <div className="col-span-full rounded-2xl border border-dashed border-borderSoft bg-surface p-10 text-center">
                 <Star className="mx-auto h-6 w-6 text-faintText" />
-                <p className="mt-3 font-display font-medium">No selects yet.</p>
-                <p className="mt-1 text-sm text-mutedText">Be the first to leave a kept frame.</p>
+                <p className="mt-3 font-display font-medium">No selects yet — no fake placeholders.</p>
+                <p className="mt-1 text-sm text-mutedText">
+                  We never show synthetic testimonials. Be the first to leave a verified kept frame — it appears here only after moderation.
+                </p>
               </div>
             ) : (
               reviews.slice(0, 3).map((review) => (

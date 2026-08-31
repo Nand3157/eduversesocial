@@ -65,6 +65,9 @@ export async function POST(request: Request) {
     .upload(path, buffer, { contentType: mime, upsert: false });
   if (error) return NextResponse.json({ success: false, message: "Could not store the image." }, { status: 500 });
 
-  const { data: publicUrl } = supabase.storage.from("post-media").getPublicUrl(path);
-  return NextResponse.json({ success: true, url: publicUrl.publicUrl });
+  // Bucket is private (public=false) — issue a long-lived signed URL so Meta
+  // can fetch the media via URL token, without exposing the bucket publicly.
+  const { data: signed } = await supabase.storage.from("post-media").createSignedUrl(path, 60 * 60 * 24 * 365);
+  const url = signed?.signedUrl ?? supabase.storage.from("post-media").getPublicUrl(path).data.publicUrl;
+  return NextResponse.json({ success: true, url });
 }
