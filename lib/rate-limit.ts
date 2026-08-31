@@ -79,8 +79,23 @@ async function upstashRateLimit(key: string, limit: number, windowMs: number): P
 }
 
 export async function checkRateLimit(key: string, limit = 10, windowMs = 60_000): Promise<RateLimitResult> {
+  const config = upstashConfig();
   const distributed = await upstashRateLimit(key, limit, windowMs);
-  return distributed ?? memoryRateLimit(key, limit, windowMs);
+  if (distributed) return distributed;
+  // Production with Upstash must not fall back to per-isolate memory (bypassable via burst).
+  // Fail closed so quota burn is safe; dev/test falls back to memory so tests still pass.
+  if (config) {
+    if (process.env.NODE_ENV === "production") {
+      logger.error("rate_limit_degraded_fail_closed", { key });
+      return { allowed: false, remaining: 0 };
+    }
+    logger.warn("rate_limit_redis_unavailable_falling_back_to_memory", { key });
+    return memoryRateLimit(key, limit, windowMs);
+  }
+  if (process.env.NODE_ENV === "production") {
+    logger.warn("rate_limit_no_upstash_falling_back_to_memory", { key });
+  }
+  return memoryRateLimit(key, limit, windowMs);
 }
 
 /** Number of tracked keys in the in-memory fallback; exposed for tests. */

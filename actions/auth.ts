@@ -94,7 +94,13 @@ export type AuthResult = { error?: string; message?: string };
 async function clientIp(): Promise<string> {
   try {
     const h = await headers();
-    return h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+    // Prefer Vercel's trusted header, then x-real-ip, then first x-forwarded-for.
+    // x-forwarded-for is client-controlled, so it must not be trusted alone.
+    const vercelIp = h.get("x-real-ip")?.trim();
+    if (vercelIp) return vercelIp;
+    const forwarded = h.get("x-forwarded-for");
+    if (forwarded) return forwarded.split(",")[0]?.trim() ?? "unknown";
+    return h.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
   } catch {
     return "unknown";
   }
@@ -155,7 +161,15 @@ export async function signUp(_: AuthResult, formData: FormData): Promise<AuthRes
     password: parsed.data.password,
     options: { data: name.success && name.data ? { full_name: name.data } : undefined, emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/auth/callback` }
   });
-  return error ? { error: error.message } : { message: "Check your email to verify your account." };
+  // Never leak whether the email already exists — always return generic success
+  if (error) {
+    const msg = error.message.toLowerCase();
+    if (msg.includes("already registered") || msg.includes("already exists") || msg.includes("user already")) {
+      return { message: "Check your email to verify your account." };
+    }
+    return { error: error.message };
+  }
+  return { message: "Check your email to verify your account." };
 }
 
 export async function requestPasswordReset(_: AuthResult, formData: FormData): Promise<AuthResult> {

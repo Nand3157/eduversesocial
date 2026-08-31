@@ -80,8 +80,11 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
   if (!user) return Response.json({ success: false, errorCode: "META_AUTH_ERROR", message: "Sign in required." }, { status: 401 });
 
-  if (!(await checkRateLimit(`hook:${user.id}`, 15, 60_000)).allowed) {
+  if (!(await checkRateLimit(`hook:${user.id}`, 10, 60_000)).allowed) {
     return Response.json({ success: false, errorCode: "META_RATE_LIMIT", message: "Too many requests. Try again shortly." }, { status: 429 });
+  }
+  if (!(await checkRateLimit(`hook:daily:${user.id}`, 100, 24 * 60 * 60 * 1000)).allowed) {
+    return Response.json({ success: false, errorCode: "META_RATE_LIMIT", message: "Daily hook limit reached (100/day). Try again tomorrow." }, { status: 429 });
   }
 
   const apiKey = process.env.GEMINI_API_KEY;

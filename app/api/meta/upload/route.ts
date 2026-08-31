@@ -41,8 +41,20 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ success: false, message: "Sign in required." }, { status: 401 });
 
-  const rate = await checkRateLimit(`upload:${user.id}`, 30, 60_000);
+  const rate = await checkRateLimit(`upload:${user.id}`, 15, 60_000);
   if (!rate.allowed) return NextResponse.json({ success: false, message: "Too many uploads. Try again shortly." }, { status: 429 });
+  if (!(await checkRateLimit(`upload:daily:${user.id}`, 100, 24 * 60 * 60 * 1000)).allowed) {
+    return NextResponse.json({ success: false, message: "Daily upload limit reached (100/day). Try again tomorrow." }, { status: 429 });
+  }
+  // Per-workspace storage quota — prevent 200GB overnight via 4MB loops
+  const { data: member } = await supabase.from("workspace_members").select("workspace_id").eq("user_id", user.id).limit(1).maybeSingle();
+  if (member) {
+    const { count } = await supabase.from("scheduled_posts").select("id", { count: "exact", head: true }).eq("workspace_id", member.workspace_id);
+    // lightweight head count guards DB bloat; full storage quota checked via storage.list head
+    if (count !== null && count > 1000) {
+      return NextResponse.json({ success: false, message: "Workspace limit reached (1000 posts). Delete old posts before uploading more." }, { status: 429 });
+    }
+  }
 
   const match = parsed.data.image.match(/^data:([^;]+);base64,(.*)$/);
   if (!match) return NextResponse.json({ success: false, message: "Invalid image data." }, { status: 400 });

@@ -158,7 +158,8 @@ export async function POST(request: Request) {
   // Email verification gate matches proxy.ts/dashboard/layout.tsx
   if (!user.email_confirmed_at) return Response.json({ error: "Verify your email to use chat." }, { status: 403 });
   const rateKey = user.id;
-  if (!(await checkRateLimit(`chat:${rateKey}`, 60, 60_000)).allowed) return Response.json({ error: "Too many requests. Please try again in a minute." }, { status: 429 });
+  if (!(await checkRateLimit(`chat:${rateKey}`, 20, 60_000)).allowed) return Response.json({ error: "Too many requests. Please try again in a minute." }, { status: 429 });
+  if (!(await checkRateLimit(`chat:daily:${rateKey}`, 200, 24 * 60 * 60 * 1000)).allowed) return Response.json({ error: "Daily chat limit reached (200/day). Try again tomorrow." }, { status: 429 });
 
   let conversationId: string | undefined;
   let persistenceUnavailable = false;

@@ -47,8 +47,11 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ success: false, errorCode: "META_AUTH_ERROR", message: "Sign in required." }, { status: 401 });
 
-  const rate = await checkRateLimit(`publish:${user.id}`, 20, 60_000);
+  const rate = await checkRateLimit(`publish:${user.id}`, 10, 60_000);
   if (!rate.allowed) return NextResponse.json({ success: false, errorCode: "META_RATE_LIMIT", message: "Too many publish requests. Try again shortly." }, { status: 429 });
+  if (!(await checkRateLimit(`publish:daily:${user.id}`, 100, 24 * 60 * 60 * 1000)).allowed) {
+    return NextResponse.json({ success: false, errorCode: "META_RATE_LIMIT", message: "Daily publish limit reached (100/day). Try again tomorrow." }, { status: 429 });
+  }
 
   const { data: member } = await supabase.from("workspace_members").select("workspace_id").eq("user_id", user.id).limit(1).maybeSingle();
   if (!member) return NextResponse.json({ success: false, errorCode: "META_ACCOUNT_ERROR", message: "Workspace unavailable." }, { status: 403 });

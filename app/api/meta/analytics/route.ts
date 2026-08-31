@@ -14,9 +14,12 @@ export async function GET(request: Request) {
   if (!user) return NextResponse.json({ success: false, live: false, error: "Sign in required." }, { status: 401 });
 
   // Authenticated and per-user rate limited — prevents both anon probing and
-  // per-IP bypass across serverless isolates.
-  if (!(await checkRateLimit(`analytics:${user.id}`, 30, 60_000)).allowed) {
+  // per-IP bypass across serverless isolates. Daily cap prevents Graph quota burn.
+  if (!(await checkRateLimit(`analytics:${user.id}`, 15, 60_000)).allowed) {
     return NextResponse.json({ success: false, live: false, error: "Too many requests. Try again shortly." }, { status: 429 });
+  }
+  if (!(await checkRateLimit(`analytics:daily:${user.id}`, 300, 24 * 60 * 60 * 1000)).allowed) {
+    return NextResponse.json({ success: false, live: false, error: "Daily analytics limit reached (300/day). Try again tomorrow." }, { status: 429 });
   }
 
   const bypassCache = new URL(request.url).searchParams.get("refresh") === "1";
