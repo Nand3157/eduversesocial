@@ -1,8 +1,8 @@
-@tailwind base;
+﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* — Edit Bay + Light Table — committed palette — */
+/* ΓÇö Edit Bay + Light Table ΓÇö committed palette ΓÇö */
 :root {
   color-scheme: light;
   --background: #F6F1E9;
@@ -73,7 +73,7 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-tap-highlight-c
 ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--muted) 45%, transparent); border-radius: 999px; border: 2px solid var(--background); }
 ::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--muted) 70%, transparent); }
 
-/* — Primitives for Edit Bay world — */
+/* ΓÇö Primitives for Edit Bay world ΓÇö */
 .sprocket-track {
   background-image:
     radial-gradient(circle at 50% 6px, var(--ink) 2.2px, transparent 2.4px),
@@ -201,7 +201,7 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-tap-highlight-c
 .text-balance { text-wrap: balance; }
 .text-pretty { text-wrap: pretty; }
 
-/* — Ambient glows restored from old design, re-tempered for Edit Bay — */
+/* ΓÇö Ambient glows restored from old design, re-tempered for Edit Bay ΓÇö */
 .hero-ambient {
   position: absolute;
   left: 50%; top: -320px;
@@ -278,7 +278,7 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-tap-highlight-c
 @keyframes aurora { 0% { transform: translate(-30%, -20%) rotate(0deg) scale(1); } 50% { transform: translate(10%, 10%) rotate(180deg) scale(1.1); } 100% { transform: translate(-30%, -20%) rotate(360deg) scale(1); } }
 .aurora-bg { animation: aurora 18s ease-in-out infinite; }
 
-/* — Inherited interactive helpers kept but re-tuned — */
+/* ΓÇö Inherited interactive helpers kept but re-tuned ΓÇö */
 .interactive-card {
   position: relative;
   overflow: hidden;
@@ -338,20 +338,20 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-tap-highlight-c
 ::view-transition-new(root) { animation: vt-in 0.32s cubic-bezier(0.16,1,0.3,1); }
 @keyframes vt-out { to { opacity: 0; transform: scale(0.985); } }
 @keyframes vt-in { from { opacity: 0; transform: translateY(8px) scale(0.985); } }
-/* — Site-wide hover & micro-interactions — galaxy/uiverse + magicui + react-bits + kokonutui + hyperui + eldora/indie/fancy/coss/shadcn — */
+/* ΓÇö Site-wide hover & micro-interactions ΓÇö galaxy/uiverse + magicui + react-bits + kokonutui + hyperui + eldora/indie/fancy/coss/shadcn ΓÇö */
 a { transition: color 150ms ease, opacity 150ms ease, text-decoration-color 150ms ease; }
 a:hover { opacity: 0.88; }
 button { transition: transform 160ms cubic-bezier(0.16,1,0.3,1), box-shadow 160ms ease, background-color 160ms ease, border-color 160ms ease, color 160ms ease; }
 button:hover:not(:disabled) { transform: translateY(-1px); }
 button:active:not(:disabled) { transform: translateY(0) scale(0.985); }
-/* cards, surfaces, stats — kokonutui/coss/react-bits Spotlight */
+/* cards, surfaces, stats ΓÇö kokonutui/coss/react-bits Spotlight */
 .card, [class*="rounded-"][class*="border"]:not(button):not(a) { transition: transform 200ms cubic-bezier(0.16,1,0.3,1), box-shadow 200ms ease, border-color 200ms ease; }
 .card:hover, [class*="rounded-"][class*="border"]:hover { transform: translateY(-2px); }
-/* inputs — indie-ui / shadcn focus (fancy) */
+/* inputs ΓÇö indie-ui / shadcn focus (fancy) */
 input, textarea, select { transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease; }
 input:hover, textarea:hover, select:hover { border-color: color-mix(in srgb, var(--ink) 16%, var(--line)); }
 input:focus, textarea:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
-/* uiverse galaxy — subtle button glow (eldoraui) */
+/* uiverse galaxy ΓÇö subtle button glow (eldoraui) */
 .bg-ink:hover, .bg-\[var\(--accent\)\]:hover { box-shadow: 0 4px 20px color-mix(in srgb, var(--accent) 18%, transparent); }
 .bg-surface:hover { border-color: color-mix(in srgb, var(--accent) 18%, var(--line)); }
 
@@ -359,3 +359,59 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); box-sha
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
   .dashboard-card { animation: none; }
 }
+
+/* Archive Atlas overlay - scoped to dashboard only, respects light/dark - Ink+Ice unified */
+.dashboard-canvas { position: relative; isolation: isolate; background: #EEF3F9; }
+.dark .dashboard-canvas { background: #0A0F1E; }
+.dashboard-canvas::before {
+  content:""; position:absolute; inset:0; z-index:-1; opacity:0.04;
+  background-image: linear-gradient(rgba(15,17,21,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(15,17,21,0.04) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(ellipse at center, black 42%, transparent 78%);
+}
+.dark .dashboard-canvas::before { opacity:0.04; background-image: linear-gradient(rgba(247,243,232,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(247,243,232,0.04) 1px, transparent 1px); }
+/* Ink + Ice — editorial: midnight #0B1220, ice #EEF3F9, amber #FFB43A */
+.dashboard-canvas .catalog-card {
+  background: #FFFFFF; color: #0B1220;
+  border: 1px solid #D6DFE8;
+  box-shadow: 0 1px 0 rgba(11,18,32,0.04), 0 10px 28px rgba(11,18,32,0.07), 0 0 0 1px rgba(11,18,32,0.04);
+  border-radius: 12px;
+}
+.dark .dashboard-canvas .catalog-card {
+  background: #141E32; color: #E6EEF6;
+  border-color: #1F2A44;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.32), 0 12px 28px rgba(0,0,0,0.42);
+}
+.dashboard-canvas .atlas-sheet {
+  background: #FFFFFF; color: #0B1220;
+  border: 1px solid #D6DFE8;
+  box-shadow: 0 1px 0 rgba(11,18,32,0.04), 0 20px 40px -16px rgba(11,18,32,0.10);
+  border-radius: 14px;
+}
+.dark .dashboard-canvas .atlas-sheet {
+  background: #141E32; color: #E6EEF6;
+  border-color: #1F2A44;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.32), 0 20px 40px -16px rgba(0,0,0,0.42);
+}
+.dashboard-canvas .catalog-card .text-on-card { color: #1A140F; }
+.dark .dashboard-canvas .catalog-card .text-on-card { color: #F7F3E8; }
+.dashboard-canvas .catalog-card .muted-on-card { color: #6B5E4A; }
+.dark .dashboard-canvas .catalog-card .muted-on-card { color: #B8AA8C; }
+/* tone down atlas headers inside ink dark — match Analytics muted palette */
+.dark .dashboard-canvas .bg-\[\#FFFCF2\] { background-color: #1E1A14 !important; }
+.dark .dashboard-canvas .bg-\[\#EEF3F9\] { background-color: #141E32 !important; }
+.dark .dashboard-canvas .bg-\[\#F7F3E8\] { background-color: #1A1E24 !important; }
+.dark .dashboard-canvas .bg-\[\#F8FAFC\] { background-color: #0E1424 !important; }
+.dark .dashboard-canvas .border-\[\#E8DFC6\] { border-color: #1F2A44 !important; }
+.dark .dashboard-canvas .border-\[\#D6DFE8\] { border-color: #1F2A44 !important; }
+.dark .dashboard-canvas .border-\[\#DDD2B6\] { border-color: #1F2A44 !important; }
+.dark .dashboard-canvas .text-\[\#0B1220\] { color: #E6EEF6 !important; }
+.dark .dashboard-canvas .text-\[\#1A140F\] { color: #E6EEF6 !important; }
+.dark .dashboard-canvas .text-\[\#4A5A6E\] { color: #8AA0BE !important; }
+.dark .dashboard-canvas .text-\[\#6B5E4A\] { color: #8AA0BE !important; }
+.dark .dashboard-canvas .text-\[\#8A7D6B\] { color: #6B7A9A !important; }
+.dark .dashboard-canvas .text-\[\#8A6A2A\] { color: #8AA0BE !important; }
+.dashboard-canvas .brass-rule { height:1px; background: linear-gradient(90deg, transparent, #FFB43A, transparent); opacity:0.45; }
+.dashboard-canvas { --accent: #FFB43A; }
+@keyframes pinPulse { 0%,100%{opacity:0.9;transform:scale(1)} 50%{opacity:1;transform:scale(1.06)} } .pin-pulse{animation:pinPulse 2.4s ease-in-out infinite}
+

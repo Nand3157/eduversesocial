@@ -36,8 +36,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#F6F1E9" },
-    { media: "(prefers-color-scheme: dark)", color: "#0F1115" }
+    { media: "(prefers-color-scheme: light)", color: "#12100E" },
+    { media: "(prefers-color-scheme: dark)", color: "#0E0C0A" }
   ]
 };
 
@@ -89,8 +89,8 @@ export default async function RootLayout({
         </Script>
       </head>
       <body className={`${sans.variable} ${display.variable} ${mono.variable}`}>
-        {/* THESIS: Your timeline is your memory — refuses warm-cream floating-card + hero-metric. OWN-WORLD: Ink #0F1115 + off-white #F6F1E9 + amber #FFB43A 40% committed; sprocket tape, light-table kraft, monitor bezel, KEPT grease, tally dot, mono timecode; Sora + Public Sans + JetBrains Mono; offset blur shadows. STORY: Solo creator sees live memory is indexed not invented, believes provenance via scrub, acts: sandbox or start free → connect. FIRST VIEWPORT: Timecode bar atop, ink bay split 60/40 — left light table 5 frames + 14-day playhead timeline, right loupe 168px detail + amber NEXT stamp; actions on stamp; headline 4.35rem. FORM: Edit Bay + Light Table #1/7 (Recorder, Light Table, Riso, Monitor, Pinboard, Control Wall, Notebook) seed 7c9ea9a5 user-pinned beats assigned Lab Notebook. FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance */}
-        <div dangerouslySetInnerHTML={{ __html: `<!-- THESIS: Your timeline is your memory — refuses warm-cream floating-card + hero-metric. OWN-WORLD: Ink #0F1115 + off-white #F6F1E9 + amber #FFB43A 40% committed; sprocket tape, light-table kraft, monitor bezel, KEPT grease, tally dot, mono timecode; Sora + Public Sans + JetBrains Mono. STORY: Solo creator sees live memory is indexed not invented, believes provenance via scrub, acts: sandbox or start free → connect. FIRST VIEWPORT: Timecode bar atop, ink bay 60/40 — left 5-frame light table + 14-day playhead timeline, right 168px loupe + amber NEXT stamp; actions on stamp; headline 4.35rem. FORM: Edit Bay + Light Table #1/7 seed 7c9ea9a5 user-pinned beats assigned Lab Notebook. FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance -->` }} />
+        {/* THESIS: Archive is memory you can walk around — refuses KPI card wall + sprocket hero. OWN-WORLD: Walnut #12100E 45% + cream card #F7F3E8 + brass #D4A85A + cyan acetate 195° 12% + vermillion pin; walnut grain, linen, catalog typed card, acetate veil, brass hairline; JetBrains Mono fac + Sora display + Public Sans. STORY: Educator sees in 5 sec where audience terrain lies (atlas table), which acetate layers are live, what to pin next (recommendations on brass rail). FIRST VIEWPORT: Left catalog cabinet (drawer nav 236px), central atlas table 62% with acetate toggles + metric windows punched into table, right pin rail with recommendation flags; no hero metric. FORM: Archive Atlas #4/7 (Newsroom, Field Notebook, Telemetry, *Atlas Table*, Proofing, Herbarium, Patch Bay) seed 749e3fb6 assigned 4 — raised with Cape drape silhouette + Saville catalog code strip. FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance */}
+        <div dangerouslySetInnerHTML={{ __html: `<!-- THESIS: Archive is memory you can walk around — refuses KPI card wall + sprocket hero. OWN-WORLD: Walnut #12100E 45% + cream #F7F3E8 + brass #D4A85A + cyan acetate 12% + vermillion pin; walnut grain, linen, typed card, acetate veil, brass hairline. STORY: Educator sees terrain (atlas), layers, pinned next action. FIRST VIEWPORT: Catalog cabinet left, atlas table center with acetate toggles + punched metric windows, pin rail right. FORM: Archive Atlas #4/7 seed 749e3fb6 assigned 4 raised Cape+SAVILLE. FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance -->` }} />
         <ThemeProvider>
           <a href="#main-content" className="skip-link">
             Skip to content

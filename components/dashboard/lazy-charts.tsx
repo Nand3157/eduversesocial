@@ -31,5 +31,5 @@ export const SentimentTrendCard = dynamic(() => import("@/components/chart-card"
 });
 export const PlatformBreakdownCard = dynamic(() => import("@/components/chart-card").then((module) => module.PlatformBreakdownCard), {
   ssr: false,
-  loading: fallback
+  loading: tallFallback
 });
