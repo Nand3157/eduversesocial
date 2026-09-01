@@ -77,6 +77,7 @@ const exploreLinks = [
   { label: "How it works", href: "/#how" },
   { label: "Live Demo", href: "/demo" },
   { label: "Features", href: "/#features" },
+  { label: "Feedback", href: "/#feedback" },
   { label: "Pricing", href: "/#pricing" },
   { label: "FAQ", href: "/#faq" },
   { label: "Sign in", href: "/login" },

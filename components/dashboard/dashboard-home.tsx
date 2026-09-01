@@ -155,9 +155,9 @@ export function DashboardHome() {
         </div>
       </div>
 
-      <div className="grid items-start gap-5 xl:grid-cols-3">
-        <div className="xl:col-span-2 flex">
-          <div className="catalog-card flex w-full flex-col overflow-hidden">
+      <div className="grid items-stretch gap-5 xl:grid-cols-3">
+        <div className="flex h-full xl:col-span-2">
+          <div className="catalog-card flex h-full w-full flex-col overflow-hidden">
             <div className="flex items-center justify-between gap-3 border-b border-[#D6DFE8] bg-[#EEF3F9] px-4 py-3 dark:bg-[#0E1424] dark:border-[#1F2A44]">
               <div className="flex items-center gap-2">
                 <span className="mono text-[10px] tracking-[0.14em] text-mutedText">FAC 022 · TIMELINE</span>
@@ -168,13 +168,13 @@ export function DashboardHome() {
             <div className="p-3 sm:p-4 flex-1 flex flex-col min-h-[280px]"><EngagementChartCard /></div>
           </div>
         </div>
-          <div className="catalog-card flex w-full flex-col overflow-hidden">
+          <div className="catalog-card flex h-full w-full flex-col overflow-hidden">
             <div className="flex items-center gap-2 border-b border-[#D6DFE8] bg-[#EEF3F9] px-4 py-3 dark:bg-[#0E1424] dark:border-[#1F2A44]">
               <span className="mono text-[10px] tracking-[0.14em] text-mutedText">FAC 014 · TELEMETRY</span>
               <span className="h-1 w-1 rounded-full bg-amber-500" aria-hidden="true" />
               <span className="text-sm font-semibold tracking-tight text-ink">Channel telemetry</span>
             </div>
-            <div className="flex flex-1 flex-col bg-white p-3 dark:bg-[#141E32] sm:p-4"><div className="flex w-full flex-1 items-center"><PlatformBreakdownCard /></div></div>
+            <div className="flex min-h-0 flex-1 flex-col bg-white p-3 dark:bg-[#141E32] sm:p-4"><div className="flex h-full w-full flex-1 items-center"><PlatformBreakdownCard className="h-full" /></div></div>
           </div>
       </div>
 

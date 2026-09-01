@@ -382,6 +382,8 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); box-sha
   border-color: #1F2A44;
   box-shadow: 0 1px 0 rgba(0,0,0,0.32), 0 12px 28px rgba(0,0,0,0.42);
 }
+/* The shell owns elevation; nested dashboard cards should not cast a second shadow. */
+.dashboard-canvas .catalog-card .dashboard-card { box-shadow: none; }
 .dashboard-canvas .atlas-sheet {
   background: #FFFFFF; color: #0B1220;
   border: 1px solid #D6DFE8;

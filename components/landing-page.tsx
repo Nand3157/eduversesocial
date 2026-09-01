@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { ArrowRight, Check, Eye, Lock, Menu, Star, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
@@ -10,6 +10,7 @@ import { FAQS } from "@/lib/agentic/faq";
 import { ThemeToggle } from "@/components/providers/theme-toggle";
 
 type Review = { id: string; name: string; role: string | null; rating: number; content: string; created_at: string; };
+const EMPTY_FEEDBACK = { name: "", role: "", rating: 5, content: "" };
 
 function Wordmark({ className }: { className?: string }) {
   return (
@@ -26,6 +27,9 @@ export function LandingPage() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(true);
+  const [feedbackForm, setFeedbackForm] = useState(EMPTY_FEEDBACK);
+  const [feedbackStatus, setFeedbackStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
+  const [feedbackMessage, setFeedbackMessage] = useState("");
   const reduceMotion = useReducedMotion();
   const [scrolled, setScrolled] = useState(false);
 
@@ -34,6 +38,32 @@ export function LandingPage() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  const submitFeedback = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setFeedbackStatus("submitting");
+    setFeedbackMessage("");
+
+    try {
+      const response = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...feedbackForm, rating: Number(feedbackForm.rating) }),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Feedback could not be sent right now.");
+      }
+
+      setFeedbackStatus("success");
+      setFeedbackMessage(data.message ?? "Thanks — your feedback is waiting for moderation.");
+      setFeedbackForm(EMPTY_FEEDBACK);
+    } catch (error) {
+      setFeedbackStatus("error");
+      setFeedbackMessage(error instanceof Error ? error.message : "Feedback could not be sent right now.");
+    }
+  };
 
   useEffect(() => {
     fetch("/api/reviews", { cache: "no-store" })
@@ -54,7 +84,7 @@ export function LandingPage() {
             {[
               ["How it works", "how"],
               ["Features", "features"],
-              ["Reviews", "proof"],
+              ["Feedback", "feedback"],
               ["FAQ", "faq"],
             ].map(([label, id]) => (
               <button key={id} onClick={() => scrollTo(id)} className="min-h-11 rounded-full px-3.5 py-2 text-[13px] font-medium text-mutedText transition-colors hover:bg-surface hover:text-ink">
@@ -79,7 +109,7 @@ export function LandingPage() {
           {mobileOpen && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden border-t border-[#D6DFE8] dark:border-[#1F2A44] bg-background lg:hidden">
               <div className="space-y-1 px-5 py-4">
-                {[["How it works","how"],["Features","features"],["Reviews","proof"],["FAQ","faq"]].map(([l,id]) => (
+                {[["How it works","how"],["Features","features"],["Feedback","feedback"],["FAQ","faq"]].map(([l,id]) => (
                   <button key={id} onClick={() => scrollTo(id)} className="block w-full rounded-xl px-3 py-3 text-left text-sm font-medium hover:bg-surface">{l}</button>
                 ))}
                 <Button asChild className="mt-2 w-full rounded-full bg-ink text-background"><Link href="/signup">Start free — no credit card</Link></Button>
@@ -241,30 +271,74 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* REVIEWS — restrained */}
-      <section id="proof" className="mx-auto max-w-[1280px] px-5 py-14 sm:px-8 sm:py-16">
+      {/* FEEDBACK — verified only */}
+      <section id="feedback" aria-labelledby="feedback-heading" className="mx-auto max-w-[1280px] scroll-mt-24 px-5 py-14 sm:px-8 sm:py-16">
         <div className="flex flex-wrap items-end justify-between gap-4">
-          <h2 className="font-display text-[28px] font-[700] tracking-[-0.03em] sm:text-[32px]">Selects — kept frames.</h2>
-          <span className="font-mono text-xs tracking-[0.12em] text-mutedText">{reviews.length ? `${reviews.length} SELECTS` : "Verified only — no fakes"}</span>
+          <h2 id="feedback-heading" className="font-display text-[28px] font-[700] tracking-[-0.03em] sm:text-[32px]">Feedback from early users.</h2>
+          <span className="font-mono text-xs tracking-[0.12em] text-mutedText">{reviews.length ? `${reviews.length} VERIFIED NOTES` : "No approved feedback yet"}</span>
         </div>
-        <div className="mt-6 grid gap-4 sm:grid-cols-3">
-          {(loadingReviews ? Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-[160px] animate-pulse rounded-2xl border border-[#D6DFE8] dark:border-[#1F2A44] bg-surface" />
-          )) : reviews.length ? reviews.slice(0,3).map((r) => (
-            <div key={r.id} className="rounded-2xl border border-[#D6DFE8] dark:border-[#1F2A44] bg-card p-5">
-              <div className="flex gap-0.5">{Array.from({ length: 5 }).map((_, i) => <Star key={i} className={`h-3 w-3 ${i < r.rating ? "fill-[var(--accent)] text-[var(--accent)]" : "text-faintText"}`} />)}</div>
-              <blockquote className="mt-3 text-sm leading-6 text-ink">“{r.content}”</blockquote>
-              <div className="mt-4 flex items-center gap-2 border-t border-[#D6DFE8] dark:border-[#1F2A44] pt-3">
-                <span className="grid h-8 w-8 place-items-center rounded-full bg-ink text-xs font-semibold text-background">{r.name.split(" ").map((n)=>n[0]).join("").slice(0,2)}</span>
-                <div><p className="text-sm font-medium leading-none text-ink">{r.name}</p><p className="text-xs text-mutedText">{r.role ?? "Creator"}</p></div>
+        <div className="mt-6 grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
+          <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
+            {(loadingReviews ? Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-[160px] animate-pulse rounded-2xl border border-[#D6DFE8] dark:border-[#1F2A44] bg-surface" />
+            )) : reviews.length ? reviews.slice(0,3).map((r) => (
+              <div key={r.id} className="rounded-2xl border border-[#D6DFE8] dark:border-[#1F2A44] bg-card p-5">
+                <div className="flex gap-0.5">{Array.from({ length: 5 }).map((_, i) => <Star key={i} className={`h-3 w-3 ${i < r.rating ? "fill-[var(--accent)] text-[var(--accent)]" : "text-faintText"}`} />)}</div>
+                <blockquote className="mt-3 text-sm leading-6 text-ink">“{r.content}”</blockquote>
+                <div className="mt-4 flex items-center gap-2 border-t border-[#D6DFE8] dark:border-[#1F2A44] pt-3">
+                  <span className="grid h-8 w-8 place-items-center rounded-full bg-ink text-xs font-semibold text-background">{r.name.split(" ").map((n)=>n[0]).join("").slice(0,2)}</span>
+                  <div><p className="text-sm font-medium leading-none text-ink">{r.name}</p><p className="text-xs text-mutedText">{r.role ?? "Creator"}</p></div>
+                </div>
               </div>
+              )) : (
+                <div className="rounded-2xl border border-dashed border-[#D6DFE8] bg-white p-8 text-center shadow-sm dark:border-[#1F2A44] dark:bg-[#141E32] lg:py-12">
+                  <p className="font-display text-base font-semibold tracking-tight text-ink">No feedback published yet.</p>
+                  <p className="mt-1.5 text-sm leading-6 text-mutedText">Approved feedback will appear here after moderation. We do not invent testimonials.</p>
+                </div>
+              ))}
+          </div>
+
+          <form onSubmit={submitFeedback} className="rounded-2xl border border-[#D6DFE8] bg-white p-6 shadow-sm dark:border-[#1F2A44] dark:bg-[#141E32] sm:p-7">
+            <p className="font-mono text-[11px] tracking-[0.16em] text-mutedText">SHARE YOUR EXPERIENCE</p>
+            <h3 className="mt-2 font-display text-xl font-semibold tracking-tight text-ink">Give feedback.</h3>
+            <p className="mt-2 text-sm leading-6 text-mutedText">Tell us what helped or what needs work. Submissions are moderated before they appear publicly.</p>
+
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              <label className="grid gap-1.5 text-sm font-medium text-ink">
+                Name
+                <input required maxLength={80} value={feedbackForm.name} onChange={(event) => setFeedbackForm((current) => ({ ...current, name: event.target.value }))} className="min-h-11 rounded-xl border border-[#D6DFE8] bg-background px-3.5 text-sm outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 dark:border-[#1F2A44]" />
+              </label>
+              <label className="grid gap-1.5 text-sm font-medium text-ink">
+                Role <span className="font-normal text-mutedText">(optional)</span>
+                <input maxLength={120} value={feedbackForm.role} onChange={(event) => setFeedbackForm((current) => ({ ...current, role: event.target.value }))} className="min-h-11 rounded-xl border border-[#D6DFE8] bg-background px-3.5 text-sm outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 dark:border-[#1F2A44]" />
+              </label>
             </div>
-            )) : (
-              <div className="col-span-3 mx-auto max-w-xl rounded-2xl border border-dashed border-[#D6DFE8] dark:border-[#1F2A44] bg-white dark:bg-[#141E32] p-8 text-center shadow-sm">
-                <p className="font-display text-base font-semibold tracking-tight text-ink">No selects yet — no fake placeholders.</p>
-                <p className="mt-1.5 text-sm leading-6 text-mutedText">Be the first verified kept frame — moderated before publication.</p>
+
+            <fieldset className="mt-5">
+              <legend className="text-sm font-medium text-ink">Rating</legend>
+              <div className="mt-2 flex gap-2" role="radiogroup" aria-label="Rating from one to five stars">
+                {[1, 2, 3, 4, 5].map((rating) => (
+                  <label key={rating} className="cursor-pointer">
+                    <input type="radio" name="rating" value={rating} checked={feedbackForm.rating === rating} onChange={() => setFeedbackForm((current) => ({ ...current, rating }))} className="peer sr-only" />
+                    <span className="grid h-10 w-10 place-items-center rounded-xl border border-[#D6DFE8] text-sm font-semibold text-mutedText transition peer-checked:border-[var(--accent)] peer-checked:bg-[var(--accent)]/10 peer-checked:text-ink hover:border-[var(--accent)] dark:border-[#1F2A44]">{rating}</span>
+                  </label>
+                ))}
               </div>
-            ))}
+            </fieldset>
+
+            <label className="mt-5 grid gap-1.5 text-sm font-medium text-ink">
+              Feedback
+              <textarea required maxLength={800} rows={5} value={feedbackForm.content} onChange={(event) => setFeedbackForm((current) => ({ ...current, content: event.target.value }))} className="resize-y rounded-xl border border-[#D6DFE8] bg-background px-3.5 py-3 text-sm leading-6 outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 dark:border-[#1F2A44]" />
+              <span className="text-right text-xs font-normal text-mutedText">{feedbackForm.content.length}/800</span>
+            </label>
+
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <Button type="submit" disabled={feedbackStatus === "submitting"} className="min-h-11 rounded-full bg-ink text-background hover:bg-ink/90">
+                {feedbackStatus === "submitting" ? "Sending…" : "Send feedback"} <ArrowRight className="h-4 w-4" />
+              </Button>
+              {feedbackMessage && <p role={feedbackStatus === "error" ? "alert" : "status"} className={cn("text-xs leading-5", feedbackStatus === "error" ? "text-red-600 dark:text-red-400" : "text-success")}>{feedbackMessage}</p>}
+            </div>
+          </form>
         </div>
       </section>
 
@@ -288,7 +362,7 @@ export function LandingPage() {
       </section>
 
       {/* FAQ — amber ? as designed, chevron — dark band, always */}
-      <section id="faq" className="bg-[#0B1220] px-5 py-14 sm:px-8 sm:py-16">
+      <section id="faq" className="scroll-mt-24 bg-[#0B1220] px-5 py-14 sm:px-8 sm:py-16">
         <div className="mx-auto grid max-w-[1280px] gap-8 lg:grid-cols-[0.9fr_1.1fr]">
           <div>
             <h2 className="font-display text-[28px] font-[700] tracking-[-0.03em] text-white sm:text-[32px]">Edit log — plainly.</h2>
