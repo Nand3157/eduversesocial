@@ -132,11 +132,11 @@ export function MetaConnectModal({ isOpen, onClose, onConnected }: MetaConnectMo
 
             <div aria-live="polite">
               {authRequired && (
-                <div className="flex items-start gap-2 rounded-xl border border-warning/30 bg-warning/10 p-4 text-xs leading-relaxed text-warning dark:text-amber-300">
+                <div className="flex items-start gap-2 rounded-xl border border-warning/30 bg-warning/10 p-4 text-xs leading-relaxed text-warning">
                   <AlertCircle aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
                   <div className="space-y-2">
                     <p className="font-semibold">Sign in required</p>
-                    <p className="text-warning/80 dark:text-amber-300/80">You need to be logged in to connect Meta accounts. Sign in first, then return here to connect.</p>
+                    <p className="text-warning/80">You need to be logged in to connect Meta accounts. Sign in first, then return here to connect.</p>
                     <a href="/login?next=/dashboard/settings" className="inline-flex items-center justify-center rounded-lg bg-ink px-4 py-2 text-xs font-semibold text-background hover:bg-ink/90">
                       Go to login
                     </a>

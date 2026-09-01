@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import Script from "next/script";
 import { Mail, Phone } from "lucide-react";
@@ -87,12 +88,12 @@ const exploreLinks = [
 
 function Footer() {
   return (
-    <footer className="relative overflow-hidden bg-[var(--surface-ink)] px-5 py-14 sm:px-8 text-white">
+    <footer className="landing-footer-shell relative overflow-hidden bg-[var(--surface-ink)] px-5 py-14 sm:px-8 text-white">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-3 sprocket-track opacity-20" aria-hidden />
       <div className="mx-auto grid max-w-[1280px] gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <div>
           <Link aria-label="EduVerse home" className="inline-flex items-center gap-3" href="/">
-            <img src="/icon.svg" alt="" width={36} height={36} className="h-9 w-9 rounded-[9px] object-cover ring-1 ring-white/10" />
+            <Image src="/icon.svg" alt="" width={36} height={36} className="h-9 w-9 rounded-[9px] object-cover ring-1 ring-white/10" />
             <span className="font-display text-lg font-semibold tracking-tight text-white">
               Edu<span className="font-normal text-[var(--accent)]">Verse</span>
             </span>

@@ -121,7 +121,7 @@ export default function ContentPage() {
         <ModalContent className="max-w-2xl">
           <ModalTitle>CSV Import Preview</ModalTitle>
           <ModalDescription>Parsed {csvPreview?.length ?? 0} rows. Content stays local until you publish. Max 50 rows per import.</ModalDescription>
-          {csvError && <div className="mt-4 rounded-xl border border-warning/30 bg-warning/10 p-3 text-xs text-warning-foreground dark:text-amber-200">{csvError}</div>}
+          {csvError && <div className="mt-4 rounded-xl border border-warning/30 bg-warning/10 p-3 text-xs text-warning">{csvError}</div>}
           {csvPreview && csvPreview.length > 0 ? (
             <>
               <div className="mt-4 max-h-72 overflow-auto rounded-xl border border-borderSoft">

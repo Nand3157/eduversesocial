@@ -494,7 +494,7 @@ export default function SettingsPage() {
         {/* Delete Account Card */}
         <Card className="border-danger/30">
           <CardContent className="flex gap-4 p-5">
-            <span aria-hidden="true" className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-danger/10 text-danger dark:bg-red-400/10">
+            <span aria-hidden="true" className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-danger/10 text-danger">
               <ShieldCheck className="h-5 w-5" />
             </span>
             <div>
@@ -603,7 +603,7 @@ export default function SettingsPage() {
           ) : (
             <form className="mt-4 space-y-4" onSubmit={handlePasswordSubmit}>
               {passwordError && (
-                <div role="alert" className="rounded-xl border border-danger/30 bg-danger/10 p-3 text-xs text-red-700 dark:border-red-400/20 dark:bg-red-400/10 text-danger">
+                <div role="alert" className="rounded-xl border border-danger/30 bg-danger/10 p-3 text-xs text-danger">
                   {passwordError}
                 </div>
               )}
@@ -833,7 +833,7 @@ export default function SettingsPage() {
                 autoCapitalize="off"
                 autoComplete="off"
                 spellCheck={false}
-                className="h-10 w-full rounded-xl border border-borderSoft bg-surface px-3 text-sm outline-none transition focus-visible:border-danger focus-visible:ring-2 focus-visible:ring-red-500/50 dark:border-borderSoft dark:bg-surface/[0.04]"
+              className="h-10 w-full rounded-xl border border-borderSoft bg-surface px-3 text-sm outline-none transition focus-visible:border-danger focus-visible:ring-2 focus-visible:ring-danger/50"
                 onChange={(e) => { setDeleteConfirmText(e.target.value); if (deleteError) setDeleteError(""); }}
                 placeholder="Type DELETE…"
                 value={deleteConfirmText}
