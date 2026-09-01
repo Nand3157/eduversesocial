@@ -32,13 +32,13 @@ export function DemoDashboard() {
       <div className="catalog-card p-5 sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex gap-3">
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-primary/25 bg-accent-soft text-primary">
               <Eye aria-hidden="true" className="h-4 w-4" />
             </span>
             <div>
               <p className="flex items-center gap-2 text-sm font-semibold text-ink">
                 Sandbox preview — simulated data
-                <Badge className="bg-amber-500 text-white border-0 mono text-[10px]">Demo</Badge>
+                <Badge className="border-0 bg-primary text-ink mono text-[10px]">Demo</Badge>
               </p>
               <p className="mt-1 max-w-xl text-xs leading-relaxed text-mutedText">
                 This is a read-only mock dashboard so you can explore the layout before connecting Meta. Connect your own accounts to replace this with live Graph API data.
@@ -65,7 +65,7 @@ export function DemoDashboard() {
           <span className="h-3 w-px bg-borderSoft" aria-hidden="true" />
           <span>ATLAS TABLE · SIMULATED</span>
           <span className="h-3 w-px bg-borderSoft" aria-hidden="true" />
-          <span>{new Date().toLocaleDateString("en-GB", { day:"2-digit", month:"short", year:"numeric" }).toUpperCase()}</span>
+          <span>{formatAtlasDate()}</span>
         </div>
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>
@@ -88,12 +88,12 @@ export function DemoDashboard() {
 
       {/* Metrics — punched windows like real dashboard */}
       <div className="atlas-sheet overflow-hidden">
-        <div className="flex items-center gap-2 border-b border-[#D6DFE8] bg-[#EEF3F9] px-4 py-3 dark:bg-[#0E1424] dark:border-[#1F2A44]">
+        <div className="flex items-center gap-2 border-b border-borderSoft bg-surface-muted px-4 py-3">
           <span className="mono text-[10px] tracking-[0.14em] text-mutedText">TERRAIN READINGS · SIMULATED</span>
-          <span className="h-1 w-1 rounded-full bg-amber-500" aria-hidden="true" />
+          <span className="h-1 w-1 rounded-full bg-primary" aria-hidden="true" />
           <span className="text-sm font-semibold tracking-tight text-ink">Demo metrics — sample data</span>
         </div>
-        <div className="bg-[#F8FAFC] p-4 sm:p-5 dark:bg-[#0E1424]">
+        <div className="bg-surface-muted p-4 sm:p-5">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {snap.metrics.map((m) => (
               <div key={m.label} className="catalog-card p-4">
@@ -113,7 +113,7 @@ export function DemoDashboard() {
       <div className="grid gap-5 xl:grid-cols-3 items-stretch">
         <div className="xl:col-span-2 flex">
           <div className="catalog-card overflow-hidden flex flex-col h-full w-full">
-            <div className="flex items-center justify-between gap-3 border-b border-[#D6DFE8] bg-[#EEF3F9] px-4 py-3 dark:bg-[#0E1424] dark:border-[#1F2A44]">
+            <div className="flex items-center justify-between gap-3 border-b border-borderSoft bg-surface-muted px-4 py-3">
               <span className="mono text-[10px] tracking-[0.14em] text-mutedText">FAC 022 · TIMELINE</span>
               <span className="text-sm font-semibold tracking-tight text-ink">Engagement over time</span>
             </div>
@@ -141,12 +141,12 @@ export function DemoDashboard() {
           </div>
         </div>
 
-        <div className="catalog-card overflow-hidden flex flex-col h-full dark:border-[#1F2A44]">
-          <div className="flex items-center gap-2 border-b border-[#D6DFE8] bg-[#EEF3F9] px-4 py-3 dark:bg-[#0E1424] dark:border-[#1F2A44]">
+        <div className="catalog-card flex h-full flex-col overflow-hidden">
+          <div className="flex items-center gap-2 border-b border-borderSoft bg-surface-muted px-4 py-3">
             <span className="mono text-[10px] tracking-[0.14em] text-mutedText">FAC 014 · TELEMETRY</span>
             <span className="text-sm font-semibold tracking-tight text-ink">Channel telemetry</span>
           </div>
-          <div className="p-3 sm:p-4 flex-1 flex flex-col bg-white dark:bg-[#141E32]">
+          <div className="flex flex-1 flex-col bg-card p-3 sm:p-4">
             <p className="mono text-[11px] text-faintText">Share of engagement across networks.</p>
             <div className="flex-1 min-h-[220px] grid place-items-center">
               <div className="grid gap-5 lg:grid-cols-[200px_1fr] lg:items-center w-full">
@@ -365,6 +365,11 @@ export function DemoDashboard() {
       </Card>
     </div>
   );
+}
+
+function formatAtlasDate() {
+  const [year, month, day] = new Date().toISOString().slice(0, 10).split("-");
+  return `${day} ${["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"][Number(month) - 1]} ${year}`;
 }
 
 // compact preview for landing page hero

@@ -6,22 +6,37 @@
 :root {
   color-scheme: light;
   --background: #EEF3F9;
+  --background-rgb: 238 243 249;
   --surface: #FFFFFF;
+  --surface-rgb: 255 255 255;
   --surface-muted: #E5EDF6;
+  --surface-muted-rgb: 229 237 246;
   --surface-ink: #0B1220;
+  --surface-ink-rgb: 11 18 32;
   --ink: #0B1220;
+  --ink-rgb: 11 18 32;
   --ink-soft: #1F2A44;
+  --ink-soft-rgb: 31 42 68;
   --muted: #516174;
+  --muted-rgb: 81 97 116;
   --faint: #64748B;
+  --faint-rgb: 100 116 139;
   --line: #D6DFE8;
+  --line-rgb: 214 223 232;
   --line-ink: #1F2A44;
+  --line-ink-rgb: 31 42 68;
   --accent: #FFB43A;
+  --accent-rgb: 255 180 58;
   --accent-strong: #E89B1C;
+  --accent-strong-rgb: 232 155 28;
   --accent-soft: rgba(255, 180, 58, 0.14);
   --accent-glow: rgba(255, 180, 58, 0.28);
   --ok: #177A4D;
+  --ok-rgb: 23 122 77;
   --warn: #E4532A;
+  --warn-rgb: 228 83 42;
   --bad: #C0392B;
+  --bad-rgb: 192 57 43;
   --shadow-soft: 0 1px 2px rgba(15,17,21,0.06), 0 14px 36px -18px rgba(15,17,21,0.18);
   --shadow-lift: 0 4px 16px rgba(15,17,21,0.08), 0 24px 48px -20px rgba(15,17,21,0.22);
   --shadow-ink: 0 8px 32px rgba(0,0,0,0.35), 0 2px 8px rgba(0,0,0,0.45);
@@ -30,20 +45,35 @@
 .dark {
   color-scheme: dark;
   --background: #0A0F1E;
+  --background-rgb: 10 15 30;
   --surface: #141E32;
+  --surface-rgb: 20 30 50;
   --surface-muted: #1B2941;
+  --surface-muted-rgb: 27 41 65;
   --surface-ink: #0A0F1E;
+  --surface-ink-rgb: 10 15 30;
   --ink: #E6EEF6;
+  --ink-rgb: 230 238 246;
   --ink-soft: #C8D7EA;
+  --ink-soft-rgb: 200 215 234;
   --muted: #A8B8CC;
+  --muted-rgb: 168 184 204;
   --faint: #8AA0BE;
+  --faint-rgb: 138 160 190;
   --line: #1F2A44;
+  --line-rgb: 31 42 68;
   --line-ink: #1F2A44;
+  --line-ink-rgb: 31 42 68;
   --accent: #FFB43A;
+  --accent-rgb: 255 180 58;
   --accent-strong: #FFC96B;
+  --accent-strong-rgb: 255 201 107;
   --accent-soft: rgba(255,180,58,0.16);
   --accent-glow: rgba(255,180,58,0.22);
   --ok: #67D9A0;
+  --ok-rgb: 103 217 160;
+  --warn-rgb: 228 83 42;
+  --bad-rgb: 192 57 43;
   --shadow-soft: 0 1px 2px rgba(0,0,0,0.4), 0 16px 40px -20px rgba(0,0,0,0.6);
   --shadow-lift: 0 4px 16px rgba(0,0,0,0.5), 0 28px 64px -24px rgba(0,0,0,0.7);
   --shadow-ink: 0 10px 40px rgba(0,0,0,0.6);
@@ -82,13 +112,6 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-tap-highlight-c
   background-size: 14px 100%;
   background-repeat: repeat-x;
 }
-.sprocket-track-light {
-  background-image:
-    radial-gradient(circle at 50% 5px, color-mix(in srgb, var(--ink) 18%, transparent) 1.8px, transparent 2px),
-    radial-gradient(circle at 50% calc(100% - 5px), color-mix(in srgb, var(--ink) 18%, transparent) 1.8px, transparent 2px);
-  background-size: 12px 100%;
-  background-repeat: repeat-x;
-}
 .scanline {
   background: repeating-linear-gradient(0deg, transparent 0px, transparent 2px, color-mix(in srgb, var(--ink) 6%, transparent) 3px);
 }
@@ -100,15 +123,6 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-tap-highlight-c
   overflow: hidden;
   pointer-events: none;
   background: radial-gradient(circle at 18% 22%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 32%), radial-gradient(circle at 82% 78%, color-mix(in srgb, var(--ok) 10%, transparent), transparent 34%);
-}
-.auth-scene-grid {
-  position: absolute;
-  inset: 0;
-  content: "";
-  opacity: 0.42;
-  background-image: linear-gradient(color-mix(in srgb, var(--ink) 5%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--ink) 5%, transparent) 1px, transparent 1px);
-  background-size: 46px 46px;
-  mask-image: radial-gradient(ellipse at center, black, transparent 78%);
 }
 .auth-orb {
   position: absolute;
@@ -297,12 +311,6 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-tap-highlight-c
   position: relative; isolation: isolate;
   background: radial-gradient(circle at 82% 0%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 28%), var(--background);
 }
-.dashboard-canvas::before {
-  position: absolute; inset: 0; content: ""; z-index: -1; opacity: 0.16;
-  background-image: linear-gradient(color-mix(in srgb, var(--ink) 5%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--ink) 5%, transparent) 1px, transparent 1px);
-  background-size: 32px 32px;
-  mask-image: radial-gradient(ellipse at center, black, transparent 78%);
-}
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 .tabular-nums { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
 @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-33.3333%); } }
@@ -346,8 +354,8 @@ button { transition: transform 160ms cubic-bezier(0.16,1,0.3,1), box-shadow 160m
 button:hover:not(:disabled) { transform: translateY(-1px); }
 button:active:not(:disabled) { transform: translateY(0) scale(0.985); }
 /* cards, surfaces, stats ΓÇö kokonutui/coss/react-bits Spotlight */
-.card, [class*="rounded-"][class*="border"]:not(button):not(a) { transition: transform 200ms cubic-bezier(0.16,1,0.3,1), box-shadow 200ms ease, border-color 200ms ease; }
-.card:hover, [class*="rounded-"][class*="border"]:hover { transform: translateY(-2px); }
+.card, .interactive-card { transition: transform 200ms cubic-bezier(0.16,1,0.3,1), box-shadow 200ms ease, border-color 200ms ease; }
+.card:hover, .interactive-card:hover { transform: translateY(-2px); }
 /* inputs ΓÇö indie-ui / shadcn focus (fancy) */
 input, textarea, select { transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease; }
 input:hover, textarea:hover, select:hover { border-color: color-mix(in srgb, var(--ink) 16%, var(--line)); }
@@ -361,60 +369,21 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); box-sha
   .dashboard-card { animation: none; }
 }
 
-/* Archive Atlas overlay - scoped to dashboard only, respects light/dark - Ink+Ice unified */
-.dashboard-canvas { position: relative; isolation: isolate; background: #EEF3F9; }
-.dark .dashboard-canvas { background: #0A0F1E; }
-.dashboard-canvas::before {
-  content:""; position:absolute; inset:0; z-index:-1; opacity:0.04;
-  background-image: linear-gradient(rgba(15,17,21,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(15,17,21,0.04) 1px, transparent 1px);
-  background-size: 28px 28px;
-  mask-image: radial-gradient(ellipse at center, black 42%, transparent 78%);
-}
-.dark .dashboard-canvas::before { opacity:0.04; background-image: linear-gradient(rgba(247,243,232,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(247,243,232,0.04) 1px, transparent 1px); }
-/* Ink + Ice — editorial: midnight #0B1220, ice #EEF3F9, amber #FFB43A */
+/* Archive Atlas surface — scoped to dashboard only, respects light/dark. */
 .dashboard-canvas .catalog-card {
-  background: #FFFFFF; color: #0B1220;
-  border: 1px solid #D6DFE8;
-  box-shadow: 0 1px 0 rgba(11,18,32,0.04), 0 10px 28px rgba(11,18,32,0.07), 0 0 0 1px rgba(11,18,32,0.04);
+  background: var(--surface); color: var(--ink);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-soft);
   border-radius: 12px;
-}
-.dark .dashboard-canvas .catalog-card {
-  background: #141E32; color: #E6EEF6;
-  border-color: #1F2A44;
-  box-shadow: 0 1px 0 rgba(0,0,0,0.32), 0 12px 28px rgba(0,0,0,0.42);
 }
 /* The shell owns elevation; nested dashboard cards should not cast a second shadow. */
 .dashboard-canvas .catalog-card .dashboard-card { box-shadow: none; }
 .dashboard-canvas .atlas-sheet {
-  background: #FFFFFF; color: #0B1220;
-  border: 1px solid #D6DFE8;
-  box-shadow: 0 1px 0 rgba(11,18,32,0.04), 0 20px 40px -16px rgba(11,18,32,0.10);
+  background: var(--surface); color: var(--ink);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-lift);
   border-radius: 14px;
 }
-.dark .dashboard-canvas .atlas-sheet {
-  background: #141E32; color: #E6EEF6;
-  border-color: #1F2A44;
-  box-shadow: 0 1px 0 rgba(0,0,0,0.32), 0 20px 40px -16px rgba(0,0,0,0.42);
-}
-.dashboard-canvas .catalog-card .text-on-card { color: #1A140F; }
-.dark .dashboard-canvas .catalog-card .text-on-card { color: #F7F3E8; }
-.dashboard-canvas .catalog-card .muted-on-card { color: #6B5E4A; }
-.dark .dashboard-canvas .catalog-card .muted-on-card { color: #B8AA8C; }
-/* tone down atlas headers inside ink dark — match Analytics muted palette */
-.dark .dashboard-canvas .bg-\[\#FFFCF2\] { background-color: #1E1A14 !important; }
-.dark .dashboard-canvas .bg-\[\#EEF3F9\] { background-color: #141E32 !important; }
-.dark .dashboard-canvas .bg-\[\#F7F3E8\] { background-color: #1A1E24 !important; }
-.dark .dashboard-canvas .bg-\[\#F8FAFC\] { background-color: #0E1424 !important; }
-.dark .dashboard-canvas .border-\[\#E8DFC6\] { border-color: #1F2A44 !important; }
-.dark .dashboard-canvas .border-\[\#D6DFE8\] { border-color: #1F2A44 !important; }
-.dark .dashboard-canvas .border-\[\#DDD2B6\] { border-color: #1F2A44 !important; }
-.dark .dashboard-canvas .text-\[\#0B1220\] { color: #E6EEF6 !important; }
-.dark .dashboard-canvas .text-\[\#1A140F\] { color: #E6EEF6 !important; }
-.dark .dashboard-canvas .text-\[\#4A5A6E\] { color: #8AA0BE !important; }
-.dark .dashboard-canvas .text-\[\#6B5E4A\] { color: #8AA0BE !important; }
-.dark .dashboard-canvas .text-\[\#8A7D6B\] { color: #6B7A9A !important; }
-.dark .dashboard-canvas .text-\[\#8A6A2A\] { color: #8AA0BE !important; }
-.dashboard-canvas .brass-rule { height:1px; background: linear-gradient(90deg, transparent, #FFB43A, transparent); opacity:0.45; }
-.dashboard-canvas { --accent: #FFB43A; }
+.dashboard-canvas .brass-rule { height:1px; background: linear-gradient(90deg, transparent, var(--accent), transparent); opacity:0.45; }
 @keyframes pinPulse { 0%,100%{opacity:0.9;transform:scale(1)} 50%{opacity:1;transform:scale(1.06)} } .pin-pulse{animation:pinPulse 2.4s ease-in-out infinite}
 

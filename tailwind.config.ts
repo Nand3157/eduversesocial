@@ -10,20 +10,20 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "var(--background)",
-        card: "var(--surface)",
-        surface: "var(--surface-muted)",
-        ink: "var(--ink)",
-        primary: "var(--accent)",
-        "primary-strong": "var(--accent-strong)",
-        accent: "var(--accent)",
+        background: "rgb(var(--background-rgb) / <alpha-value>)",
+        card: "rgb(var(--surface-rgb) / <alpha-value>)",
+        surface: "rgb(var(--surface-muted-rgb) / <alpha-value>)",
+        ink: "rgb(var(--ink-rgb) / <alpha-value>)",
+        primary: "rgb(var(--accent-rgb) / <alpha-value>)",
+        "primary-strong": "rgb(var(--accent-strong-rgb) / <alpha-value>)",
+        accent: "rgb(var(--accent-rgb) / <alpha-value>)",
         "accent-soft": "var(--accent-soft)",
-        success: "var(--ok)",
-        warning: "var(--warn)",
-        danger: "var(--bad)",
-        mutedText: "var(--muted)",
-        faintText: "var(--faint)",
-        borderSoft: "var(--line)"
+        success: "rgb(var(--ok-rgb) / <alpha-value>)",
+        warning: "rgb(var(--warn-rgb) / <alpha-value>)",
+        danger: "rgb(var(--bad-rgb) / <alpha-value>)",
+        mutedText: "rgb(var(--muted-rgb) / <alpha-value>)",
+        faintText: "rgb(var(--faint-rgb) / <alpha-value>)",
+        borderSoft: "rgb(var(--line-rgb) / <alpha-value>)"
       },
       borderRadius: {
         xl: "16px"

@@ -39,7 +39,7 @@ export function DashboardHome() {
           <span className="h-3 w-px bg-borderSoft" aria-hidden="true" />
           <span>FAC 001 — ATLAS TABLE</span>
           <span className="h-3 w-px bg-borderSoft" aria-hidden="true" />
-          <span>{new Date().toLocaleDateString("en-GB", { day:"2-digit", month:"short", year:"numeric" }).toUpperCase()}</span>
+          <span>{formatAtlasDate()}</span>
         </div>
         <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
           <div>
@@ -51,13 +51,13 @@ export function DashboardHome() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => setConnectModalOpen(true)} size="sm" variant="secondary" className="rounded-full bg-[#1E1A14] border-[#2E2416] text-[#B8AA8C] hover:bg-[#232019] hover:text-[#F7F3E8]">
-              <Sparkles aria-hidden="true" className="h-3.5 w-3.5 text-[#D4A85A]" /> Meta sync
+            <Button onClick={() => setConnectModalOpen(true)} size="sm" variant="secondary" className="rounded-full">
+              <Sparkles aria-hidden="true" className="h-3.5 w-3.5 text-primary" /> Meta sync
             </Button>
-            <Button onClick={() => setPublisherModalOpen(true)} size="sm" className="rounded-full bg-[#F7F3E8] text-[#0B1220] hover:bg-[#ECE5D1] border border-[#DDD2B6]">
+            <Button onClick={() => setPublisherModalOpen(true)} size="sm" variant="secondary" className="rounded-full">
               <Send aria-hidden="true" className="h-3.5 w-3.5" /> Publish post
             </Button>
-            <Button asChild size="sm" className="rounded-full bg-[#D4A85A] text-[#1A1206] hover:bg-[#E8C27A] shadow-[0_4px_16px_rgba(212,168,90,0.22)]">
+            <Button asChild size="sm" variant="accent" className="rounded-full">
               <Link href="/dashboard/chat"><MessageSquareText aria-hidden="true" className="h-3.5 w-3.5" /> Ask atlas</Link>
             </Button>
           </div>
@@ -71,42 +71,42 @@ export function DashboardHome() {
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="space-y-2.5">
                 <div className="inline-flex items-center gap-2">
-                  <span className="mono text-[10px] tracking-[0.14em] text-[#8A7D6B]">CATALOG CARD · FAC 002</span>
-                  <span className="h-1 w-1 rounded-full bg-[#D4A85A]" aria-hidden="true" />
-                  <span className="mono text-[10px] tracking-[0.12em] text-[#D4A85A]">REQUIRED</span>
+                  <span className="mono text-[10px] tracking-[0.14em] text-faintText">CATALOG CARD · FAC 002</span>
+                  <span className="h-1 w-1 rounded-full bg-primary" aria-hidden="true" />
+                  <span className="mono text-[10px] tracking-[0.12em] text-primary">REQUIRED</span>
                 </div>
-                <h2 className="font-display text-xl font-semibold tracking-tight text-[#0B1220]">Mount live acetate to read terrain.</h2>
-                <p className="max-w-[52ch] text-sm leading-6 text-[#4A5A6E]">Connect a Meta User Access Token to lay reach, saves, and timing atop your atlas. Tokens are AES-256-GCM encrypted and pinned per drawer.</p>
-                <p className="flex items-center gap-1.5 mono text-[11px] tracking-[0.06em] text-[#8A7D6B]"><Lock aria-hidden="true" className="h-3 w-3 text-[#5FB48A]" /> ENCRYPTED · RLS ISOLATED · <Link href="/privacy" className="text-[#8A5A2B] underline decoration-[#D4A85A]/30 underline-offset-4 hover:decoration-[#D4A85A]">Privacy & Data Security</Link></p>
+                <h2 className="text-balance font-display text-xl font-semibold tracking-tight text-ink">Mount live acetate to read terrain.</h2>
+                <p className="max-w-[52ch] text-sm leading-6 text-mutedText">Connect a Meta User Access Token to lay reach, saves, and timing atop your atlas. Tokens are AES-256-GCM encrypted and pinned per drawer.</p>
+                <p className="flex items-center gap-1.5 mono text-[11px] tracking-[0.06em] text-faintText"><Lock aria-hidden="true" className="h-3 w-3 text-success" /> ENCRYPTED · RLS ISOLATED · <Link href="/privacy" className="text-primary underline decoration-primary/30 underline-offset-4 hover:decoration-primary">Privacy & Data Security</Link></p>
               </div>
               <div className="flex shrink-0 gap-2">
-                <Button onClick={() => setConnectModalOpen(true)} className="rounded-full bg-[#1A140F] text-[#F7F3E8] hover:bg-[#232019]">Connect Meta</Button>
-                <Button asChild variant="secondary" size="sm" className="rounded-full bg-[#FFF8E6] border-[#E8C27A]/30 text-[#8A5A2B] hover:bg-[#FFF0CC]">
+                <Button onClick={() => setConnectModalOpen(true)} variant="accent" className="rounded-full">Connect Meta</Button>
+                <Button asChild variant="secondary" size="sm" className="rounded-full">
                   <Link href="/demo"><Eye aria-hidden="true" className="h-3.5 w-3.5" /> Live Demo</Link>
                 </Button>
               </div>
             </div>
           </div>
-          <div className="flex items-center justify-between gap-3 rounded-[10px] border border-[#2E2416] bg-[#1E1A14] px-4 py-2.5 text-xs">
-            <span className="inline-flex items-center gap-1.5 text-[#B8AA8C] mono text-[11px] tracking-[0.08em]"><ShieldCheck aria-hidden="true" className="h-3.5 w-3.5 text-[#5FB48A]" /> PREVIEW SANDBOX — NO LOGIN</span>
-            <Link href="/demo" className="mono text-[11px] tracking-[0.12em] text-[#D4A85A] hover:text-[#E8C27A]">OPEN →</Link>
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-borderSoft bg-ink px-4 py-2.5 text-xs">
+            <span className="inline-flex items-center gap-1.5 text-background/80 mono text-[11px] tracking-[0.08em]"><ShieldCheck aria-hidden="true" className="h-3.5 w-3.5 text-success" /> PREVIEW SANDBOX — NO LOGIN</span>
+            <Link href="/demo" className="mono text-[11px] tracking-[0.12em] text-primary hover:text-primary-strong">OPEN →</Link>
           </div>
         </div>
       )}
 
       {/* Atlas table — acetate bar + punched metric windows */}
       <div className="atlas-sheet overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#D6DFE8] bg-[#EEF3F9] px-4 py-3 sm:px-5">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-borderSoft bg-surface-muted px-4 py-3 sm:px-5">
           <div className="flex items-center gap-2">
-            <span className="grid h-7 w-7 place-items-center rounded-[8px] bg-[#1A140F] text-[#D4A85A] border border-[#2E2416]"><MapPinned aria-hidden="true" className="h-3.5 w-3.5" /></span>
+            <span className="grid h-7 w-7 place-items-center rounded-[8px] border border-primary/25 bg-accent-soft text-primary"><MapPinned aria-hidden="true" className="h-3.5 w-3.5" /></span>
             <div>
-              <p className="mono text-[10px] tracking-[0.14em] text-[#8A7D6B]">ATLAS TABLE · FAC 014</p>
-              <p className="text-sm font-semibold tracking-tight text-[#0B1220]">Terrain readings — live acetate</p>
+              <p className="mono text-[10px] tracking-[0.14em] text-faintText">ATLAS TABLE · FAC 014</p>
+              <p className="text-sm font-semibold tracking-tight text-ink">Terrain readings — live acetate</p>
             </div>
           </div>
-          <div className="flex items-center gap-1 rounded-full bg-[#1A140F] p-1">
+          <div className="flex items-center gap-1 rounded-full bg-surface-muted p-1">
             {(["terrain","engagement","memory"] as const).map((k) => (
-              <button key={k} onClick={() => setAcetate(k)} aria-pressed={acetate===k} className={`rounded-full px-3 py-1 mono text-[11px] tracking-[0.10em] transition ${acetate===k ? "bg-[#D4A85A] text-[#1A1206]" : "text-[#B8AA8C] hover:text-[#F7F3E8]"}`}>
+              <button key={k} onClick={() => setAcetate(k)} aria-pressed={acetate===k} className={`min-h-11 rounded-full px-3 py-1 mono text-[11px] tracking-[0.10em] transition ${acetate===k ? "bg-primary text-ink" : "text-mutedText hover:text-ink"}`}>
                 {k === "terrain" ? "TERRAIN" : k === "engagement" ? "ENGAGEMENT" : "MEMORY"}
               </button>
             ))}
@@ -114,11 +114,11 @@ export function DashboardHome() {
         </div>
 
         {/* punched windows — metrics */}
-        <div className="bg-[#F8FAFC] p-4 sm:p-5">
+        <div className="bg-surface-muted p-4 sm:p-5">
           {analyticsLoading ? (
             <div role="status" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {[0,1,2].map((s)=>(
-                <div key={s} className="h-28 rounded-[10px] border border-[#D6DFE8] bg-white/60 animate-pulse" aria-hidden="true" />
+                <div key={s} className="h-28 rounded-[10px] border border-borderSoft bg-card/60 animate-pulse" aria-hidden="true" />
               ))}
               <span className="sr-only">Loading terrain…</span>
             </div>
@@ -127,29 +127,29 @@ export function DashboardHome() {
               {metrics.map((metric) => (
                 <motion.div key={metric.label} variants={staggerItemFast} className="catalog-card p-4">
                   <div className="flex items-start justify-between gap-3">
-                    <p className="mono text-[10px] tracking-[0.14em] text-[#8A7D6B]">{metric.label.toUpperCase()}</p>
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#D4A85A] mt-1.5 shrink-0" aria-hidden="true" />
+                    <p className="mono text-[10px] tracking-[0.14em] text-faintText">{metric.label.toUpperCase()}</p>
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary mt-1.5 shrink-0" aria-hidden="true" />
                   </div>
-                  <p className="mt-2 display-nums text-[28px] font-[650] leading-none tracking-tight text-[#0B1220]"><AnimatedNumber suffix={metric.suffix} value={metric.value} /></p>
-                  <p className="mt-1.5 mono text-[11px] tracking-[0.04em] text-[#5F7A6B] flex items-center gap-1.5"><span className="h-1 w-1 rounded-full bg-[#5FB48A]" aria-hidden="true" />{metric.detail}</p>
+                  <p className="mt-2 display-nums text-[28px] font-[650] leading-none tracking-tight text-ink"><AnimatedNumber suffix={metric.suffix} value={metric.value} /></p>
+                  <p className="mt-1.5 mono text-[11px] tracking-[0.04em] text-success flex items-center gap-1.5"><span className="h-1 w-1 rounded-full bg-success" aria-hidden="true" />{metric.detail}</p>
                 </motion.div>
               ))}
             </motion.div>
           ) : (
-            <div className="rounded-[10px] border border-dashed border-[#2E2416] bg-[#EEF3F9] dark:bg-[#232019] px-4 py-8 text-center mono text-xs tracking-[0.12em] text-[#0B1220] dark:text-[#E8DDC1]">NO TERRAIN MOUNTED — CONNECT META TO PUNCH WINDOWS</div>
+            <div className="rounded-[10px] border border-dashed border-borderSoft bg-card/50 px-4 py-8 text-center mono text-xs tracking-[0.12em] text-mutedText">NO TERRAIN MOUNTED — CONNECT META TO PUNCH WINDOWS</div>
           )}
 
-          {/* acetate veil — subtle cyan wash when engagement mode */}
+          {/* acetate veil — a restrained amber wash that keeps the active layer legible */}
           {acetate==="engagement" && (
-            <div className="mt-4 rounded-[10px] border border-[rgba(127,184,200,0.22)] bg-[rgba(127,184,200,0.08)] px-3 py-2.5 flex items-center gap-2">
-              <Layers aria-hidden="true" className="h-3.5 w-3.5 text-[#7FB8C8]" />
-              <span className="mono text-[11px] tracking-[0.10em] text-[#5A7A85]">CYAN ACETATE — ENGAGEMENT CONTOURS VISIBLE · OPACITY 12%</span>
+            <div className="mt-4 flex items-center gap-2 rounded-[10px] border border-primary/25 bg-accent-soft px-3 py-2.5">
+              <Layers aria-hidden="true" className="h-3.5 w-3.5 text-primary" />
+              <span className="mono text-[11px] tracking-[0.10em] text-primary">ENGAGEMENT ACETATE — CONTOURS VISIBLE · OPACITY 12%</span>
             </div>
           )}
           {acetate==="memory" && (
-            <div className="mt-4 rounded-[10px] border border-[rgba(212,168,90,0.22)] bg-[rgba(212,168,90,0.08)] px-3 py-2.5 flex items-center gap-2">
-              <Bookmark aria-hidden="true" className="h-3.5 w-3.5 text-[#D4A85A]" />
-              <span className="mono text-[11px] tracking-[0.10em] text-[#8A6A2A]">PARCHMENT ACETATE — MEMORY ISOLINES · COMPOUNDING</span>
+            <div className="mt-4 flex items-center gap-2 rounded-[10px] border border-warning/25 bg-warning/10 px-3 py-2.5">
+              <Bookmark aria-hidden="true" className="h-3.5 w-3.5 text-warning" />
+              <span className="mono text-[11px] tracking-[0.10em] text-warning">MEMORY ACETATE — ISOLINES COMPOUNDING</span>
             </div>
           )}
         </div>
@@ -158,10 +158,10 @@ export function DashboardHome() {
       <div className="grid items-stretch gap-5 xl:grid-cols-3">
         <div className="flex h-full xl:col-span-2">
           <div className="catalog-card flex h-full w-full flex-col overflow-hidden">
-            <div className="flex items-center justify-between gap-3 border-b border-[#D6DFE8] bg-[#EEF3F9] px-4 py-3 dark:bg-[#0E1424] dark:border-[#1F2A44]">
+            <div className="flex items-center justify-between gap-3 border-b border-borderSoft bg-surface-muted px-4 py-3">
               <div className="flex items-center gap-2">
                 <span className="mono text-[10px] tracking-[0.14em] text-mutedText">FAC 022 · TIMELINE</span>
-                <span className="h-1 w-1 rounded-full bg-amber-500" aria-hidden="true" />
+                <span className="h-1 w-1 rounded-full bg-primary" aria-hidden="true" />
                 <span className="text-sm font-semibold tracking-tight text-ink">14-day engagement contour</span>
               </div>
             </div>
@@ -169,79 +169,80 @@ export function DashboardHome() {
           </div>
         </div>
           <div className="catalog-card flex h-full w-full flex-col overflow-hidden">
-            <div className="flex items-center gap-2 border-b border-[#D6DFE8] bg-[#EEF3F9] px-4 py-3 dark:bg-[#0E1424] dark:border-[#1F2A44]">
+            <div className="flex items-center gap-2 border-b border-borderSoft bg-surface-muted px-4 py-3">
               <span className="mono text-[10px] tracking-[0.14em] text-mutedText">FAC 014 · TELEMETRY</span>
-              <span className="h-1 w-1 rounded-full bg-amber-500" aria-hidden="true" />
+              <span className="h-1 w-1 rounded-full bg-primary" aria-hidden="true" />
               <span className="text-sm font-semibold tracking-tight text-ink">Channel telemetry</span>
             </div>
-            <div className="flex min-h-0 flex-1 flex-col bg-white p-3 dark:bg-[#141E32] sm:p-4"><div className="flex h-full w-full flex-1 items-center"><PlatformBreakdownCard className="h-full" /></div></div>
+            <div className="flex min-h-0 flex-1 flex-col bg-card p-3 sm:p-4"><div className="flex h-full w-full flex-1 items-center"><PlatformBreakdownCard className="h-full" /></div></div>
           </div>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-3">
-        <div className="catalog-card overflow-hidden"><div className="border-b border-[#D6DFE8] bg-[#EEF3F9] px-4 py-2.5 flex items-center gap-2"><span className="mono text-[10px] tracking-[0.12em] text-[#8A7D6B]">FAC 031</span><span className="text-sm font-medium text-[#0B1220]">Posting frequency</span></div><div className="p-3"><PostingFrequencyCard /></div></div>
-        <div className="catalog-card overflow-hidden"><div className="border-b border-[#D6DFE8] bg-[#EEF3F9] px-4 py-2.5 flex items-center gap-2"><span className="mono text-[10px] tracking-[0.12em] text-[#8A7D6B]">FAC 032</span><span className="text-sm font-medium text-[#0B1220]">Audience growth</span></div><div className="p-3"><AudienceGrowthCard /></div></div>
-        <div className="catalog-card overflow-hidden"><div className="border-b border-[#D6DFE8] bg-[#EEF3F9] px-4 py-2.5 flex items-center gap-2"><span className="mono text-[10px] tracking-[0.12em] text-[#8A7D6B]">FAC 033</span><span className="text-sm font-medium text-[#0B1220]">Sentiment trend</span></div><div className="p-3"><SentimentTrendCard /></div></div>
+        <div className="catalog-card overflow-hidden"><div className="flex items-center gap-2 border-b border-borderSoft bg-surface-muted px-4 py-2.5"><span className="mono text-[10px] tracking-[0.12em] text-faintText">FAC 031</span><span className="text-sm font-medium text-ink">Posting frequency</span></div><div className="p-3"><PostingFrequencyCard /></div></div>
+        <div className="catalog-card overflow-hidden"><div className="flex items-center gap-2 border-b border-borderSoft bg-surface-muted px-4 py-2.5"><span className="mono text-[10px] tracking-[0.12em] text-faintText">FAC 032</span><span className="text-sm font-medium text-ink">Audience growth</span></div><div className="p-3"><AudienceGrowthCard /></div></div>
+        <div className="catalog-card overflow-hidden"><div className="flex items-center gap-2 border-b border-borderSoft bg-surface-muted px-4 py-2.5"><span className="mono text-[10px] tracking-[0.12em] text-faintText">FAC 033</span><span className="text-sm font-medium text-ink">Sentiment trend</span></div><div className="p-3"><SentimentTrendCard /></div></div>
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
         <div className="catalog-card overflow-hidden">
-          <div className="flex items-center justify-between gap-3 border-b border-[#D6DFE8] bg-[#EEF3F9] px-4 py-3 dark:bg-[#0E1424] dark:border-[#1F2A44]">
+          <div className="flex items-center justify-between gap-3 border-b border-borderSoft bg-surface-muted px-4 py-3">
             <div className="flex items-center gap-2">
               <span className="mono text-[10px] tracking-[0.14em] text-mutedText">FAC 041 · RECOMMENDATIONS</span>
-              <span className="h-1 w-1 rounded-full bg-amber-500" aria-hidden="true" />
+              <span className="h-1 w-1 rounded-full bg-primary" aria-hidden="true" />
               <span className="text-sm font-semibold tracking-tight text-ink">Pin to rail</span>
             </div>
             {recommendations.length > 0 && <Badge className="rounded-full bg-ink text-background border border-borderSoft mono text-[10px] tracking-[0.10em]">READY TO PIN</Badge>}
           </div>
-          <div className="p-4 sm:p-5 space-y-4 bg-white dark:bg-[#141E32]">
+          <div className="space-y-4 bg-card p-4 sm:p-5">
             {recommendations.length ? recommendations.map(([title, timing, detail], i) => (
-              <div key={title} className="relative overflow-hidden rounded-[12px] border border-[#D6DFE8] bg-white p-4 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
-                <div className="absolute left-0 top-0 h-full w-1 bg-[#D4A85A]" aria-hidden="true" />
-                <div className="absolute right-3 top-3 h-2 w-2 rounded-full bg-[#D44D3A] pin-pulse" aria-hidden="true" />
-                <p className="mono text-[10px] tracking-[0.12em] text-[#D4A85A]">WINDOW · {timing.toUpperCase()} · {String(i+1).padStart(2,"0")}</p>
-                <h3 className="mt-1 font-display text-lg font-semibold leading-tight tracking-tight text-[#0B1220]">{title}</h3>
-                <p className="mt-1.5 text-sm leading-6 text-[#4A5A6E]">{detail}</p>
-                <Button onClick={() => setPublisherModalOpen(true)} className="mt-3 rounded-full bg-[#1A140F] text-[#F7F3E8] hover:bg-[#232019] text-xs"><Sparkles aria-hidden="true" className="h-3.5 w-3.5" /> Generate draft & schedule</Button>
+              <div key={title} className="rounded-[12px] border border-borderSoft bg-surface p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="mono text-[10px] tracking-[0.12em] text-primary">WINDOW · {timing.toUpperCase()} · {String(i+1).padStart(2,"0")}</p>
+                  <span className="h-2 w-2 shrink-0 rounded-full bg-danger pin-pulse" aria-hidden="true" />
+                </div>
+                <h3 className="mt-1 font-display text-lg font-semibold leading-tight tracking-tight text-ink">{title}</h3>
+                <p className="mt-1.5 text-sm leading-6 text-mutedText">{detail}</p>
+                <Button onClick={() => setPublisherModalOpen(true)} variant="accent" className="mt-3 rounded-full text-xs"><Sparkles aria-hidden="true" className="h-3.5 w-3.5" /> Generate draft & schedule</Button>
               </div>
             )) : (
-              <div className="rounded-[10px] border border-dashed border-[#D6DFE8] dark:border-[#1F2A44] bg-white dark:bg-[#1E293B] p-5 mono text-xs leading-6 tracking-[0.04em] text-mutedText">EDUVERSE DOES NOT INVENT RECOMMENDATIONS. ONCE META RETURNS ENOUGH HISTORY, A GROUNDED NEXT STEP IS PINNED HERE WITH A RED FLAG.</div>
+              <div className="rounded-[10px] border border-dashed border-borderSoft bg-surface p-5 mono text-xs leading-6 tracking-[0.04em] text-mutedText">EDUVERSE DOES NOT INVENT RECOMMENDATIONS. ONCE META RETURNS ENOUGH HISTORY, A GROUNDED NEXT STEP IS PINNED HERE WITH A RED FLAG.</div>
             )}
           </div>
         </div>
 
         <div className="catalog-card overflow-hidden flex flex-col">
-          <div className="flex items-center gap-2 border-b border-[#D6DFE8] bg-[#EEF3F9] px-4 py-3">
-            <span className="mono text-[10px] tracking-[0.14em] text-[#8A7D6B]">FAC 022 · MEMORY</span>
-            <span className="ml-auto mono text-[10px] tracking-[0.10em] text-[#5FB48A]">{memoryItems.length ? `${memoryItems.length} CARDS FILED` : "EMPTY DRAWER"}</span>
+          <div className="flex items-center gap-2 border-b border-borderSoft bg-surface-muted px-4 py-3">
+            <span className="mono text-[10px] tracking-[0.14em] text-faintText">FAC 022 · MEMORY</span>
+            <span className="ml-auto mono text-[10px] tracking-[0.10em] text-success">{memoryItems.length ? `${memoryItems.length} CARDS FILED` : "EMPTY DRAWER"}</span>
           </div>
-          <div className="flex-1 bg-white dark:bg-[#141E32] p-4 sm:p-5">
+          <div className="flex-1 bg-card p-4 sm:p-5">
             {memoryItems.length ? (
               <div className="space-y-3">
                 {memoryItems.map((item, index) => (
                   <div key={item} className="relative flex gap-3">
-                    <span aria-hidden="true" className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#1A140F] text-[#D4A85A] border border-[#2E2416]"><Check className="h-3 w-3" /></span>
-                    {index < memoryItems.length - 1 && <span aria-hidden="true" className="absolute left-3 top-7 h-6 w-px bg-[#E8DFC6]" />}
-                    <div className="min-w-0 flex-1 rounded-[8px] border border-[#D6DFE8] bg-white px-3 py-2.5">
-                      <p className="text-sm font-medium leading-5 text-[#0B1220]">{item}</p>
-                      <p className="mt-1 mono text-[10px] tracking-[0.08em] text-[#8A7D6B]">DERIVED FROM LIVE INSIGHTS · FAC 022/{String(index+1).padStart(2,"0")}</p>
+                    <span aria-hidden="true" className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full border border-primary/25 bg-accent-soft text-primary"><Check className="h-3 w-3" /></span>
+                    {index < memoryItems.length - 1 && <span aria-hidden="true" className="absolute left-3 top-7 h-6 w-px bg-borderSoft" />}
+                    <div className="min-w-0 flex-1 rounded-[8px] border border-borderSoft bg-surface px-3 py-2.5">
+                      <p className="text-sm font-medium leading-5 text-ink">{item}</p>
+                      <p className="mt-1 mono text-[10px] tracking-[0.08em] text-faintText">DERIVED FROM LIVE INSIGHTS · FAC 022/{String(index+1).padStart(2,"0")}</p>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="rounded-[10px] border border-dashed border-[#D6DFE8] dark:border-[#1F2A44] bg-white dark:bg-[#1E293B] p-5 mono text-xs leading-6 tracking-[0.04em] text-mutedText">AUDIENCE MEMORY FILES AFTER LIVE META CONTENT IS ANALYZED — EACH CARD IS A TYPED CATALOG ENTRY, NOT A GENERATED CLAIM.</div>
+              <div className="rounded-[10px] border border-dashed border-borderSoft bg-surface p-5 mono text-xs leading-6 tracking-[0.04em] text-mutedText">AUDIENCE MEMORY FILES AFTER LIVE META CONTENT IS ANALYZED — EACH CARD IS A TYPED CATALOG ENTRY, NOT A GENERATED CLAIM.</div>
             )}
           </div>
         </div>
       </div>
 
       <div className="catalog-card overflow-hidden">
-        <div className="flex items-center justify-between gap-3 border-b border-[#D6DFE8] bg-[#EEF3F9] px-4 py-3">
-          <div className="flex items-center gap-2"><span className="mono text-[10px] tracking-[0.14em] text-[#8A7D6B]">FAC 030 · LEDGER</span><span className="text-sm font-semibold tracking-tight text-[#0B1220]">Recent posts — telemetry ledger</span></div>
-          <span className="mono text-[10px] tracking-[0.10em] text-[#8A7D6B]">{analytics?.recentPosts?.length ?? 0} ROWS</span>
+        <div className="flex items-center justify-between gap-3 border-b border-borderSoft bg-surface-muted px-4 py-3">
+          <div className="flex items-center gap-2"><span className="mono text-[10px] tracking-[0.14em] text-faintText">FAC 030 · LEDGER</span><span className="text-sm font-semibold tracking-tight text-ink">Recent posts — telemetry ledger</span></div>
+          <span className="mono text-[10px] tracking-[0.10em] text-faintText">{analytics?.recentPosts?.length ?? 0} ROWS</span>
         </div>
-        <div className="bg-white dark:bg-[#141E32] p-3 sm:p-4"><PostTable /></div>
+        <div className="bg-card p-3 sm:p-4"><PostTable /></div>
       </div>
     </div>
   );
@@ -258,4 +259,9 @@ function subscribeGreeting(onStoreChange: () => void) {
   let current = getGreeting();
   const id = window.setInterval(() => { const next = getGreeting(); if (next !== current) { current = next; onStoreChange(); } }, 60_000);
   return () => window.clearInterval(id);
+}
+
+function formatAtlasDate() {
+  const [year, month, day] = new Date().toISOString().slice(0, 10).split("-");
+  return `${day} ${["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"][Number(month) - 1]} ${year}`;
 }

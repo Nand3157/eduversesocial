@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Sparkles } from "lucide-react";
 import { AuthBackground } from "@/components/auth/auth-background";
 import { ThemeToggle } from "@/components/providers/theme-toggle";
@@ -17,7 +18,7 @@ export function AuthShell({ children, title, description }: { children: React.Re
         </div>
         <section className="w-full rounded-[20px] border border-borderSoft/80 bg-card/90 p-4 shadow-glass backdrop-blur-xl sm:p-5 max-h-[calc(100vh-2rem)] overflow-y-auto">
           <Link aria-label="EduVerse home" className="inline-flex items-center gap-2" href="/">
-            <img src="/icon.svg" alt="" width={28} height={28} className="h-7 w-7 rounded-lg object-cover ring-1 ring-black/5" />
+            <Image src="/icon.svg" alt="" width={28} height={28} className="h-7 w-7 rounded-lg object-cover ring-1 ring-black/5" />
             <span className="font-display text-base font-semibold tracking-tight text-ink">Edu<em className="font-normal text-primary">Verse</em></span>
           </Link>
           <h1 className="mt-4 font-heading text-xl font-medium tracking-tight text-ink">{title}</h1>

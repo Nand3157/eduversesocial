@@ -116,7 +116,7 @@ const FormattedMarkdown = React.memo(function FormattedMarkdown({ content }: { c
       elements.push(
         <blockquote
           key={i}
-          className="my-2 rounded-r-lg border-l-2 border-primary bg-accent-soft p-2.5 text-xs leading-relaxed text-ink"
+          className="my-2 rounded-r-lg border-l border-primary/60 bg-accent-soft p-2.5 text-xs leading-relaxed text-ink"
         >
           {formatInline(trimmed.slice(2))}
         </blockquote>
@@ -389,9 +389,9 @@ export function ChatInterface() {
   }
 
   return (
-    <div className="grid min-h-[calc(100vh-150px)] overflow-hidden rounded-2xl border border-[#D6DFE8] bg-white shadow-sm dark:border-[#1F2A44] dark:bg-[#141E32] lg:grid-cols-[240px_1fr]">
+    <div className="grid min-h-[calc(100vh-150px)] overflow-hidden rounded-2xl border border-borderSoft bg-card shadow-sm lg:grid-cols-[240px_1fr]">
       {/* Sidebar - ice to match Atlas, with separation */}
-      <aside className="hidden border-r-2 border-[#D6DFE8] bg-[#F8FAFC] p-4 shadow-[inset_-1px_0_0_rgba(11,18,32,0.06)] dark:border-[#1F2A44] dark:bg-[#0E1424] lg:block">
+      <aside className="hidden border-r border-borderSoft bg-surface p-4 lg:block">
         <Button
           className="w-full bg-ink text-background hover:bg-ink/90"
           onClick={() => {
@@ -437,7 +437,7 @@ export function ChatInterface() {
           </ul>
         )}
 
-        <div className="mt-6 rounded-xl border border-[#D6DFE8] bg-white p-3 dark:border-[#1F2A44] dark:bg-[#141E32]">
+        <div className="mt-6 rounded-xl border border-borderSoft bg-card p-3">
           <div className="flex items-center gap-2 text-xs font-medium text-primary">
             <Cpu aria-hidden="true" className="h-3.5 w-3.5" />
             Active AI engine
@@ -507,7 +507,7 @@ export function ChatInterface() {
                   className={
                     message.role === "user"
                       ? "ml-auto max-w-xl rounded-2xl rounded-tr-sm bg-ink p-4 text-sm leading-6 text-background"
-                      : "max-w-xl rounded-2xl rounded-tl-sm bg-[#EEF3F9] p-4 text-sm leading-6 text-[#0B1220] border border-[#D6DFE8] dark:bg-[#141E32] dark:text-[#E6EEF6] dark:border-[#1F2A44]"
+                      : "max-w-xl rounded-2xl rounded-tl-sm border border-borderSoft bg-surface p-4 text-sm leading-6 text-ink"
                   }
                 >
                   {message.role === "user" ? (

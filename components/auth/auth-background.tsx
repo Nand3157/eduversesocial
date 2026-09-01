@@ -8,7 +8,6 @@ export function AuthBackground() {
 
   return (
     <div aria-hidden="true" className="auth-scene">
-      <div className="auth-scene-grid" />
       <motion.div className="auth-orb auth-orb-one" animate={reduceMotion ? undefined : { x: [0, 30, -18, 0], y: [0, -22, 18, 0], scale: [1, 1.08, 0.96, 1] }} transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }} />
       <motion.div className="auth-orb auth-orb-two" animate={reduceMotion ? undefined : { x: [0, -26, 16, 0], y: [0, 22, -14, 0], scale: [1, 0.94, 1.08, 1] }} transition={{ duration: 19, repeat: Infinity, ease: "easeInOut" }} />
       <div className="auth-planet">

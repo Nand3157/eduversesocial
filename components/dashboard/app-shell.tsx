@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -29,7 +30,6 @@ import { cn } from "@/lib/utils";
 import { useDashboardStore } from "@/lib/stores/dashboard-store";
 import { MetaConnectModal } from "@/components/meta/meta-connect-modal";
 import { MetaPublisherModal } from "@/components/meta/meta-publisher-modal";
-import { SPRING_SOFT } from "@/components/motion-variants";
 import { AnalyticsProvider } from "@/components/dashboard/analytics-context";
 
 const baseNavigation = [
@@ -88,13 +88,13 @@ export function AppShell({ children, email, profile }: { children: React.ReactNo
     return () => { document.removeEventListener("keydown", onKeyDown); document.body.style.overflow = prevOverflow; prev?.focus?.(); };
   }, [open, closeMobileNav]);
 
-  const cabinet = (pillId?: string) => (
-    <aside className={cn("flex h-full flex-col bg-[#F8FAFC] dark:bg-[#0B1220] text-ink border-r border-[#D6DFE8] dark:border-[#1F2A44] shadow-[2px_0_12px_rgba(11,18,32,0.04)] dark:shadow-[2px_0_12px_rgba(0,0,0,0.22)]", collapsed && "lg:w-[76px]")}>
+  const cabinet = () => (
+    <aside className={cn("flex h-full flex-col bg-surface text-ink border-r border-borderSoft shadow-sm", collapsed && "lg:w-[76px]")}>
       {/* top brass plate */}
       <div className="shrink-0 border-b border-borderSoft bg-surface">
         <div className="flex items-center justify-between px-3 py-3.5">
           <Link href="/dashboard" aria-label="EduVerse" className="flex items-center gap-3 overflow-hidden">
-            <img src="/icon.svg" alt="EduVerse" width={36} height={36} className="h-9 w-9 shrink-0 rounded-[9px] shadow-[0_1px_0_rgba(0,0,0,0.12)] object-cover" />
+            <Image src="/icon.svg" alt="EduVerse" width={36} height={36} className="h-9 w-9 shrink-0 rounded-[9px] shadow-[0_1px_0_rgba(0,0,0,0.12)] object-cover" />
             <span className={cn("overflow-hidden whitespace-nowrap flex items-center transition-[clip-path,opacity] duration-300", collapsed ? "clip-path-[inset(0_100%_0_0)] opacity-0" : "opacity-100")}>
               <span className="block font-display text-[15px] font-semibold tracking-tight leading-none">EduVerse</span>
             </span>
@@ -153,9 +153,9 @@ export function AppShell({ children, email, profile }: { children: React.ReactNo
       <div className="shrink-0 border-t border-borderSoft bg-surface p-3">
         {!collapsed ? (
           <div className="space-y-3">
-            <button onClick={() => setConnectModalOpen(true)} className="flex w-full items-center justify-between rounded-full bg-[#D4A85A] px-3.5 py-2.5 text-sm font-semibold text-[#1A1206] shadow-[0_1px_0_rgba(0,0,0,0.12),0_6px_16px_rgba(212,168,90,0.18)] transition hover:bg-[#E8C27A]">
+            <button onClick={() => setConnectModalOpen(true)} className="flex w-full items-center justify-between rounded-full bg-primary px-3.5 py-2.5 text-sm font-semibold text-ink shadow-sm transition hover:bg-primary-strong">
               <span className="flex items-center gap-2"><Sparkles aria-hidden="true" className="h-3.5 w-3.5" /> Meta sync</span>
-              <span className="mono rounded-full bg-[#1A1206] px-2 py-0.5 text-[10px] tracking-[0.12em] text-[#D4A85A]">LIVE</span>
+              <span className="mono rounded-full bg-ink px-2 py-0.5 text-[10px] tracking-[0.12em] text-primary">LIVE</span>
             </button>
             <div className="rounded-[12px] border border-borderSoft bg-surface-muted p-3">
               <div className="flex items-center justify-between">
@@ -167,7 +167,7 @@ export function AppShell({ children, email, profile }: { children: React.ReactNo
           </div>
         ) : (
           <div className="grid place-items-center gap-2">
-            <button onClick={() => setConnectModalOpen(true)} aria-label="Meta sync" className="grid h-9 w-9 place-items-center rounded-full bg-[#D4A85A] text-[#1A1206]"><Sparkles aria-hidden="true" className="h-4 w-4" /></button>
+            <button onClick={() => setConnectModalOpen(true)} aria-label="Meta sync" className="grid h-9 w-9 place-items-center rounded-full bg-primary text-ink shadow-sm hover:bg-primary-strong"><Sparkles aria-hidden="true" className="h-4 w-4" /></button>
           </div>
         )}
       </div>
@@ -181,13 +181,13 @@ export function AppShell({ children, email, profile }: { children: React.ReactNo
         <MetaConnectModal isOpen={connectModalOpen} onClose={() => setConnectModalOpen(false)} onConnected={() => window.dispatchEvent(new Event("eduverse:analytics-refresh"))} />
         <MetaPublisherModal isOpen={publisherModalOpen} onClose={() => setPublisherModalOpen(false)} />
 
-        <div className="sticky top-0 hidden h-screen lg:block">{cabinet("nav-pill")}</div>
+        <div className="sticky top-0 hidden h-screen lg:block">{cabinet()}</div>
 
         <AnimatePresence>
           {open && (
             <motion.div animate={{ opacity: 1 }} exit={{ opacity: 0 }} initial={{ opacity: 0 }} transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }} className="fixed inset-0 z-50 lg:hidden">
               <div role="dialog" aria-modal="true" aria-label="Archive cabinet" className="absolute inset-0">
-                <button aria-label="Close cabinet" tabIndex={-1} className="absolute inset-0 bg-[#0F0D0A]/60 backdrop-blur-sm" onClick={() => setOpen(false)} />
+                <button aria-label="Close cabinet" tabIndex={-1} className="absolute inset-0 bg-ink/60 backdrop-blur-sm" onClick={() => setOpen(false)} />
                 <motion.div animate={{ x: 0 }} exit={{ x: -280 }} initial={{ x: -280 }} transition={{ type: "spring", stiffness: 320, damping: 32 }} className="relative h-full w-[300px] bg-surface border-r border-borderSoft">
                   {cabinet()}
                   <button ref={mobileNavCloseRef} aria-label="Close cabinet" className="absolute right-3 top-3 grid h-10 w-10 place-items-center rounded-full bg-ink text-background" onClick={() => setOpen(false)}><X aria-hidden="true" className="h-4 w-4" /></button>
@@ -198,7 +198,7 @@ export function AppShell({ children, email, profile }: { children: React.ReactNo
         </AnimatePresence>
 
         <div className="min-w-0">
-          <header className="sticky top-0 z-30 flex h-[64px] items-center gap-3 border-b border-borderSoft bg-background/85 px-4 backdrop-blur-xl supports-[backdrop-filter]:bg-background/72 sm:px-6">
+          <header className="sticky top-0 z-30 flex h-[64px] items-center gap-3 border-b border-borderSoft bg-background px-4 backdrop-blur-xl sm:px-6">
             <Button aria-label="Open cabinet" className="lg:hidden bg-surface text-ink hover:bg-surface-muted border border-borderSoft" onClick={() => setOpen(true)} size="icon" variant="secondary"><Menu aria-hidden="true" className="h-5 w-5" /></Button>
             <div className="hidden items-center gap-2 sm:flex">
               <span className="mono text-[10px] tracking-[0.16em] text-faintText">DRAWER</span>
@@ -207,7 +207,7 @@ export function AppShell({ children, email, profile }: { children: React.ReactNo
             </div>
 
             <div className="ml-auto flex items-center gap-2">
-              <button onClick={() => setPublisherModalOpen(true)} className="hidden items-center gap-1.5 rounded-full bg-ink px-4 py-2 text-xs font-semibold tracking-tight text-background shadow-sm hover:bg-ink/90 sm:inline-flex">
+              <button onClick={() => setPublisherModalOpen(true)} className="hidden items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold tracking-tight text-ink shadow-sm hover:bg-primary-strong sm:inline-flex">
                 <Send aria-hidden="true" className="h-3.5 w-3.5" /> Schedule post
               </button>
               <ThemeToggle />
@@ -215,7 +215,7 @@ export function AppShell({ children, email, profile }: { children: React.ReactNo
                 <Link href="/dashboard/notifications"><Bell aria-hidden="true" className="h-4 w-4" /></Link>
               </Button>
               <form action={signOut}>
-                <button aria-label={`Sign out${displayName ? `, ${displayName}` : ""}`} title={`${displayName || "Signed in"} · ${activeEmail}`} className="rounded-full outline-none ring-[#D4A85A] hover:opacity-90 focus-visible:ring-2">
+                <button aria-label={`Sign out${displayName ? `, ${displayName}` : ""}`} title={`${displayName || "Signed in"} · ${activeEmail}`} className="rounded-full outline-none ring-primary hover:opacity-90 focus-visible:ring-2">
                   <Avatar className="h-9 w-9 border border-borderSoft"><AvatarFallback className="bg-accent-soft font-semibold text-primary">{avatarInitials}</AvatarFallback></Avatar>
                 </button>
               </form>

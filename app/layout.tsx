@@ -71,11 +71,12 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <script
+        <Script
+          id="organization-jsonld"
+          strategy="afterInteractive"
           type="application/ld+json"
           nonce={nonce}
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd).replace(/</g, "\\u003c") }}
-        />
+        >{JSON.stringify(organizationJsonLd).replace(/</g, "\\u003c")}</Script>
         <Script id="theme-init" strategy="beforeInteractive" nonce={nonce}>
           {`(function () {
   var stored = null;
