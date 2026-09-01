@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Mail, Phone, Sparkles } from "lucide-react";
+import { Mail, Phone } from "lucide-react";
 import { LandingPage } from "@/components/landing-page";
 import { SITE } from "@/lib/agentic/site";
 import { faqPageJsonLd } from "@/lib/agentic/faq";
@@ -74,9 +74,10 @@ const productLinks = [
 ];
 
 const exploreLinks = [
-  { label: "How it works", href: "/#telemetry" },
+  { label: "How it works", href: "/#how" },
   { label: "Live Demo", href: "/demo" },
   { label: "Features", href: "/#features" },
+  { label: "Pricing", href: "/#pricing" },
   { label: "FAQ", href: "/#faq" },
   { label: "Sign in", href: "/login" },
   { label: "Create account", href: "/signup" }
@@ -98,11 +99,11 @@ function Footer() {
             Social intelligence that remembers your audience — live-only, provenance for every recommendation.
           </p>
           <div className="mt-6 space-y-2.5 text-sm">
-            <a className="inline-flex items-center gap-2 text-white/60 hover:text-white" href="mailto:hello@eduverse.app">
+            <a className="inline-flex min-h-11 items-center gap-2 text-white/60 hover:text-white" href="mailto:hello@eduverse.app">
               <Mail className="h-4 w-4 text-[var(--accent)]" /> hello@eduverse.app
             </a>
             <br />
-            <a className="inline-flex items-center gap-2 text-white/60 hover:text-white" href="tel:+15550123456">
+            <a className="inline-flex min-h-11 items-center gap-2 text-white/60 hover:text-white" href="tel:+15550123456">
               <Phone className="h-4 w-4 text-[var(--accent)]" /> +1 (555) 012-3456
             </a>
           </div>
@@ -113,7 +114,7 @@ function Footer() {
           <ul className="mt-4 space-y-2.5 text-sm">
             {productLinks.map((link) => (
               <li key={link.href}>
-                <Link className="text-white/60 hover:text-white" href={link.href}>
+                <Link className="inline-flex min-h-11 items-center text-white/60 hover:text-white" href={link.href}>
                   {link.label}
                 </Link>
               </li>
@@ -126,7 +127,7 @@ function Footer() {
           <ul className="mt-4 space-y-2.5 text-sm">
             {exploreLinks.map((link) => (
               <li key={link.href}>
-                <Link className="text-white/60 hover:text-white" href={link.href}>
+                <Link className="inline-flex min-h-11 items-center text-white/60 hover:text-white" href={link.href}>
                   {link.label}
                 </Link>
               </li>
@@ -143,12 +144,12 @@ function Footer() {
             <li>Instagram · Facebook · Threads</li>
             <li>Encrypted, revocable anytime</li>
             <li>
-              <Link href="/privacy" className="font-medium text-[var(--accent)] hover:underline">
+              <Link href="/privacy" className="inline-flex min-h-11 items-center font-medium text-[var(--accent)] hover:underline">
                 Privacy & Data Security
               </Link>
             </li>
             <li>
-              <Link href="/demo" className="font-medium text-[var(--accent)] hover:underline">
+              <Link href="/demo" className="inline-flex min-h-11 items-center font-medium text-[var(--accent)] hover:underline">
                 Explore Live Demo (no login)
               </Link>
             </li>
@@ -159,10 +160,10 @@ function Footer() {
       <div className="mx-auto mt-12 flex max-w-[1280px] flex-col items-center justify-between gap-3 border-t border-white/10 pt-6 text-xs text-white/40 sm:flex-row">
         <p>© <CurrentYear /> EduVerse. All rights reserved.</p>
         <div className="flex flex-wrap items-center gap-4">
-          <Link href="/privacy" className="font-medium text-white/40 hover:text-white">
+          <Link href="/privacy" className="inline-flex min-h-11 items-center font-medium text-white/40 hover:text-white">
             Privacy Policy
           </Link>
-          <Link href="/demo" className="font-medium text-white/40 hover:text-white">
+          <Link href="/demo" className="inline-flex min-h-11 items-center font-medium text-white/40 hover:text-white">
             Live Demo
           </Link>
           <span className="font-mono">TC 00:42:11:04 · LIVE MEMORY ONLY</span>

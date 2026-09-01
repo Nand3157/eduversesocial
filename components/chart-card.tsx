@@ -1,5 +1,6 @@
 "use client";
 
+import { Activity } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useReducedMotion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +12,15 @@ const axisTick = { fill: "var(--faint)", fontSize: 12, fontVariantNumeric: "tabu
 function ChartState({ loading, message }: { loading: boolean; message?: string }) {
   const { data } = useAnalytics();
   const fallback = data?.live ? "Meta returned no data for the connected accounts in the last 28 days." : "Connect Meta to load live analytics.";
-  return <div className="grid min-h-[280px] place-items-center rounded-xl border border-dashed border-borderSoft bg-surface/50 px-6 text-center text-xs leading-relaxed text-mutedText">{loading ? "Loading live Meta analytics…" : (message ?? fallback)}</div>;
+  const copy = loading ? "Loading live Meta analytics…" : (message ?? fallback);
+  return (
+    <div role="status" aria-live="polite" className="grid min-h-[180px] w-full place-items-center rounded-xl border border-dashed border-borderSoft bg-surface/50 px-6 text-center text-xs leading-relaxed text-mutedText">
+      <div className="flex max-w-[28ch] flex-col items-center gap-2">
+        {!loading && <span aria-hidden="true" className="grid h-8 w-8 place-items-center rounded-full border border-borderSoft bg-card text-primary"><Activity className="h-4 w-4" /></span>}
+        <span>{copy}</span>
+      </div>
+    </div>
+  );
 }
 
 export function EngagementChartCard() {
@@ -48,5 +57,5 @@ export function PlatformBreakdownCard() {
   const chartData = data?.platformBreakdown ?? [];
   const colors = ["var(--accent)", "var(--ok)", "var(--warn)", "var(--muted)"];
   if (loading || chartData.length === 0) return <ChartState loading={loading} />;
-  return <div className="grid gap-5 lg:grid-cols-[220px_1fr] lg:items-center"><div role="img" aria-label={`Pie chart: share of engagement across ${chartData.map((p) => p.name).join(", ")}.`} className="h-[210px]"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie animationDuration={900} isAnimationActive={!reduceMotion} cx="50%" cy="50%" data={chartData} dataKey="value" innerRadius={54} outerRadius={82} paddingAngle={4}>{chartData.map((entry, index) => <Cell fill={colors[index % colors.length]} key={entry.name} />)}</Pie><Tooltip contentStyle={tooltipStyle} /></PieChart></ResponsiveContainer></div><div className="grid gap-3">{chartData.map((platform, index) => <div className="flex items-center justify-between gap-3 text-sm" key={platform.name}><span className="flex items-center gap-2 text-mutedText"><span aria-hidden="true" className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: colors[index % colors.length] }} />{platform.name}</span><strong className="tabular-nums text-ink">{new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(platform.value)}%</strong></div>)}</div></div>;
+  return <div className="grid w-full min-w-0 gap-5 lg:grid-cols-[220px_1fr] lg:items-center"><div role="img" aria-label={`Pie chart: share of engagement across ${chartData.map((p) => p.name).join(", ")}.`} className="h-[210px]"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie animationDuration={900} isAnimationActive={!reduceMotion} cx="50%" cy="50%" data={chartData} dataKey="value" innerRadius={54} outerRadius={82} paddingAngle={4}>{chartData.map((entry, index) => <Cell fill={colors[index % colors.length]} key={entry.name} />)}</Pie><Tooltip contentStyle={tooltipStyle} /></PieChart></ResponsiveContainer></div><div className="grid gap-3">{chartData.map((platform, index) => <div className="flex items-center justify-between gap-3 text-sm" key={platform.name}><span className="flex items-center gap-2 text-mutedText"><span aria-hidden="true" className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: colors[index % colors.length] }} />{platform.name}</span><strong className="tabular-nums text-ink">{new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(platform.value)}%</strong></div>)}</div></div>;
 }

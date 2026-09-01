@@ -1,15 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowRight, Check, Eye, Lock, Menu, ShieldCheck, Sparkles, Star, X } from "lucide-react";
+import { ArrowRight, Check, Eye, Lock, Menu, Star, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { FAQS } from "@/lib/agentic/faq";
-import { MetaConnectModal } from "@/components/meta/meta-connect-modal";
 import { ThemeToggle } from "@/components/providers/theme-toggle";
 
 type Review = { id: string; name: string; role: string | null; rating: number; content: string; created_at: string; };
@@ -26,8 +23,6 @@ function Wordmark({ className }: { className?: string }) {
 }
 
 export function LandingPage() {
-  const router = useRouter();
-  const [connectOpen, setConnectOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(true);
@@ -48,18 +43,6 @@ export function LandingPage() {
       .finally(() => setLoadingReviews(false));
   }, []);
 
-  const handleConnect = async () => {
-    try {
-      const { createClient } = await import("@/lib/supabase/client");
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.push("/login?next=/dashboard/settings"); return; }
-      const res = await fetch("/api/meta/connect", { cache: "no-store" });
-      if (res.status === 401) { router.push("/login?next=/dashboard/settings"); return; }
-    } catch { router.push("/login?next=/dashboard/settings"); return; }
-    setConnectOpen(true);
-  };
-
   const scrollTo = (id: string) => { setMobileOpen(false); document.getElementById(id)?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" }); };
 
   return (
@@ -74,7 +57,7 @@ export function LandingPage() {
               ["Reviews", "proof"],
               ["FAQ", "faq"],
             ].map(([label, id]) => (
-              <button key={id} onClick={() => scrollTo(id)} className="rounded-full px-3.5 py-2 text-[13px] font-medium text-mutedText hover:bg-surface hover:text-ink transition-colors">
+              <button key={id} onClick={() => scrollTo(id)} className="min-h-11 rounded-full px-3.5 py-2 text-[13px] font-medium text-mutedText transition-colors hover:bg-surface hover:text-ink">
                 {label}
               </button>
             ))}
@@ -104,9 +87,7 @@ export function LandingPage() {
             </motion.div>
           )}
         </AnimatePresence>
-      </header>
-
-      <MetaConnectModal isOpen={connectOpen} onClose={() => setConnectOpen(false)} />
+        </header>
 
       {/* HERO — editorial, proof-first */}
       <section className="relative overflow-hidden">
@@ -133,13 +114,11 @@ export function LandingPage() {
             <p className="mt-5 max-w-[56ch] text-[15px] leading-7 text-mutedText sm:text-[16px]">
               EduVerse indexes real Instagram, Facebook and Threads engagement — reach, saves, timing — into a workspace memory that compounds. Every recommendation shows <em className="font-medium text-ink not-italic">why</em> it exists.
             </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Button asChild className="rounded-full bg-ink px-6 py-6 text-background hover:bg-ink/90">
+            <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
+              <Button asChild className="rounded-full bg-ink px-6 py-6 text-background shadow-[0_8px_20px_rgba(11,18,32,0.16)] hover:bg-ink/90">
                 <Link href="/signup">Start free <ArrowRight className="h-4 w-4" /></Link>
               </Button>
-              <Button asChild variant="secondary" className="rounded-full border border-[#D6DFE8] dark:border-[#1F2A44] bg-surface">
-                <Link href="/demo"><Eye className="h-4 w-4" /> Explore demo — no login</Link>
-              </Button>
+              <Link href="/demo" className="inline-flex min-h-11 items-center gap-1.5 text-sm font-medium text-mutedText underline decoration-[#B9C4D0] underline-offset-4 transition hover:text-ink hover:decoration-ink"><Eye className="h-4 w-4" /> Preview the demo</Link>
             </div>
             <div className="mt-5 flex flex-wrap gap-2 text-xs">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-[#D6DFE8] dark:border-[#1F2A44] bg-surface px-2.5 py-1 text-mutedText"><Check className="h-3 w-3 text-success" /> No credit card</span>
@@ -152,35 +131,35 @@ export function LandingPage() {
           <motion.div initial={reduceMotion ? undefined : { opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.12, ease: [0.16,1,0.3,1] }} className="relative">
             <div className="overflow-hidden rounded-[16px] border border-[#D6DFE8] dark:border-[#1F2A44] bg-card shadow-soft">
               <div className="flex items-center justify-between border-b border-[#D6DFE8] dark:border-[#1F2A44] bg-surface px-4 py-3">
-                <span className="font-mono text-[10px] tracking-[0.14em] text-faintText">ATLAS TABLE · FAC 001 · LIVE ACETATE</span>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-success/10 px-2 py-1 text-[10px] font-medium text-success"><span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" /> Live</span>
+                <span className="font-mono text-[10px] tracking-[0.14em] text-mutedText">SANDBOX PREVIEW · FAC 001 · SAMPLE DATA</span>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-warning/10 px-2 py-1 text-[10px] font-medium text-warning"><span className="h-1.5 w-1.5 rounded-full bg-warning" /> Simulated</span>
               </div>
               <div className="bg-surface p-4">
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { k: "Reach 28d", v: "142.9K", sub: "save velocity +4.2%" },
+                    { k: "Reach · 28 days", v: "142.9K", sub: "save velocity +4.2%" },
                     { k: "Engagement", v: "18.4K", sub: "comments + saves" },
                     { k: "Posts", v: "47", sub: "IG · FB · Threads" },
                   ].map((m) => (
                     <div key={m.k} className="rounded-xl border border-[#D6DFE8] dark:border-[#1F2A44] bg-background p-3">
-                      <p className="font-mono text-[10px] tracking-[0.12em] text-faintText">{m.k}</p>
+                      <p className="font-mono text-[11px] tracking-[0.08em] text-mutedText">{m.k}</p>
                       <p className="mt-1 font-display text-lg font-semibold tracking-tight text-ink">{m.v}</p>
                       <p className="text-[11px] text-success">{m.sub}</p>
                     </div>
                   ))}
                 </div>
                 <div className="mt-4 rounded-xl border border-dashed border-[#D6DFE8] dark:border-[#1F2A44] bg-background p-4">
-                  <p className="font-mono text-[10px] tracking-[0.14em] text-faintText">14-DAY CONTOUR · ENGAGEMENT</p>
+                  <p className="font-mono text-[10px] tracking-[0.14em] text-mutedText">14-DAY TREND · ENGAGEMENT</p>
                   <div className="mt-3 h-[96px] w-full rounded-lg bg-[linear-gradient(to_right,var(--line)_1px,transparent_1px),linear-gradient(to_bottom,var(--line)_1px,transparent_1px)] bg-[size:24px_24px] opacity-60" aria-hidden />
-                  <p className="mt-2 text-center font-mono text-[10px] tracking-[0.08em] text-faintText">Scrub = memory — every frame is a real post</p>
+                  <p className="mt-2 text-center font-mono text-[10px] tracking-[0.08em] text-mutedText">Every point comes from a real post</p>
                 </div>
               </div>
               <div className="flex items-center justify-between border-t border-[#D6DFE8] dark:border-[#1F2A44] bg-surface px-4 py-2.5">
-                <span className="font-mono text-[11px] text-faintText">Provenance — why this next</span>
-                <span className="font-mono text-[11px] font-medium text-ink">Aug 12 · 19:30 · Carousel → 3.2× saves at night</span>
+                <span className="font-mono text-[11px] text-mutedText">Why this recommendation</span>
+                <span className="font-mono text-[11px] font-medium text-ink">Sample · Aug 12 · Carousel → 3.2× saves</span>
               </div>
             </div>
-            <p className="mt-3 text-center font-mono text-[11px] tracking-[0.06em] text-faintText">Preview uses simulated numbers. Connect Meta for live — empty states guide you there.</p>
+            <p className="mt-3 text-center font-mono text-[11px] tracking-[0.06em] text-mutedText">Preview uses simulated numbers. Connect Meta for live data.</p>
           </motion.div>
         </div>
       </section>
@@ -198,16 +177,16 @@ export function LandingPage() {
       </section>
 
       {/* HOW IT WORKS — contact sheet, 3 steps */}
-      <section id="telemetry" className="mx-auto max-w-[1280px] scroll-mt-24 px-5 py-14 sm:px-8 sm:py-20">
+      <section id="how" className="mx-auto max-w-[1280px] scroll-mt-24 px-5 py-14 sm:px-8 sm:py-20">
         <div className="max-w-[720px]">
           <h2 className="font-display text-[28px] font-[700] leading-[0.98] tracking-[-0.03em] sm:text-[34px]">How a post becomes memory.</h2>
-          <p className="mt-3 text-[15px] leading-7 text-mutedText">Three prints. No number invented — only indexed, then kept.</p>
+          <p className="mt-3 text-[15px] leading-7 text-mutedText">Three steps. No number invented — only indexed, then kept.</p>
         </div>
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
           {[
-            { n: "01", title: "Connect the gate", desc: "Link IG Business or Facebook Page once via Meta OAuth. Tokens AES-256-GCM, workspace-scoped, revocable.", meta: "30-day long-lived token" },
-            { n: "02", title: "Index what happened", desc: "Reach, saves, comments, timing — parallel Graph fetches, per-day cache, graceful failure per platform.", meta: "14-day window · cached" },
-            { n: "03", title: "Publish with provenance", desc: "Every recommendation shows its source post and signal. Publish or schedule — idempotent, retry-safe.", meta: "Idempotent · 3× concurrency" },
+            { n: "01", title: "Connect your accounts", desc: "Link an Instagram Business account or Facebook Page once through Meta. Access is encrypted, scoped, and revocable.", meta: "OAuth · revocable" },
+            { n: "02", title: "See what worked", desc: "Reach, saves, comments, and timing appear together in a clear timeline with graceful handling when a platform has no data.", meta: "14-day history" },
+            { n: "03", title: "Act with context", desc: "Recommendations show the post and signal behind them. Schedule or publish with safe, verified delivery.", meta: "Source-backed" },
           ].map((s) => (
             <div key={s.n} className="rounded-2xl border border-[#D6DFE8] dark:border-[#1F2A44] bg-white dark:bg-[#141E32] p-6">
               <div className="flex items-center gap-3">
@@ -225,14 +204,14 @@ export function LandingPage() {
       {/* FEATURES — 3 restrained cards, not bento */}
       <section id="features" className="mx-auto max-w-[1280px] scroll-mt-24 px-5 sm:px-8">
         <div className="max-w-[720px]">
-          <h2 className="font-display text-[28px] font-[700] tracking-[-0.03em] sm:text-[34px]">Three tapes. One bin.</h2>
-          <p className="mt-3 text-[15px] leading-7 text-mutedText">Live callbacks + long-term memory. The rest stays in the bin until you need it.</p>
+          <h2 className="font-display text-[28px] font-[700] tracking-[-0.03em] sm:text-[34px]">One view for every signal.</h2>
+          <p className="mt-3 text-[15px] leading-7 text-mutedText">Live engagement and long-term audience memory, organized around the decisions you need to make.</p>
         </div>
         <div className="mt-8 grid gap-4 lg:grid-cols-3">
           {[
-            { title: "Meta Graph Memory", desc: "Continuously learns from every Reel, Page post and Thread — performance predicted from your actual engagement, not a template.", bullets: ["REEL", "POST", "THREAD"] },
-            { title: "Cross-Platform Telemetry", desc: "Reach, save velocity and sentiment on one timeline — three lines, one truth.", bullets: ["Reach", "Saves", "Sentiment"] },
-            { title: "Automated Dispatch", desc: "Schedule & publish via official Graph API — idempotent, encrypted, retry-safe after verification.", bullets: ["Idempotent", "Encrypted", "Retry-safe"] },
+            { title: "Audience memory", desc: "Learn from every Reel, Page post, and Thread using your actual engagement instead of generic benchmarks.", bullets: ["Reels", "Posts", "Threads"] },
+            { title: "Cross-platform analytics", desc: "See reach, saves, and comment signals together so patterns are easier to act on.", bullets: ["Reach", "Saves", "Sentiment"] },
+            { title: "Safe publishing", desc: "Schedule or publish through the official Meta API with encrypted, verified, retry-safe delivery.", bullets: ["Verified", "Encrypted", "Retry-safe"] },
           ].map((f) => (
             <div key={f.title} className="rounded-2xl border border-[#D6DFE8] dark:border-[#1F2A44] bg-card p-6">
               <h3 className="font-display text-lg font-semibold tracking-tight text-ink">{f.title}</h3>
@@ -245,7 +224,21 @@ export function LandingPage() {
             </div>
           ))}
         </div>
-        <p className="mt-4 text-center font-mono text-[11px] tracking-[0.08em] text-faintText">Also in the bin: Sentiment, Publishing Windows, Hook Intelligence — live in dashboard, surfaced as next step.</p>
+        <p className="mt-4 text-center font-mono text-[11px] tracking-[0.08em] text-mutedText">Also available in the dashboard: sentiment, posting windows, and hook intelligence.</p>
+      </section>
+
+      <section id="pricing" className="mx-auto max-w-[1280px] scroll-mt-24 px-5 py-14 sm:px-8 sm:py-16">
+        <div className="grid gap-6 rounded-2xl border border-[#D6DFE8] bg-white p-6 shadow-sm dark:border-[#1F2A44] dark:bg-[#141E32] sm:p-8 lg:grid-cols-[1fr_auto] lg:items-center">
+          <div className="max-w-[62ch]">
+            <h2 className="font-display text-[28px] font-[700] tracking-[-0.03em] sm:text-[34px]">Free during early access.</h2>
+            <p className="mt-3 text-[15px] leading-7 text-mutedText">Explore the full workflow without a credit card or auto-renewal. You can disconnect Meta or delete your workspace any time.</p>
+          </div>
+          <div className="border-t border-[#D6DFE8] pt-5 dark:border-[#1F2A44] sm:border-l sm:border-t-0 sm:pl-8 sm:pt-0">
+            <p className="font-mono text-[11px] tracking-[0.16em] text-mutedText">EARLY ACCESS</p>
+            <p className="mt-1 font-display text-4xl font-semibold tracking-tight text-ink">Free</p>
+            <p className="mt-1 text-sm text-mutedText">No card · no renewal</p>
+          </div>
+        </div>
       </section>
 
       {/* REVIEWS — restrained */}
@@ -266,12 +259,12 @@ export function LandingPage() {
                 <div><p className="text-sm font-medium leading-none text-ink">{r.name}</p><p className="text-xs text-mutedText">{r.role ?? "Creator"}</p></div>
               </div>
             </div>
-          )) : (
-            <div className="col-span-3 rounded-2xl border border-dashed border-[#D6DFE8] dark:border-[#1F2A44] bg-surface p-8 text-center">
-              <p className="font-display font-medium">No selects yet — no fake placeholders.</p>
-              <p className="mt-1 text-sm text-mutedText">Be the first verified kept frame — moderated before publication.</p>
-            </div>
-          ))}
+            )) : (
+              <div className="col-span-3 mx-auto max-w-xl rounded-2xl border border-dashed border-[#D6DFE8] dark:border-[#1F2A44] bg-white dark:bg-[#141E32] p-8 text-center shadow-sm">
+                <p className="font-display text-base font-semibold tracking-tight text-ink">No selects yet — no fake placeholders.</p>
+                <p className="mt-1.5 text-sm leading-6 text-mutedText">Be the first verified kept frame — moderated before publication.</p>
+              </div>
+            ))}
         </div>
       </section>
 
@@ -280,16 +273,15 @@ export function LandingPage() {
         <div className="overflow-hidden rounded-2xl border border-[#D6DFE8] dark:border-[#1F2A44] bg-card">
           <div className="grid gap-6 p-6 sm:p-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
             <div>
-              <h3 className="font-display text-xl font-semibold tracking-tight">Try the bay before you connect.</h3>
-              <p className="mt-2 max-w-[52ch] text-sm leading-6 text-mutedText">Full live features need OAuth — step into a read-only monitor wall with simulated telemetry. No login.</p>
+              <h3 className="font-display text-xl font-semibold tracking-tight">See the dashboard before you connect.</h3>
+              <p className="mt-2 max-w-[52ch] text-sm leading-6 text-mutedText">Open a read-only demo with simulated telemetry. Every number is labeled, and no login is required.</p>
               <ul className="mt-3 space-y-1.5 text-sm text-mutedText">
-                <li className="flex gap-2"><Check className="mt-0.5 h-4 w-4 text-success" /> Real layout — metrics, timeline, keeps</li>
-                <li className="flex gap-2"><Check className="mt-0.5 h-4 w-4 text-success" /> Sample only — every number tagged Simulated</li>
+                <li className="flex gap-2"><Check className="mt-0.5 h-4 w-4 text-success" /> Same layout as the live dashboard</li>
+                <li className="flex gap-2"><Check className="mt-0.5 h-4 w-4 text-success" /> Sample data is clearly labeled</li>
               </ul>
             </div>
             <div className="flex flex-wrap gap-3 lg:justify-end">
-              <Button asChild className="rounded-full bg-ink text-background"><Link href="/demo"><Eye className="h-4 w-4" /> Explore Demo</Link></Button>
-              <Button asChild variant="secondary" className="rounded-full"><Link href="/signup">Start free <ArrowRight className="h-4 w-4" /></Link></Button>
+              <Button asChild className="rounded-full bg-ink text-background shadow-sm"><Link href="/demo"><Eye className="h-4 w-4" /> Open the demo</Link></Button>
             </div>
           </div>
         </div>
@@ -306,7 +298,7 @@ export function LandingPage() {
           <div className="grid gap-3">
             {FAQS.slice(0,4).map((faq) => (
               <details key={faq.question} className="group rounded-2xl border border-white/10 bg-white/[0.06] open:border-[var(--accent)]/30 open:bg-white/[0.08]">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-sm font-semibold text-white hover:bg-white/[0.06] [&::-webkit-details-marker]:hidden">
+                <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-sm font-semibold text-white hover:bg-white/[0.06] [&::-webkit-details-marker]:hidden">
                   <span className="flex items-center gap-3"><span className="hidden sm:grid h-7 w-7 place-items-center rounded-full bg-white text-[#0B1220] text-xs font-bold">?</span>{faq.question}</span>
                   <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/10 bg-white/10 text-white/70 transition group-open:rotate-180 group-open:bg-[var(--accent)] group-open:text-ink group-open:border-[var(--accent)]"><span>⌄</span></span>
                 </summary>
@@ -320,12 +312,12 @@ export function LandingPage() {
       {/* FINAL CTA — restrained ink — fixed dark, always */}
       <section className="bg-[#0B1220] py-12 sm:py-16">
         <div className="mx-auto max-w-[760px] px-5 text-center sm:px-8">
-          <p className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 font-mono text-[11px] tracking-[0.16em] text-white/60"><span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" /> EXPORT BAY — READY</p>
+          <p className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 font-mono text-[11px] tracking-[0.16em] text-white/60"><span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" /> EARLY ACCESS — READY</p>
           <h2 className="mt-4 font-display text-[32px] font-[700] leading-[0.95] tracking-[-0.03em] text-white sm:text-[40px]">Stop guessing.<br /><span className="font-[400] text-white/70">Start remembering.</span></h2>
-          <p className="mx-auto mt-4 max-w-[58ch] text-[15px] leading-7 text-white/60">Connect Meta and the bay fills with your real posts. Or walk the sandbox — no OAuth, every number labeled.</p>
+          <p className="mx-auto mt-4 max-w-[58ch] text-[15px] leading-7 text-white/60">Connect Meta to see your real engagement, or preview the workflow first with clearly labeled sample data.</p>
           <div className="mt-7 flex flex-wrap justify-center gap-3">
-            <Button asChild variant="secondary" className="rounded-full bg-white text-ink hover:bg-white/90"><Link href="/demo"><Eye className="h-4 w-4" /> Explore Demo</Link></Button>
-            <Button asChild className="rounded-full bg-[var(--accent)] text-ink hover:bg-[var(--accent-strong)]"><Link href="/signup">Start free <ArrowRight className="h-4 w-4" /></Link></Button>
+            <Button asChild className="rounded-full bg-[var(--accent)] text-ink shadow-[0_8px_20px_rgba(255,180,58,0.18)] hover:bg-[var(--accent-strong)]"><Link href="/signup">Start free <ArrowRight className="h-4 w-4" /></Link></Button>
+            <Button asChild variant="secondary" className="rounded-full border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white"><Link href="/demo"><Eye className="h-4 w-4" /> Preview the demo</Link></Button>
           </div>
           <p className="mt-6 text-xs text-white/40">By connecting you agree to <Link href="/privacy" className="text-[var(--accent)] underline decoration-white/20 underline-offset-4">Privacy</Link> — AES-256-GCM, RLS, revocable.</p>
         </div>

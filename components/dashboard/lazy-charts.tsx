@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 
 function ChartFallback({ height }: { height: number }) {
   return (
-    <div role="status" aria-live="polite" style={{ height }} className="animate-pulse rounded-2xl border border-borderSoft bg-surface/50">
+    <div role="status" aria-live="polite" style={{ height }} className="w-full animate-pulse rounded-2xl border border-borderSoft bg-surface/50">
       <span className="sr-only">Loading chart…</span>
     </div>
   );
