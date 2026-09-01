@@ -477,3 +477,173 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); box-sha
 @media (prefers-reduced-motion: reduce) { .signal-row-1, .signal-row-2, .signal-row-3, .signal-row-4, .landing-review-skeleton { animation: none; } }
 
  .landing-footer-shell { background: #151816 !important; color: #f3efe5; }
+
+/* Landing refinements: floating glass islands and a compact signal chart. */
+.landing-shell {
+  --landing-island: rgba(255, 255, 255, .72);
+  --landing-island-strong: rgba(255, 255, 255, .9);
+}
+.dark .landing-shell {
+  --landing-island: rgba(32, 35, 31, .78);
+  --landing-island-strong: rgba(41, 44, 39, .92);
+}
+.landing-header {
+  top: 1rem;
+  width: min(calc(100% - 2rem), 80rem);
+  margin-inline: auto;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--landing-line) 72%, transparent);
+  border-radius: 999px;
+  background: var(--landing-island);
+  box-shadow: 0 18px 42px -26px rgba(33, 39, 45, .32), inset 0 1px 0 color-mix(in srgb, white 56%, transparent);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+.landing-header-scrolled {
+  background: var(--landing-island-strong);
+  box-shadow: 0 20px 46px -28px rgba(33, 39, 45, .38), inset 0 1px 0 color-mix(in srgb, white 62%, transparent);
+}
+.landing-header-open { border-radius: 1.25rem; }
+.landing-header .landing-wrap { width: min(calc(100% - 2rem), 80rem); }
+.landing-mobile-menu { background: var(--landing-island-strong); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+
+.signal-board-dashboard { display: grid; grid-template-columns: minmax(10.5rem, .7fr) minmax(0, 1.3fr); gap: .75rem; padding: 0 1.3rem 1.3rem; }
+.signal-board-metrics { display: grid; gap: .5rem; }
+.signal-metric { display: grid; gap: .28rem; padding: .7rem .75rem; border: 1px solid #343933; border-radius: .7rem; background: rgba(255, 255, 255, .025); }
+.signal-metric span, .signal-chart-head span { color: #8d9187; font-family: var(--font-mono), ui-monospace, monospace; font-size: .52rem; letter-spacing: .1em; }
+.signal-metric strong { color: #f3efe5; font-size: 1.18rem; font-weight: 600; letter-spacing: -.04em; }
+.signal-metric small { color: #8bb695; font-family: var(--font-mono), ui-monospace, monospace; font-size: .56rem; }
+.signal-chart { min-width: 0; padding: .7rem .8rem .55rem; border: 1px solid #343933; border-radius: .7rem; background: rgba(255, 255, 255, .025); }
+.signal-chart-head { display: flex; align-items: center; justify-content: space-between; gap: .8rem; }
+.signal-chart-head strong { color: #8bb695; font-family: var(--font-mono), ui-monospace, monospace; font-size: .58rem; letter-spacing: .08em; }
+.signal-chart svg { display: block; width: 100%; height: auto; margin-top: .55rem; overflow: visible; }
+.signal-chart-grid { fill: none; stroke: #343933; stroke-width: 1; }
+.signal-chart-area { fill: url(#signal-chart-fill); }
+.signal-chart-line { fill: none; stroke: #d87843; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2.4; stroke-dasharray: 430; stroke-dashoffset: 430; animation: signal-chart-draw 1.2s .25s cubic-bezier(.16, 1, .3, 1) forwards; }
+.signal-chart-secondary { fill: none; stroke: #8bb695; stroke-dasharray: 4 5; stroke-linecap: round; stroke-width: 1.2; opacity: .9; stroke-dashoffset: 280; animation: signal-chart-secondary 1s .4s cubic-bezier(.16, 1, .3, 1) forwards; }
+.signal-chart-note { display: block; margin-top: .25rem; color: #8d9187; font-family: var(--font-mono), ui-monospace, monospace; font-size: .54rem; letter-spacing: .04em; text-align: right; }
+@keyframes signal-chart-draw { to { stroke-dashoffset: 0; } }
+@keyframes signal-chart-secondary { to { stroke-dashoffset: 0; } }
+
+.landing-feedback-form, .landing-demo-strip {
+  border: 1px solid color-mix(in srgb, var(--landing-line) 90%, transparent);
+  background: var(--landing-island-strong);
+  box-shadow: 0 22px 48px -30px rgba(33, 39, 45, .34), inset 0 1px 0 color-mix(in srgb, white 56%, transparent);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.landing-feedback-form { border-radius: 1.2rem; animation: landing-island-in .72s .08s both cubic-bezier(.16, 1, .3, 1); }
+.landing-demo-strip { border-radius: 1.2rem; }
+.landing-feedback-form:hover, .landing-demo-strip:hover { border-color: color-mix(in srgb, var(--landing-signal) 45%, var(--landing-line)); box-shadow: 0 26px 54px -30px rgba(33, 39, 45, .42), inset 0 1px 0 color-mix(in srgb, white 62%, transparent); }
+@keyframes landing-island-in { from { opacity: 0; transform: translateY(12px); filter: blur(8px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
+
+@media (max-width: 900px) {
+  .signal-board-dashboard { grid-template-columns: 1fr; }
+  .signal-board-metrics { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 640px) {
+  .landing-header { width: calc(100% - 1rem); }
+  .landing-header .landing-wrap { width: calc(100% - 1rem); }
+  .signal-board-dashboard { padding-inline: .8rem; }
+  .signal-metric { padding-inline: .55rem; }
+  .signal-metric strong { font-size: 1rem; }
+  .signal-metric small { font-size: .5rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .signal-chart-line, .signal-chart-secondary, .landing-feedback-form { animation: none; stroke-dashoffset: 0; }
+}
+
+/* Keep the blur declarations isolated for browsers that drop them from a grouped rule. */
+.landing-header { backdrop-filter: blur(18px) !important; }
+.landing-feedback-form { backdrop-filter: blur(20px) !important; }
+.landing-demo-strip { backdrop-filter: blur(20px) !important; }
+
+/* Tighten the first viewport at browser-default zoom. */
+.landing-header::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(115deg, transparent 24%, rgba(255, 255, 255, .48) 48%, transparent 70%);
+  opacity: var(--landing-glass-opacity, .12);
+  transform: translateX(var(--landing-glass-shift, -40%));
+  transition: transform 520ms cubic-bezier(.16, 1, .3, 1), opacity 320ms ease;
+}
+.landing-header > .landing-wrap, .landing-header > .landing-mobile-menu { position: relative; z-index: 1; }
+.landing-hero-grid { min-height: clamp(560px, calc(100svh - 112px), 640px); gap: clamp(2rem, 4.5vw, 4.5rem); padding-block: clamp(2.5rem, 6vw, 5rem); }
+.landing-hero h1 { max-width: 11ch; margin-top: 1.05rem; font-size: clamp(2.7rem, 4.35vw, 4.5rem); }
+.landing-hero-copy { max-width: 46ch; margin-top: 1.35rem; }
+.landing-board-wrap { width: 100%; max-width: 700px; margin-inline-start: auto; }
+.signal-board-title { padding: 1.55rem 1.15rem 1.1rem; }
+.signal-board h2, .signal-receipt h2 { font-size: clamp(1.8rem, 2.75vw, 2.75rem); }
+.signal-board-dashboard { gap: .65rem; padding: 0 1.15rem 1.05rem; }
+.signal-metric { padding: .6rem .65rem; }
+.signal-metric strong { font-size: 1.05rem; }
+.signal-chart { padding: .6rem .7rem .45rem; }
+.signal-chart svg { margin-top: .4rem; }
+.signal-board-table th, .signal-board-table td { padding-block: .68rem; }
+.landing-section-intro h2, .landing-section-heading-row h2, .landing-demo-strip h2 { font-size: clamp(2rem, 3.35vw, 3.3rem); }
+.landing-demo-strip h2 { max-width: 28ch; font-size: clamp(1.65rem, 2.65vw, 2.4rem); }
+.landing-demo-strip { padding: clamp(1.2rem, 3vw, 2.2rem); }
+.landing-feedback-form { padding: clamp(1.2rem, 2.6vw, 1.8rem); }
+@media (max-width: 900px) {
+  .landing-hero-grid { min-height: 0; }
+}
+@media (max-width: 640px) {
+  .landing-hero-grid { padding-block: 2.6rem 3.5rem; }
+  .landing-hero h1 { font-size: clamp(2.55rem, 12vw, 3.5rem); }
+  .landing-header .landing-wrap { height: 60px; }
+  .landing-section-intro h2, .landing-section-heading-row h2 { font-size: clamp(2rem, 10vw, 2.8rem); }
+  .landing-demo-strip { padding: 1.25rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-header::before { transition: none; }
+}
+
+/* Keep the hero board readable without letting it dominate the first viewport. */
+@media (min-width: 901px) {
+  .landing-hero-grid {
+    align-items: start;
+    min-height: clamp(520px, calc(100svh - 96px), 600px);
+    padding-block: clamp(2rem, 4vw, 3.5rem);
+  }
+  .signal-board-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: .35rem;
+  }
+  .signal-metric {
+    min-width: 0;
+    gap: .2rem;
+    padding: .52rem .45rem;
+  }
+  .signal-metric span,
+  .signal-chart-head span {
+    font-size: .46rem;
+    letter-spacing: .07em;
+  }
+  .signal-metric strong { font-size: .95rem; }
+  .signal-metric small {
+    overflow: hidden;
+    font-size: .48rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .signal-board-topline { min-height: 36px; }
+  .signal-board-title { padding: 1.2rem 1rem .9rem; }
+  .signal-board-stamp { min-height: 50px; min-width: 50px; }
+  .signal-board-dashboard { gap: .55rem; padding: 0 1rem .8rem; }
+  .signal-chart { padding: .52rem .6rem .4rem; }
+  .signal-chart svg { height: 90px; }
+  .signal-chart-note { font-size: .48rem; }
+  .signal-board-table th,
+  .signal-board-table td { padding-block: .38rem; }
+  .signal-platform { height: 1.45rem; width: 1.45rem; }
+  .signal-board-footer { min-height: 34px; }
+}
+
+@media (max-width: 900px) {
+  .signal-board-dashboard { grid-template-columns: 1fr; }
+  .signal-board-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}

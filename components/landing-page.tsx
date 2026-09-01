@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import {
   ArrowRight,
   BarChart3,
@@ -41,6 +41,12 @@ const railSignals = [
   { platform: "IG", post: "Behind the lesson", timing: "Tue · 17:45", lift: "+2.4× shares", status: "REPEAT" }
 ];
 
+const signalMetrics = [
+  { label: "REACH / 28 DAYS", value: "142.9K", detail: "save velocity +4.2%" },
+  { label: "ENGAGEMENT", value: "18.4K", detail: "comments + saves" },
+  { label: "POSTS", value: "47", detail: "IG · FB · Threads" }
+];
+
 const memoryStages = [
   { number: "01", title: "Connect once", copy: "Link Instagram Business, Facebook Pages, or Threads through Meta’s official consent flow." },
   { number: "02", title: "Read the signal", copy: "Reach, saves, comments, timing, and post format arrive together in one live timeline." },
@@ -68,6 +74,22 @@ function SignalBoard() {
       <div className="signal-board" aria-label="Simulated EduVerse recommendation board">
         <div className="signal-board-topline"><span>EDUVERSE / WORKSPACE 001</span><span className="signal-board-live"><i aria-hidden="true" /> SIMULATED</span></div>
         <div className="signal-board-title"><div><p className="signal-board-kicker">AUDIENCE MEMORY / 14 DAYS</p><h2>What your audience<br /><em>kept.</em></h2></div><div className="signal-board-stamp">SAMPLE<br />DATA</div></div>
+        <div className="signal-board-dashboard">
+          <div className="signal-board-metrics" aria-label="Simulated audience summary">
+            {signalMetrics.map((metric) => <div className="signal-metric" key={metric.label}><span>{metric.label}</span><strong>{metric.value}</strong><small>{metric.detail}</small></div>)}
+          </div>
+          <div className="signal-chart" role="img" aria-label="Simulated fourteen day engagement trend rising by 4.2 percent">
+            <div className="signal-chart-head"><span>14-DAY TREND · ENGAGEMENT</span><strong>+4.2%</strong></div>
+            <svg viewBox="0 0 360 118" aria-hidden="true" focusable="false">
+              <defs><linearGradient id="signal-chart-fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#d87843" stopOpacity=".28" /><stop offset="1" stopColor="#d87843" stopOpacity="0" /></linearGradient></defs>
+              <path className="signal-chart-grid" d="M0 24H360M0 59H360M0 94H360M72 0V118M144 0V118M216 0V118M288 0V118" />
+              <path className="signal-chart-area" d="M0 96 C22 92 34 94 52 87 S88 89 106 78 S138 83 157 70 S187 76 208 62 S241 65 260 52 S292 54 310 42 S343 45 360 28 V118 H0 Z" />
+              <path className="signal-chart-line" d="M0 96 C22 92 34 94 52 87 S88 89 106 78 S138 83 157 70 S187 76 208 62 S241 65 260 52 S292 54 310 42 S343 45 360 28" />
+              <path className="signal-chart-secondary" d="M0 105 C24 103 38 104 57 100 S91 101 110 94 S143 98 161 90 S194 93 212 84 S245 88 263 78 S295 82 314 72 S345 75 360 65" />
+            </svg>
+            <span className="signal-chart-note">Sample trend · every point labeled simulated</span>
+          </div>
+        </div>
         <div className="signal-board-table-wrap">
           <table className="signal-board-table">
             <caption className="sr-only">Simulated audience signal recommendations</caption>
@@ -94,9 +116,26 @@ export function LandingPage() {
   const [feedbackStatus, setFeedbackStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [scrolled, setScrolled] = useState(false);
+  const landingHeaderRef = useRef<HTMLElement>(null);
   const reduceMotion = useReducedMotion();
 
-  useEffect(() => { const onScroll = () => setScrolled(window.scrollY > 12); window.addEventListener("scroll", onScroll, { passive: true }); return () => window.removeEventListener("scroll", onScroll); }, []);
+  useEffect(() => {
+    let frame = 0;
+    const onScroll = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        const maxScroll = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
+        const progress = Math.min(window.scrollY / maxScroll, 1);
+        landingHeaderRef.current?.style.setProperty("--landing-glass-shift", `${-40 + progress * 120}%`);
+        landingHeaderRef.current?.style.setProperty("--landing-glass-opacity", `${0.12 + progress * 0.12}`);
+        setScrolled(window.scrollY > 12);
+        frame = 0;
+      });
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => { window.removeEventListener("scroll", onScroll); if (frame) window.cancelAnimationFrame(frame); };
+  }, []);
   useEffect(() => { fetch("/api/reviews", { cache: "no-store" }).then((response) => (response.ok ? response.json() : { reviews: [] })).then((data) => setReviews(data.reviews ?? [])).catch(() => setReviews([])).finally(() => setLoadingReviews(false)); }, []);
 
   const submitFeedback = async (event: FormEvent<HTMLFormElement>) => {
@@ -115,8 +154,8 @@ export function LandingPage() {
 
   return (
     <div id="top" className="landing-shell min-h-screen">
-      <header className={cn("landing-header sticky top-0 z-40", scrolled && "landing-header-scrolled")}>
-        <div className="landing-wrap flex h-[72px] items-center justify-between"><Wordmark /><nav aria-label="Primary navigation" className="hidden items-center gap-1 lg:flex">{navItems.map((id) => <button key={id} onClick={() => scrollTo(id)} className="landing-nav-link min-h-11 rounded-full px-3.5 text-[13px] font-medium">{navLabel(id)}</button>)}</nav><div className="flex items-center gap-2"><ThemeToggle /><Button asChild variant="ghost" size="sm" className="hidden rounded-full text-[var(--landing-muted)] sm:inline-flex"><Link href="/login">Sign in</Link></Button><Button asChild size="sm" className="hidden rounded-full bg-[var(--landing-signal)] px-5 text-white hover:bg-[var(--landing-signal-dark)] sm:inline-flex"><Link href="/signup">Start free <ArrowRight className="h-3.5 w-3.5" /></Link></Button><button type="button" aria-label={mobileOpen ? "Close menu" : "Open menu"} aria-expanded={mobileOpen} onClick={() => setMobileOpen((open) => !open)} className="landing-menu-button lg:hidden">{mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button></div></div>
+      <header ref={landingHeaderRef} className={cn("landing-header sticky top-0 z-40", scrolled && "landing-header-scrolled", mobileOpen && "landing-header-open")}>
+        <div className="landing-wrap flex h-[64px] items-center justify-between"><Wordmark /><nav aria-label="Primary navigation" className="hidden items-center gap-1 lg:flex">{navItems.map((id) => <button key={id} onClick={() => scrollTo(id)} className="landing-nav-link min-h-11 rounded-full px-3.5 text-[13px] font-medium">{navLabel(id)}</button>)}</nav><div className="flex items-center gap-2"><ThemeToggle /><Button asChild variant="ghost" size="sm" className="hidden rounded-full text-[var(--landing-muted)] sm:inline-flex"><Link href="/login">Sign in</Link></Button><Button asChild size="sm" className="hidden rounded-full bg-[var(--landing-signal)] px-5 text-white hover:bg-[var(--landing-signal-dark)] sm:inline-flex"><Link href="/signup">Start free <ArrowRight className="h-3.5 w-3.5" /></Link></Button><button type="button" aria-label={mobileOpen ? "Close menu" : "Open menu"} aria-expanded={mobileOpen} onClick={() => setMobileOpen((open) => !open)} className="landing-menu-button lg:hidden">{mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button></div></div>
         <AnimatePresence>{mobileOpen && <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="landing-mobile-menu lg:hidden"><div className="landing-wrap grid gap-1 py-3">{navItems.map((id) => <button key={id} onClick={() => scrollTo(id)} className="min-h-11 px-3 text-left text-sm font-medium text-[var(--landing-ink)]">{navLabel(id)}</button>)}<Button asChild className="mt-2 rounded-full bg-[var(--landing-signal)] text-white hover:bg-[var(--landing-signal-dark)]"><Link href="/signup">Start free — no credit card</Link></Button></div></motion.div>}</AnimatePresence>
       </header>
 
@@ -131,7 +170,7 @@ export function LandingPage() {
 
         <section className="landing-wrap landing-receipt-section" aria-labelledby="receipt-heading"><div className="signal-receipt"><div className="signal-receipt-header"><span>RECOMMENDATION RECEIPT</span><span>SIMULATED WORKSPACE · AUG 12</span></div><div className="signal-receipt-grid"><div><p className="signal-board-kicker">WHY THIS?</p><h2 id="receipt-heading">Repeat the format<br /><em>that earned saves.</em></h2><p className="signal-receipt-copy">“Exam prep carousel” outperformed your recent post average by 3.2× on saves.</p></div><div className="signal-receipt-data"><div><span>RECOMMENDATION</span><strong>Carousel</strong></div><div><span>BEST WINDOW</span><strong>Wed · 18:30</strong></div><div><span>SOURCE SIGNAL</span><strong>Save velocity</strong></div><Link href="/demo" className="signal-receipt-link">See sample provenance <ArrowRight aria-hidden="true" /></Link></div></div></div></section>
 
-        <section id="feedback" className="landing-section landing-section-rule" aria-labelledby="feedback-heading"><div className="landing-wrap"><div className="landing-section-heading-row"><div><p className="landing-section-label">EARLY NOTES</p><h2 id="feedback-heading">People are still writing the first draft.</h2></div><span className="landing-count">{reviews.length ? `${reviews.length} VERIFIED NOTES` : "NO APPROVED NOTES YET"}</span></div><div className={cn("landing-feedback-grid", !loadingReviews && !reviews.length && "landing-feedback-empty")}>{(loadingReviews || reviews.length > 0) && <div className="landing-reviews">{(loadingReviews ? Array.from({ length: 3 }).map((_, index) => <div key={index} className="landing-review landing-review-skeleton" />) : reviews.slice(0, 3).map((review) => <article key={review.id} className="landing-review"><div className="landing-stars">{Array.from({ length: 5 }).map((_, index) => <Star key={index} className={cn("h-3.5 w-3.5", index < review.rating ? "fill-[var(--landing-signal)] text-[var(--landing-signal)]" : "text-[var(--landing-line]")} />)}</div><blockquote>“{review.content}”</blockquote><footer><span>{review.name.split(" ").map((part) => part[0]).join("").slice(0, 2)}</span><div><strong>{review.name}</strong><small>{review.role ?? "Creator"}</small></div></footer></article>))}</div>}<form onSubmit={submitFeedback} className="landing-feedback-form"><p className="landing-section-label">SHARE YOUR EXPERIENCE</p><h3>Give feedback.</h3><p>Tell us what helped or what needs work. Submissions are moderated before they appear publicly.</p><div className="landing-form-grid"><label>Name<input required maxLength={80} autoComplete="name" value={feedbackForm.name} onChange={(event) => setFeedbackForm((current) => ({ ...current, name: event.target.value }))} /></label><label>Role <span>(optional)</span><input maxLength={120} autoComplete="organization-title" value={feedbackForm.role} onChange={(event) => setFeedbackForm((current) => ({ ...current, role: event.target.value }))} /></label></div><fieldset><legend>Rating</legend><div className="landing-rating-group" role="radiogroup" aria-label="Rating from one to five stars">{[1, 2, 3, 4, 5].map((rating) => <label key={rating}><input type="radio" name="rating" value={rating} checked={feedbackForm.rating === rating} onChange={() => setFeedbackForm((current) => ({ ...current, rating }))} /><span>{rating}</span></label>)}</div></fieldset><label className="landing-message-label">Feedback<textarea required maxLength={800} rows={4} value={feedbackForm.content} onChange={(event) => setFeedbackForm((current) => ({ ...current, content: event.target.value }))} /><small>{feedbackForm.content.length}/800</small></label><div className="landing-form-submit"><Button type="submit" disabled={feedbackStatus === "submitting"} className="rounded-full bg-[var(--landing-signal)] text-white hover:bg-[var(--landing-signal-dark)]">{feedbackStatus === "submitting" ? "Sending…" : "Send feedback"}<ArrowRight className="h-4 w-4" /></Button>{feedbackMessage && <p role={feedbackStatus === "error" ? "alert" : "status"} aria-live="polite" className={feedbackStatus === "error" ? "text-danger" : "text-[var(--landing-success)]"}>{feedbackMessage}</p>}</div></form></div></div></section>
+        <section id="feedback" className="landing-section landing-section-rule" aria-labelledby="feedback-heading"><div className="landing-wrap"><div className="landing-section-heading-row"><div><p className="landing-section-label">EARLY NOTES</p><h2 id="feedback-heading">People are still writing the first draft.</h2></div><span className="landing-count">{reviews.length ? `${reviews.length} VERIFIED NOTES` : "NO APPROVED NOTES YET"}</span></div><div className={cn("landing-feedback-grid", !loadingReviews && !reviews.length && "landing-feedback-empty")}>{(loadingReviews || reviews.length > 0) && <div className="landing-reviews">{(loadingReviews ? Array.from({ length: 3 }).map((_, index) => <div key={index} className="landing-review landing-review-skeleton" />) : reviews.slice(0, 3).map((review) => <article key={review.id} className="landing-review"><div className="landing-stars">{Array.from({ length: 5 }).map((_, index) => <Star key={index} className={cn("h-3.5 w-3.5", index < review.rating ? "fill-[var(--landing-signal)] text-[var(--landing-signal)]" : "text-[var(--landing-line]")} />)}</div><blockquote>“{review.content}”</blockquote><footer><span>{review.name.split(" ").map((part) => part[0]).join("").slice(0, 2)}</span><div><strong>{review.name}</strong><small>{review.role ?? "Creator"}</small></div></footer></article>))}</div>}<form onSubmit={submitFeedback} className="landing-feedback-form landing-glass-island"><p className="landing-section-label">SHARE YOUR EXPERIENCE</p><h3>Give feedback.</h3><p>Tell us what helped or what needs work. Submissions are moderated before they appear publicly.</p><div className="landing-form-grid"><label>Name<input required maxLength={80} autoComplete="name" value={feedbackForm.name} onChange={(event) => setFeedbackForm((current) => ({ ...current, name: event.target.value }))} /></label><label>Role <span>(optional)</span><input maxLength={120} autoComplete="organization-title" value={feedbackForm.role} onChange={(event) => setFeedbackForm((current) => ({ ...current, role: event.target.value }))} /></label></div><fieldset><legend>Rating</legend><div className="landing-rating-group" role="radiogroup" aria-label="Rating from one to five stars">{[1, 2, 3, 4, 5].map((rating) => <label key={rating}><input type="radio" name="rating" value={rating} checked={feedbackForm.rating === rating} onChange={() => setFeedbackForm((current) => ({ ...current, rating }))} /><span>{rating}</span></label>)}</div></fieldset><label className="landing-message-label">Feedback<textarea required maxLength={800} rows={4} value={feedbackForm.content} onChange={(event) => setFeedbackForm((current) => ({ ...current, content: event.target.value }))} /><small>{feedbackForm.content.length}/800</small></label><div className="landing-form-submit"><Button type="submit" disabled={feedbackStatus === "submitting"} className="rounded-full bg-[var(--landing-signal)] text-white hover:bg-[var(--landing-signal-dark)]">{feedbackStatus === "submitting" ? "Sending…" : "Send feedback"}<ArrowRight className="h-4 w-4" /></Button>{feedbackMessage && <p role={feedbackStatus === "error" ? "alert" : "status"} aria-live="polite" className={feedbackStatus === "error" ? "text-danger" : "text-[var(--landing-success)]"}>{feedbackMessage}</p>}</div></form></div></div></section>
 
         <section id="pricing" className="landing-wrap landing-demo-section"><div className="landing-demo-strip"><div><p className="landing-section-label">WANT TO LOOK AROUND FIRST?</p><h2>See the workflow before you connect.</h2><p>Read-only demo. Simulated numbers clearly labeled. No login needed.</p></div><Button asChild variant="secondary" className="rounded-full border-[var(--landing-line)] bg-transparent text-[var(--landing-ink)] hover:bg-[var(--landing-paper)]"><Link href="/demo"><Eye className="h-4 w-4" /> Open the demo</Link></Button></div></section>
 
