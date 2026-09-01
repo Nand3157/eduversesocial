@@ -63,8 +63,8 @@ export function LandingPage() {
   const scrollTo = (id: string) => { setMobileOpen(false); document.getElementById(id)?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" }); };
 
   return (
-    <div id="top" className="min-h-screen bg-background text-ink selection:bg-accent-soft">
-      <header className={cn("sticky top-0 z-40 border-b backdrop-blur-xl transition", scrolled ? "border-borderSoft bg-background/90 supports-[backdrop-filter]:bg-background/80" : "border-transparent bg-transparent")}>
+    <div id="top" className="min-h-screen bg-[#EEF3F9] dark:bg-[#0A0F1E] text-ink selection:bg-accent-soft">
+      <header className={cn("sticky top-0 z-40 border-b backdrop-blur-xl transition", scrolled ? "border-[#D6DFE8] dark:border-[#1F2A44] bg-white/90 dark:bg-[#0B1220]/90 supports-[backdrop-filter]:bg-white/80 dark:supports-[backdrop-filter]:bg-[#0B1220]/80" : "border-transparent bg-transparent")}>
         <div className="mx-auto flex h-[68px] max-w-[1280px] items-center justify-between px-5 sm:px-8">
           <Wordmark />
           <nav className="hidden items-center gap-1 lg:flex">
@@ -87,14 +87,14 @@ export function LandingPage() {
             <Button asChild size="sm" className="rounded-full bg-ink text-background hover:bg-ink/90 px-5 hidden sm:inline-flex">
               <Link href="/signup">Start free <ArrowRight className="h-3.5 w-3.5" /></Link>
             </Button>
-            <button aria-label={mobileOpen ? "Close menu" : "Open menu"} aria-expanded={mobileOpen} onClick={() => setMobileOpen((v) => !v)} className="grid h-10 w-10 place-items-center rounded-full border border-borderSoft bg-surface text-ink lg:hidden">
+            <button aria-label={mobileOpen ? "Close menu" : "Open menu"} aria-expanded={mobileOpen} onClick={() => setMobileOpen((v) => !v)} className="grid h-10 w-10 place-items-center rounded-full border border-[#D6DFE8] dark:border-[#1F2A44] bg-surface text-ink lg:hidden">
               {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
           </div>
         </div>
         <AnimatePresence>
           {mobileOpen && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden border-t border-borderSoft bg-background lg:hidden">
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden border-t border-[#D6DFE8] dark:border-[#1F2A44] bg-background lg:hidden">
               <div className="space-y-1 px-5 py-4">
                 {[["How it works","how"],["Features","features"],["Reviews","proof"],["FAQ","faq"]].map(([l,id]) => (
                   <button key={id} onClick={() => scrollTo(id)} className="block w-full rounded-xl px-3 py-3 text-left text-sm font-medium hover:bg-surface">{l}</button>
@@ -116,7 +116,7 @@ export function LandingPage() {
         </div>
         <div className="mx-auto grid max-w-[1280px] gap-10 px-5 py-10 sm:px-8 sm:py-14 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-12 lg:py-20">
           <motion.div initial={reduceMotion ? undefined : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.16,1,0.3,1] }}>
-            <div className="inline-flex items-center gap-2 rounded-full border border-borderSoft bg-surface px-3 py-1 text-xs">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#D6DFE8] dark:border-[#1F2A44] bg-surface px-3 py-1 text-xs">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" aria-hidden />
               <span className="font-mono text-[11px] tracking-[0.12em] text-mutedText">LIVE-ONLY · NO FAKE METRICS</span>
             </div>
@@ -137,21 +137,21 @@ export function LandingPage() {
               <Button asChild className="rounded-full bg-ink px-6 py-6 text-background hover:bg-ink/90">
                 <Link href="/signup">Start free <ArrowRight className="h-4 w-4" /></Link>
               </Button>
-              <Button asChild variant="secondary" className="rounded-full border border-borderSoft bg-surface">
+              <Button asChild variant="secondary" className="rounded-full border border-[#D6DFE8] dark:border-[#1F2A44] bg-surface">
                 <Link href="/demo"><Eye className="h-4 w-4" /> Explore demo — no login</Link>
               </Button>
             </div>
             <div className="mt-5 flex flex-wrap gap-2 text-xs">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-borderSoft bg-surface px-2.5 py-1 text-mutedText"><Check className="h-3 w-3 text-success" /> No credit card</span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-borderSoft bg-surface px-2.5 py-1 text-mutedText"><Lock className="h-3 w-3" /> Encrypted & revocable</span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-borderSoft bg-surface px-2.5 py-1 text-mutedText">IG · FB · Threads</span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#D6DFE8] dark:border-[#1F2A44] bg-surface px-2.5 py-1 text-mutedText"><Check className="h-3 w-3 text-success" /> No credit card</span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#D6DFE8] dark:border-[#1F2A44] bg-surface px-2.5 py-1 text-mutedText"><Lock className="h-3 w-3" /> Encrypted & revocable</span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#D6DFE8] dark:border-[#1F2A44] bg-surface px-2.5 py-1 text-mutedText">IG · FB · Threads</span>
             </div>
           </motion.div>
 
           {/* Preview — atlas table, not floating glass */}
           <motion.div initial={reduceMotion ? undefined : { opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.12, ease: [0.16,1,0.3,1] }} className="relative">
-            <div className="overflow-hidden rounded-[16px] border border-borderSoft bg-card shadow-soft">
-              <div className="flex items-center justify-between border-b border-borderSoft bg-surface px-4 py-3">
+            <div className="overflow-hidden rounded-[16px] border border-[#D6DFE8] dark:border-[#1F2A44] bg-card shadow-soft">
+              <div className="flex items-center justify-between border-b border-[#D6DFE8] dark:border-[#1F2A44] bg-surface px-4 py-3">
                 <span className="font-mono text-[10px] tracking-[0.14em] text-faintText">ATLAS TABLE · FAC 001 · LIVE ACETATE</span>
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-success/10 px-2 py-1 text-[10px] font-medium text-success"><span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" /> Live</span>
               </div>
@@ -162,20 +162,20 @@ export function LandingPage() {
                     { k: "Engagement", v: "18.4K", sub: "comments + saves" },
                     { k: "Posts", v: "47", sub: "IG · FB · Threads" },
                   ].map((m) => (
-                    <div key={m.k} className="rounded-xl border border-borderSoft bg-background p-3">
+                    <div key={m.k} className="rounded-xl border border-[#D6DFE8] dark:border-[#1F2A44] bg-background p-3">
                       <p className="font-mono text-[10px] tracking-[0.12em] text-faintText">{m.k}</p>
                       <p className="mt-1 font-display text-lg font-semibold tracking-tight text-ink">{m.v}</p>
                       <p className="text-[11px] text-success">{m.sub}</p>
                     </div>
                   ))}
                 </div>
-                <div className="mt-4 rounded-xl border border-dashed border-borderSoft bg-background p-4">
+                <div className="mt-4 rounded-xl border border-dashed border-[#D6DFE8] dark:border-[#1F2A44] bg-background p-4">
                   <p className="font-mono text-[10px] tracking-[0.14em] text-faintText">14-DAY CONTOUR · ENGAGEMENT</p>
                   <div className="mt-3 h-[96px] w-full rounded-lg bg-[linear-gradient(to_right,var(--line)_1px,transparent_1px),linear-gradient(to_bottom,var(--line)_1px,transparent_1px)] bg-[size:24px_24px] opacity-60" aria-hidden />
                   <p className="mt-2 text-center font-mono text-[10px] tracking-[0.08em] text-faintText">Scrub = memory — every frame is a real post</p>
                 </div>
               </div>
-              <div className="flex items-center justify-between border-t border-borderSoft bg-surface px-4 py-2.5">
+              <div className="flex items-center justify-between border-t border-[#D6DFE8] dark:border-[#1F2A44] bg-surface px-4 py-2.5">
                 <span className="font-mono text-[11px] text-faintText">Provenance — why this next</span>
                 <span className="font-mono text-[11px] font-medium text-ink">Aug 12 · 19:30 · Carousel → 3.2× saves at night</span>
               </div>
@@ -186,7 +186,7 @@ export function LandingPage() {
       </section>
 
       {/* LOGOS — restrained */}
-      <section className="border-y border-borderSoft bg-surface">
+      <section className="border-y border-[#D6DFE8] dark:border-[#1F2A44] bg-white dark:bg-[#0E1424]">
         <div className="mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-4 px-5 py-5 sm:px-8">
           <span className="font-mono text-[11px] tracking-[0.16em] text-faintText">ONE FEED · THREE GATES · OFFICIAL META GRAPH API</span>
           <div className="flex items-center gap-6 text-sm font-medium text-mutedText">
@@ -209,7 +209,7 @@ export function LandingPage() {
             { n: "02", title: "Index what happened", desc: "Reach, saves, comments, timing — parallel Graph fetches, per-day cache, graceful failure per platform.", meta: "14-day window · cached" },
             { n: "03", title: "Publish with provenance", desc: "Every recommendation shows its source post and signal. Publish or schedule — idempotent, retry-safe.", meta: "Idempotent · 3× concurrency" },
           ].map((s) => (
-            <div key={s.n} className="rounded-2xl border border-borderSoft bg-card p-6">
+            <div key={s.n} className="rounded-2xl border border-[#D6DFE8] dark:border-[#1F2A44] bg-white dark:bg-[#141E32] p-6">
               <div className="flex items-center gap-3">
                 <span className="grid h-8 w-8 place-items-center rounded-full bg-ink text-xs font-bold text-background">{s.n}</span>
                 <span className="font-mono text-[11px] tracking-[0.14em] text-faintText">STEP {s.n}</span>
@@ -234,12 +234,12 @@ export function LandingPage() {
             { title: "Cross-Platform Telemetry", desc: "Reach, save velocity and sentiment on one timeline — three lines, one truth.", bullets: ["Reach", "Saves", "Sentiment"] },
             { title: "Automated Dispatch", desc: "Schedule & publish via official Graph API — idempotent, encrypted, retry-safe after verification.", bullets: ["Idempotent", "Encrypted", "Retry-safe"] },
           ].map((f) => (
-            <div key={f.title} className="rounded-2xl border border-borderSoft bg-card p-6">
+            <div key={f.title} className="rounded-2xl border border-[#D6DFE8] dark:border-[#1F2A44] bg-card p-6">
               <h3 className="font-display text-lg font-semibold tracking-tight text-ink">{f.title}</h3>
               <p className="mt-2 text-sm leading-6 text-mutedText">{f.desc}</p>
               <div className="mt-4 flex flex-wrap gap-1.5">
                 {f.bullets.map((b) => (
-                  <span key={b} className="rounded-full border border-borderSoft bg-surface px-2.5 py-1 text-[11px] font-mono tracking-[0.08em] text-mutedText">{b}</span>
+                  <span key={b} className="rounded-full border border-[#D6DFE8] dark:border-[#1F2A44] bg-surface px-2.5 py-1 text-[11px] font-mono tracking-[0.08em] text-mutedText">{b}</span>
                 ))}
               </div>
             </div>
@@ -256,18 +256,18 @@ export function LandingPage() {
         </div>
         <div className="mt-6 grid gap-4 sm:grid-cols-3">
           {(loadingReviews ? Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-[160px] animate-pulse rounded-2xl border border-borderSoft bg-surface" />
+            <div key={i} className="h-[160px] animate-pulse rounded-2xl border border-[#D6DFE8] dark:border-[#1F2A44] bg-surface" />
           )) : reviews.length ? reviews.slice(0,3).map((r) => (
-            <div key={r.id} className="rounded-2xl border border-borderSoft bg-card p-5">
+            <div key={r.id} className="rounded-2xl border border-[#D6DFE8] dark:border-[#1F2A44] bg-card p-5">
               <div className="flex gap-0.5">{Array.from({ length: 5 }).map((_, i) => <Star key={i} className={`h-3 w-3 ${i < r.rating ? "fill-[var(--accent)] text-[var(--accent)]" : "text-faintText"}`} />)}</div>
               <blockquote className="mt-3 text-sm leading-6 text-ink">“{r.content}”</blockquote>
-              <div className="mt-4 flex items-center gap-2 border-t border-borderSoft pt-3">
+              <div className="mt-4 flex items-center gap-2 border-t border-[#D6DFE8] dark:border-[#1F2A44] pt-3">
                 <span className="grid h-8 w-8 place-items-center rounded-full bg-ink text-xs font-semibold text-background">{r.name.split(" ").map((n)=>n[0]).join("").slice(0,2)}</span>
                 <div><p className="text-sm font-medium leading-none text-ink">{r.name}</p><p className="text-xs text-mutedText">{r.role ?? "Creator"}</p></div>
               </div>
             </div>
           )) : (
-            <div className="col-span-3 rounded-2xl border border-dashed border-borderSoft bg-surface p-8 text-center">
+            <div className="col-span-3 rounded-2xl border border-dashed border-[#D6DFE8] dark:border-[#1F2A44] bg-surface p-8 text-center">
               <p className="font-display font-medium">No selects yet — no fake placeholders.</p>
               <p className="mt-1 text-sm text-mutedText">Be the first verified kept frame — moderated before publication.</p>
             </div>
@@ -277,7 +277,7 @@ export function LandingPage() {
 
       {/* DEMO STRIP */}
       <section className="mx-auto max-w-[1280px] px-5 sm:px-8">
-        <div className="overflow-hidden rounded-2xl border border-borderSoft bg-card">
+        <div className="overflow-hidden rounded-2xl border border-[#D6DFE8] dark:border-[#1F2A44] bg-card">
           <div className="grid gap-6 p-6 sm:p-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
             <div>
               <h3 className="font-display text-xl font-semibold tracking-tight">Try the bay before you connect.</h3>
@@ -305,10 +305,10 @@ export function LandingPage() {
           </div>
           <div className="grid gap-3">
             {FAQS.slice(0,4).map((faq) => (
-              <details key={faq.question} className="group rounded-2xl border border-borderSoft bg-card open:border-[var(--accent)]/30">
+              <details key={faq.question} className="group rounded-2xl border border-[#D6DFE8] dark:border-[#1F2A44] bg-card open:border-[var(--accent)]/30">
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-sm font-semibold hover:bg-surface/50 [&::-webkit-details-marker]:hidden">
                   <span className="flex items-center gap-3"><span className="hidden sm:grid h-7 w-7 place-items-center rounded-full bg-ink text-white text-xs font-bold">?</span>{faq.question}</span>
-                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-borderSoft bg-background text-mutedText group-open:rotate-180 group-open:bg-ink group-open:text-background transition"><span>⌄</span></span>
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-[#D6DFE8] dark:border-[#1F2A44] bg-background text-mutedText group-open:rotate-180 group-open:bg-ink group-open:text-background transition"><span>⌄</span></span>
                 </summary>
                 <p className="px-5 pb-5 pl-5 sm:pl-14 text-sm leading-7 text-mutedText">{faq.answer}</p>
               </details>
