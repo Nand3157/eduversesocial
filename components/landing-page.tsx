@@ -295,30 +295,30 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* FAQ — amber ? as designed, chevron */}
-      <section id="faq" className="mx-auto max-w-[1280px] scroll-mt-24 px-5 py-14 sm:px-8 sm:py-16">
-        <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
+      {/* FAQ — amber ? as designed, chevron — dark band, always */}
+      <section id="faq" className="bg-[#0B1220] px-5 py-14 sm:px-8 sm:py-16">
+        <div className="mx-auto grid max-w-[1280px] gap-8 lg:grid-cols-[0.9fr_1.1fr]">
           <div>
-            <h2 className="font-display text-[28px] font-[700] tracking-[-0.03em] sm:text-[32px]">Edit log — plainly.</h2>
-            <p className="mt-3 max-w-[48ch] text-[15px] leading-7 text-mutedText">Free during early access, revocable in one click. The log is the truth.</p>
-            <p className="mt-3 font-mono text-xs tracking-[0.14em] text-faintText">CANONICAL · llms.txt + /md/faq</p>
+            <h2 className="font-display text-[28px] font-[700] tracking-[-0.03em] text-white sm:text-[32px]">Edit log — plainly.</h2>
+            <p className="mt-3 max-w-[48ch] text-[15px] leading-7 text-white/70">Free during early access, revocable in one click. The log is the truth.</p>
+            <p className="mt-3 font-mono text-xs tracking-[0.14em] text-white/40">CANONICAL · llms.txt + /md/faq</p>
           </div>
           <div className="grid gap-3">
             {FAQS.slice(0,4).map((faq) => (
-              <details key={faq.question} className="group rounded-2xl border border-[#D6DFE8] dark:border-[#1F2A44] bg-card open:border-[var(--accent)]/30">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-sm font-semibold hover:bg-surface/50 [&::-webkit-details-marker]:hidden">
-                  <span className="flex items-center gap-3"><span className="hidden sm:grid h-7 w-7 place-items-center rounded-full bg-ink text-white text-xs font-bold">?</span>{faq.question}</span>
-                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-[#D6DFE8] dark:border-[#1F2A44] bg-background text-mutedText group-open:rotate-180 group-open:bg-ink group-open:text-background transition"><span>⌄</span></span>
+              <details key={faq.question} className="group rounded-2xl border border-white/10 bg-white/[0.06] open:border-[var(--accent)]/30 open:bg-white/[0.08]">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-sm font-semibold text-white hover:bg-white/[0.06] [&::-webkit-details-marker]:hidden">
+                  <span className="flex items-center gap-3"><span className="hidden sm:grid h-7 w-7 place-items-center rounded-full bg-white text-[#0B1220] text-xs font-bold">?</span>{faq.question}</span>
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/10 bg-white/10 text-white/70 transition group-open:rotate-180 group-open:bg-[var(--accent)] group-open:text-ink group-open:border-[var(--accent)]"><span>⌄</span></span>
                 </summary>
-                <p className="px-5 pb-5 pl-5 sm:pl-14 text-sm leading-7 text-mutedText">{faq.answer}</p>
+                <p className="px-5 pb-5 pl-5 sm:pl-14 text-sm leading-7 text-white/70">{faq.answer}</p>
               </details>
             ))}
           </div>
         </div>
       </section>
 
-      {/* FINAL CTA — restrained ink */}
-      <section className="bg-ink py-12 sm:py-16">
+      {/* FINAL CTA — restrained ink — fixed dark, always */}
+      <section className="bg-[#0B1220] py-12 sm:py-16">
         <div className="mx-auto max-w-[760px] px-5 text-center sm:px-8">
           <p className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 font-mono text-[11px] tracking-[0.16em] text-white/60"><span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" /> EXPORT BAY — READY</p>
           <h2 className="mt-4 font-display text-[32px] font-[700] leading-[0.95] tracking-[-0.03em] text-white sm:text-[40px]">Stop guessing.<br /><span className="font-[400] text-white/70">Start remembering.</span></h2>
