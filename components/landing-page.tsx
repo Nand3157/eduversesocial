@@ -137,12 +137,8 @@ function ReviewStars({ rating, className }: { rating: number; className?: string
 
 function Wordmark({ className }: { className?: string }) {
   return (
-    <a aria-label="EduVerse home" className={cn("inline-flex items-center gap-3", className)} href="#top">
-      <span className="relative grid h-9 w-9 place-items-center rounded-[9px] bg-white text-[#0F1115] overflow-hidden ring-1 ring-black/5">
-        <span className="absolute inset-0 sprocket-track opacity-[0.08]" aria-hidden />
-        <Sparkles className="h-[18px] w-[18px] relative text-[#0F1115]" strokeWidth={2.2} />
-        <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-[var(--accent)] tally-dot" aria-hidden />
-      </span>
+    <a aria-label="EduVerse home" className={cn("inline-flex items-center gap-2.5", className)} href="#top">
+      <img src="/icon.svg" alt="" width={36} height={36} className="h-9 w-9 rounded-[9px] object-cover ring-1 ring-black/5 shadow-sm" />
       <span className="font-display text-[1.28rem] font-[700] tracking-[-0.03em] text-ink">
         Edu<span className="font-[400] text-[var(--accent-strong)]">Verse</span>
       </span>
@@ -630,11 +626,11 @@ export function LandingPage() {
               </div>
               <span
                 className={cn(
-                  "inline-flex shrink-0 items-center gap-2 rounded-full px-5 py-3 text-sm font-medium",
-                  activeFeature === 5 ? "bg-ink text-background" : "bg-[var(--accent)] text-ink"
+                  "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium",
+                  activeFeature === 5 ? "border-[var(--accent)]/30 bg-[var(--accent)]/10 text-ink" : "border-white/20 bg-white/10 text-background"
                 )}
               >
-                Publishing infra, not theatre <ArrowRight className="h-4 w-4" />
+                Publishing infra, not theatre <ArrowRight className="h-3.5 w-3.5" />
               </span>
             </motion.button>
           </motion.div>
@@ -800,10 +796,10 @@ export function LandingPage() {
                 <details key={faq.question} className="group rounded-2xl border border-borderSoft bg-surface open:border-[var(--accent)]/30">
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-sm font-semibold outline-none hover:bg-surface-muted/40 focus-visible:ring-2 focus-visible:ring-[var(--accent)] [&::-webkit-details-marker]:hidden">
                     <span className="flex items-center gap-3">
-                      <span className="hidden sm:grid h-7 w-7 place-items-center rounded-full bg-ink text-[11px] font-mono font-bold tracking-widest text-background">?</span>
+                      <span className="hidden sm:grid h-7 w-7 place-items-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border border-amber-200 dark:border-amber-800"><span className="text-xs font-bold">?</span></span>
                       {faq.question}
                     </span>
-                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-borderSoft bg-background text-mutedText transition group-open:rotate-45 group-open:border-[var(--accent)]/40 group-open:text-[var(--accent-strong)]">+</span>
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-borderSoft bg-background text-mutedText transition group-open:rotate-180 group-open:border-[var(--accent)]/40 group-open:text-[var(--accent-strong)]"><span className="text-[16px] leading-none group-open:rotate-0 transition">›</span></span>
                   </summary>
                   <p className="px-5 pb-5 pl-5 sm:pl-14 text-sm leading-7 text-mutedText">{faq.answer}</p>
                 </details>

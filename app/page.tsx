@@ -89,15 +89,9 @@ function Footer() {
       <div className="mx-auto grid max-w-[1280px] gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <div>
           <Link aria-label="EduVerse home" className="inline-flex items-center gap-3" href="/">
-            <span className="relative grid h-9 w-9 place-items-center rounded-[9px] bg-white text-ink">
-              <Sparkles className="h-4 w-4" strokeWidth={2} />
-              <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-[var(--accent)] tally-dot" />
-            </span>
+            <img src="/icon.svg" alt="" width={36} height={36} className="h-9 w-9 rounded-[9px] object-cover ring-1 ring-white/10" />
             <span className="font-display text-lg font-semibold tracking-tight text-white">
               Edu<span className="font-normal text-[var(--accent)]">Verse</span>
-            </span>
-            <span className="hidden sm:inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-mono tracking-widest text-white/60">
-              EDIT BAY
             </span>
           </Link>
           <p className="mt-4 max-w-xs text-sm leading-6 text-white/60">

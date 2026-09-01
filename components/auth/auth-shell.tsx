@@ -15,15 +15,15 @@ export function AuthShell({ children, title, description }: { children: React.Re
           <p className="mt-6 max-w-md text-base leading-relaxed text-mutedText">A calmer way to turn audience behavior into better ideas, better timing, and better outcomes.</p>
           <div className="mt-8 flex items-center gap-3 text-xs text-mutedText"><span className="h-2 w-2 animate-pulse rounded-full bg-success" /> Live learning system <span className="h-px w-10 bg-borderSoft" /> Private by default</div>
         </div>
-        <section className="w-full rounded-[28px] border border-borderSoft/80 bg-card/85 p-6 shadow-glass backdrop-blur-xl sm:p-8">
-          <Link aria-label="EduVerse home" className="inline-flex items-center gap-2.5" href="/">
-            <span className="grid h-10 w-10 place-items-center rounded-full bg-primary text-background"><Sparkles aria-hidden="true" className="h-5 w-5" /></span>
-            <span className="font-display text-xl font-semibold tracking-tight text-ink">Edu<em className="font-normal text-primary">Verse</em></span>
+        <section className="w-full rounded-[24px] border border-borderSoft/80 bg-card/90 p-5 shadow-glass backdrop-blur-xl sm:p-6">
+          <Link aria-label="EduVerse home" className="inline-flex items-center gap-2" href="/">
+            <img src="/icon.svg" alt="" width={32} height={32} className="h-8 w-8 rounded-lg object-cover ring-1 ring-black/5" />
+            <span className="font-display text-lg font-semibold tracking-tight text-ink">Edu<em className="font-normal text-primary">Verse</em></span>
           </Link>
-          <h1 className="mt-8 font-heading text-3xl font-medium tracking-tight text-ink">{title}</h1>
-          <p className="mt-2 text-sm leading-6 text-mutedText">{description}</p>
+          <h1 className="mt-5 font-heading text-2xl font-medium tracking-tight text-ink">{title}</h1>
+          <p className="mt-1.5 text-xs leading-5 text-mutedText">{description}</p>
           {children}
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-3 border-t border-borderSoft pt-4 text-[11px] text-mutedText">
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2 border-t border-borderSoft pt-3 text-[10px] text-mutedText">
             <Link href="/privacy" className="font-medium text-primary hover:underline">
               Privacy & Data Security
             </Link>

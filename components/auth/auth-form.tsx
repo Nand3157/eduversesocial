@@ -15,7 +15,7 @@ const config = {
   reset: { action: updatePassword, submit: "Update password", helper: "", link: "/login", linkLabel: "Back to sign in" }
 } as const;
 
-const inputClass = "mt-2 h-11 w-full rounded-xl border border-borderSoft bg-surface px-3 text-ink outline-none transition-[border-color,box-shadow] focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/40";
+const inputClass = "mt-1.5 h-9 w-full rounded-xl border border-borderSoft bg-surface px-3 text-sm text-ink outline-none transition-[border-color,box-shadow] focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/40";
 
 export function AuthForm({ mode, next }: { mode: Mode; next?: string }) {
   const details = config[mode];
@@ -57,7 +57,7 @@ export function AuthForm({ mode, next }: { mode: Mode; next?: string }) {
   const strengthColor = ["bg-transparent", "bg-danger", "bg-warning", "bg-warning", "bg-success", "bg-success"][strength] ?? "bg-transparent";
 
   return (
-    <form ref={formRef} action={formAction} className="mt-7 space-y-4">
+    <form ref={formRef} action={formAction} className="mt-4 space-y-3">
       {next && <input name="next" type="hidden" value={next} />}
       {hasName && (
         <label className="block text-sm font-medium text-mutedText">
@@ -116,16 +116,13 @@ export function AuthForm({ mode, next }: { mode: Mode; next?: string }) {
             </span>
           )}
           {isSignupOrReset && (
-            <ul id="pwd-rules" className="mt-2 grid grid-cols-2 gap-1 text-[11px] leading-4">
+            <ul id="pwd-rules" className="mt-1.5 grid grid-cols-3 gap-x-2 gap-y-1 text-[10px] leading-3">
               {rules.map((r) => (
                 <li key={r.label} className={`flex items-center gap-1 ${r.ok ? "text-success" : "text-mutedText"}`}>
-                  {r.ok ? <Check aria-hidden="true" className="h-3 w-3 shrink-0" /> : <X aria-hidden="true" className="h-3 w-3 shrink-0 opacity-50" />}
+                  {r.ok ? <Check aria-hidden="true" className="h-3 w-3 shrink-0" /> : <X aria-hidden="true" className="h-3 w-3 shrink-0 opacity-40" />}
                   {r.label}
                 </li>
               ))}
-              <li className="col-span-2 flex items-center gap-1 text-[11px] text-faintText">
-                <span className="h-1 w-1 rounded-full bg-faintText" aria-hidden="true" /> Checked against HaveIBeenPwned breach list on submit
-              </li>
             </ul>
           )}
         </label>
