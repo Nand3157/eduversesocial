@@ -14,7 +14,7 @@ const EMPTY_FEEDBACK = { name: "", role: "", rating: 5, content: "" };
 
 function Wordmark({ className }: { className?: string }) {
   return (
-    <a aria-label="EduVerse home" className={cn("inline-flex items-center gap-2.5", className)} href="#top">
+    <a aria-label="EduVerse home" className={cn("inline-flex min-h-11 items-center gap-2.5", className)} href="#top">
       <img src="/icon.svg" alt="" width={36} height={36} className="h-9 w-9 rounded-[9px] object-cover ring-1 ring-black/5 shadow-sm" />
       <span className="font-display text-[1.28rem] font-[700] tracking-[-0.03em] text-ink">
         Edu<span className="font-[400] text-primary">Verse</span>
@@ -97,7 +97,7 @@ export function LandingPage() {
             <Button asChild size="sm" variant="ghost" className="hidden sm:inline-flex rounded-full">
               <Link href="/login">Sign in</Link>
             </Button>
-            <Button asChild size="sm" className="rounded-full bg-ink text-background hover:bg-ink/90 px-5 hidden sm:inline-flex">
+            <Button asChild size="sm" className="hidden rounded-full bg-primary px-5 text-ink hover:bg-primary-strong sm:inline-flex">
               <Link href="/signup">Start free <ArrowRight className="h-3.5 w-3.5" /></Link>
             </Button>
             <button aria-label={mobileOpen ? "Close menu" : "Open menu"} aria-expanded={mobileOpen} onClick={() => setMobileOpen((v) => !v)} className="grid h-10 w-10 place-items-center rounded-full border border-[#D6DFE8] dark:border-[#1F2A44] bg-surface text-ink lg:hidden">
@@ -110,9 +110,9 @@ export function LandingPage() {
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden border-t border-[#D6DFE8] dark:border-[#1F2A44] bg-background lg:hidden">
               <div className="space-y-1 px-5 py-4">
                 {[["How it works","how"],["Features","features"],["Feedback","feedback"],["FAQ","faq"]].map(([l,id]) => (
-                  <button key={id} onClick={() => scrollTo(id)} className="block w-full rounded-xl px-3 py-3 text-left text-sm font-medium hover:bg-surface">{l}</button>
+                  <button key={id} onClick={() => scrollTo(id)} className="block min-h-11 w-full rounded-xl px-3 py-3 text-left text-sm font-medium hover:bg-surface">{l}</button>
                 ))}
-                <Button asChild className="mt-2 w-full rounded-full bg-ink text-background"><Link href="/signup">Start free — no credit card</Link></Button>
+                <Button asChild className="mt-2 w-full rounded-full bg-primary text-ink hover:bg-primary-strong"><Link href="/signup">Start free — no credit card</Link></Button>
               </div>
             </motion.div>
           )}
@@ -125,7 +125,7 @@ export function LandingPage() {
           <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--line)_1px,transparent_1px),linear-gradient(to_bottom,var(--line)_1px,transparent_1px)] bg-[size:32px_32px] opacity-[0.04]" />
           <div className="absolute left-1/2 top-[-280px] h-[560px] w-[1200px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle_at_center,var(--accent)_0%,transparent_70%)] opacity-[0.06] blur-2xl" />
         </div>
-        <div className="mx-auto grid max-w-[1280px] gap-10 px-5 py-10 sm:px-8 sm:py-14 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-12 lg:py-20">
+        <div className="mx-auto grid max-w-[1280px] gap-10 px-5 py-10 sm:px-8 sm:py-14 lg:grid-cols-[1.15fr_0.85fr] lg:items-center lg:gap-12 lg:py-20">
           <motion.div initial={reduceMotion ? undefined : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.16,1,0.3,1] }}>
             <div className="inline-flex items-center gap-2 rounded-full border border-[#D6DFE8] dark:border-[#1F2A44] bg-surface px-3 py-1 text-xs">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" aria-hidden />
@@ -145,21 +145,20 @@ export function LandingPage() {
               EduVerse indexes real Instagram, Facebook and Threads engagement — reach, saves, timing — into a workspace memory that compounds. Every recommendation shows <em className="font-medium text-ink not-italic">why</em> it exists.
             </p>
             <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
-              <Button asChild className="rounded-full bg-ink px-6 py-6 text-background shadow-[0_8px_20px_rgba(11,18,32,0.16)] hover:bg-ink/90">
+              <Button asChild className="rounded-full bg-primary px-6 py-6 text-ink shadow-[0_8px_20px_rgba(255,180,58,0.2)] hover:bg-primary-strong">
                 <Link href="/signup">Start free <ArrowRight className="h-4 w-4" /></Link>
               </Button>
               <Link href="/demo" className="inline-flex min-h-11 items-center gap-1.5 text-sm font-medium text-mutedText underline decoration-[#B9C4D0] underline-offset-4 transition hover:text-ink hover:decoration-ink"><Eye className="h-4 w-4" /> Preview the demo</Link>
             </div>
-            <div className="mt-5 flex flex-wrap gap-2 text-xs">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#D6DFE8] dark:border-[#1F2A44] bg-surface px-2.5 py-1 text-mutedText"><Check className="h-3 w-3 text-success" /> No credit card</span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#D6DFE8] dark:border-[#1F2A44] bg-surface px-2.5 py-1 text-mutedText"><Lock className="h-3 w-3" /> Encrypted & revocable</span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#D6DFE8] dark:border-[#1F2A44] bg-surface px-2.5 py-1 text-mutedText">IG · FB · Threads</span>
+            <div className="mt-5 flex flex-wrap gap-3 text-xs text-mutedText">
+              <span className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-[#D6DFE8] bg-surface px-3 py-1 dark:border-[#1F2A44]"><Check className="h-3 w-3 text-success" /> No credit card</span>
+              <span className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-[#D6DFE8] bg-surface px-3 py-1 dark:border-[#1F2A44]"><Lock className="h-3 w-3" /> Encrypted & revocable</span>
             </div>
           </motion.div>
 
           {/* Preview — atlas table, not floating glass */}
-          <motion.div initial={reduceMotion ? undefined : { opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.12, ease: [0.16,1,0.3,1] }} className="relative">
-            <div className="overflow-hidden rounded-[16px] border border-[#D6DFE8] dark:border-[#1F2A44] bg-card shadow-soft">
+          <motion.div initial={reduceMotion ? undefined : { opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.12, ease: [0.16,1,0.3,1] }} className="relative lg:max-w-[540px] lg:justify-self-end">
+            <div className="overflow-hidden rounded-[16px] border border-[#D6DFE8] bg-card shadow-glow dark:border-[#1F2A44]">
               <div className="flex items-center justify-between border-b border-[#D6DFE8] dark:border-[#1F2A44] bg-surface px-4 py-3">
                 <span className="font-mono text-[10px] tracking-[0.14em] text-mutedText">SANDBOX PREVIEW · FAC 001 · SAMPLE DATA</span>
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-warning/10 px-2 py-1 text-[10px] font-medium text-warning"><span className="h-1.5 w-1.5 rounded-full bg-warning" /> Simulated</span>
@@ -180,8 +179,19 @@ export function LandingPage() {
                 </div>
                 <div className="mt-4 rounded-xl border border-dashed border-[#D6DFE8] dark:border-[#1F2A44] bg-background p-4">
                   <p className="font-mono text-[10px] tracking-[0.14em] text-mutedText">14-DAY TREND · ENGAGEMENT</p>
-                  <div className="mt-3 h-[96px] w-full rounded-lg bg-[linear-gradient(to_right,var(--line)_1px,transparent_1px),linear-gradient(to_bottom,var(--line)_1px,transparent_1px)] bg-[size:24px_24px] opacity-60" aria-hidden />
-                  <p className="mt-2 text-center font-mono text-[10px] tracking-[0.08em] text-mutedText">Every point comes from a real post</p>
+                  <svg role="img" aria-label="Simulated 14-day engagement trend" viewBox="0 0 640 180" className="mt-3 h-[96px] w-full" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id="landing-engagement-fill" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0" stopColor="var(--accent)" stopOpacity="0.28" />
+                        <stop offset="1" stopColor="var(--accent)" stopOpacity="0.02" />
+                      </linearGradient>
+                    </defs>
+                    <path d="M0 152H640 M0 106H640 M0 60H640 M80 0V180 M240 0V180 M400 0V180 M560 0V180" stroke="var(--line)" strokeOpacity="0.65" strokeWidth="1" />
+                    <path d="M0 145 C44 136 62 143 92 128 S142 118 174 123 S218 92 252 105 S300 78 332 94 S382 62 418 78 S458 46 492 60 S536 34 568 48 S610 22 640 30 V180 H0 Z" fill="url(#landing-engagement-fill)" />
+                    <path d="M0 145 C44 136 62 143 92 128 S142 118 174 123 S218 92 252 105 S300 78 332 94 S382 62 418 78 S458 46 492 60 S536 34 568 48 S610 22 640 30" fill="none" stroke="var(--accent)" strokeWidth="4" strokeLinecap="round" />
+                    <path d="M0 164 C48 157 82 160 120 151 S194 145 232 148 S300 128 342 137 S414 119 450 125 S520 102 560 113 S610 92 640 96" fill="none" stroke="var(--ok)" strokeWidth="2" strokeLinecap="round" strokeDasharray="6 8" />
+                  </svg>
+                  <p className="mt-2 text-center font-mono text-[10px] tracking-[0.08em] text-mutedText">Sample trend · every point labeled simulated</p>
                 </div>
               </div>
               <div className="flex items-center justify-between border-t border-[#D6DFE8] dark:border-[#1F2A44] bg-surface px-4 py-2.5">
@@ -195,7 +205,7 @@ export function LandingPage() {
       </section>
 
       {/* LOGOS — restrained */}
-      <section className="border-y border-[#D6DFE8] dark:border-[#1F2A44] bg-white dark:bg-[#0E1424]">
+      <section className="bg-transparent">
         <div className="mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-4 px-5 py-5 sm:px-8">
           <span className="font-mono text-[11px] tracking-[0.16em] text-faintText">ONE FEED · THREE GATES · OFFICIAL META GRAPH API</span>
           <div className="flex items-center gap-6 text-sm font-medium text-mutedText">
@@ -209,7 +219,7 @@ export function LandingPage() {
       {/* HOW IT WORKS — contact sheet, 3 steps */}
       <section id="how" className="mx-auto max-w-[1280px] scroll-mt-24 px-5 py-14 sm:px-8 sm:py-20">
         <div className="max-w-[720px]">
-          <h2 className="font-display text-[28px] font-[700] leading-[0.98] tracking-[-0.03em] sm:text-[34px]">How a post becomes memory.</h2>
+          <h2 className="text-balance font-display text-[28px] font-[700] leading-[0.98] tracking-[-0.03em] sm:text-[34px]">How a post becomes memory.</h2>
           <p className="mt-3 text-[15px] leading-7 text-mutedText">Three steps. No number invented — only indexed, then kept.</p>
         </div>
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
@@ -234,7 +244,7 @@ export function LandingPage() {
       {/* FEATURES — 3 restrained cards, not bento */}
       <section id="features" className="mx-auto max-w-[1280px] scroll-mt-24 px-5 sm:px-8">
         <div className="max-w-[720px]">
-          <h2 className="font-display text-[28px] font-[700] tracking-[-0.03em] sm:text-[34px]">One view for every signal.</h2>
+          <h2 className="text-balance font-display text-[28px] font-[700] tracking-[-0.03em] sm:text-[34px]">One view for every signal.</h2>
           <p className="mt-3 text-[15px] leading-7 text-mutedText">Live engagement and long-term audience memory, organized around the decisions you need to make.</p>
         </div>
         <div className="mt-8 grid gap-4 lg:grid-cols-3">
@@ -274,11 +284,11 @@ export function LandingPage() {
       {/* FEEDBACK — verified only */}
       <section id="feedback" aria-labelledby="feedback-heading" className="mx-auto max-w-[1280px] scroll-mt-24 px-5 py-14 sm:px-8 sm:py-16">
         <div className="flex flex-wrap items-end justify-between gap-4">
-          <h2 id="feedback-heading" className="font-display text-[28px] font-[700] tracking-[-0.03em] sm:text-[32px]">Feedback from early users.</h2>
+          <h2 id="feedback-heading" className="text-balance font-display text-[28px] font-[700] tracking-[-0.03em] sm:text-[32px]">Feedback from early users.</h2>
           <span className="font-mono text-xs tracking-[0.12em] text-mutedText">{reviews.length ? `${reviews.length} VERIFIED NOTES` : "No approved feedback yet"}</span>
         </div>
-        <div className="mt-6 grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
-          <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
+        <div className={cn("mt-6 grid gap-6 lg:items-start", !loadingReviews && !reviews.length ? "lg:mx-auto lg:max-w-2xl" : "lg:grid-cols-[1.05fr_0.95fr]")}>
+          {(loadingReviews || reviews.length > 0) && <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
             {(loadingReviews ? Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="h-[160px] animate-pulse rounded-2xl border border-[#D6DFE8] dark:border-[#1F2A44] bg-surface" />
             )) : reviews.length ? reviews.slice(0,3).map((r) => (
@@ -290,13 +300,8 @@ export function LandingPage() {
                   <div><p className="text-sm font-medium leading-none text-ink">{r.name}</p><p className="text-xs text-mutedText">{r.role ?? "Creator"}</p></div>
                 </div>
               </div>
-              )) : (
-                <div className="rounded-2xl border border-dashed border-[#D6DFE8] bg-white p-8 text-center shadow-sm dark:border-[#1F2A44] dark:bg-[#141E32] lg:py-12">
-                  <p className="font-display text-base font-semibold tracking-tight text-ink">No feedback published yet.</p>
-                  <p className="mt-1.5 text-sm leading-6 text-mutedText">Approved feedback will appear here after moderation. We do not invent testimonials.</p>
-                </div>
-              ))}
-          </div>
+              )) : null)}
+          </div>}
 
           <form onSubmit={submitFeedback} className="rounded-2xl border border-[#D6DFE8] bg-white p-6 shadow-sm dark:border-[#1F2A44] dark:bg-[#141E32] sm:p-7">
             <p className="font-mono text-[11px] tracking-[0.16em] text-mutedText">SHARE YOUR EXPERIENCE</p>
@@ -306,11 +311,11 @@ export function LandingPage() {
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
               <label className="grid gap-1.5 text-sm font-medium text-ink">
                 Name
-                <input required maxLength={80} value={feedbackForm.name} onChange={(event) => setFeedbackForm((current) => ({ ...current, name: event.target.value }))} className="min-h-11 rounded-xl border border-[#D6DFE8] bg-background px-3.5 text-sm outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 dark:border-[#1F2A44]" />
+                <input id="feedback-name" name="name" autoComplete="name" required maxLength={80} value={feedbackForm.name} onChange={(event) => setFeedbackForm((current) => ({ ...current, name: event.target.value }))} className="min-h-11 rounded-xl border border-[#D6DFE8] bg-background px-3.5 text-sm outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 dark:border-[#1F2A44]" />
               </label>
               <label className="grid gap-1.5 text-sm font-medium text-ink">
                 Role <span className="font-normal text-mutedText">(optional)</span>
-                <input maxLength={120} value={feedbackForm.role} onChange={(event) => setFeedbackForm((current) => ({ ...current, role: event.target.value }))} className="min-h-11 rounded-xl border border-[#D6DFE8] bg-background px-3.5 text-sm outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 dark:border-[#1F2A44]" />
+                <input id="feedback-role" name="role" autoComplete="organization-title" maxLength={120} value={feedbackForm.role} onChange={(event) => setFeedbackForm((current) => ({ ...current, role: event.target.value }))} className="min-h-11 rounded-xl border border-[#D6DFE8] bg-background px-3.5 text-sm outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 dark:border-[#1F2A44]" />
               </label>
             </div>
 
@@ -328,15 +333,15 @@ export function LandingPage() {
 
             <label className="mt-5 grid gap-1.5 text-sm font-medium text-ink">
               Feedback
-              <textarea required maxLength={800} rows={5} value={feedbackForm.content} onChange={(event) => setFeedbackForm((current) => ({ ...current, content: event.target.value }))} className="resize-y rounded-xl border border-[#D6DFE8] bg-background px-3.5 py-3 text-sm leading-6 outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 dark:border-[#1F2A44]" />
+              <textarea id="feedback-content" name="content" required maxLength={800} rows={5} value={feedbackForm.content} onChange={(event) => setFeedbackForm((current) => ({ ...current, content: event.target.value }))} className="resize-y rounded-xl border border-[#D6DFE8] bg-background px-3.5 py-3 text-sm leading-6 outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 dark:border-[#1F2A44]" />
               <span className="text-right text-xs font-normal text-mutedText">{feedbackForm.content.length}/800</span>
             </label>
 
             <div className="mt-2 flex flex-wrap items-center gap-3">
-              <Button type="submit" disabled={feedbackStatus === "submitting"} className="min-h-11 rounded-full bg-ink text-background hover:bg-ink/90">
+              <Button type="submit" disabled={feedbackStatus === "submitting"} className="min-h-11 rounded-full bg-primary text-ink hover:bg-primary-strong">
                 {feedbackStatus === "submitting" ? "Sending…" : "Send feedback"} <ArrowRight className="h-4 w-4" />
               </Button>
-              {feedbackMessage && <p role={feedbackStatus === "error" ? "alert" : "status"} className={cn("text-xs leading-5", feedbackStatus === "error" ? "text-red-600 dark:text-red-400" : "text-success")}>{feedbackMessage}</p>}
+              {feedbackMessage && <p role={feedbackStatus === "error" ? "alert" : "status"} aria-live="polite" className={cn("text-xs leading-5", feedbackStatus === "error" ? "text-red-600 dark:text-red-400" : "text-success")}>{feedbackMessage}</p>}
             </div>
           </form>
         </div>
@@ -355,17 +360,17 @@ export function LandingPage() {
               </ul>
             </div>
             <div className="flex flex-wrap gap-3 lg:justify-end">
-              <Button asChild className="rounded-full bg-ink text-background shadow-sm"><Link href="/demo"><Eye className="h-4 w-4" /> Open the demo</Link></Button>
+              <Button asChild className="rounded-full bg-primary text-ink shadow-sm hover:bg-primary-strong"><Link href="/demo"><Eye className="h-4 w-4" /> Open the demo</Link></Button>
             </div>
           </div>
         </div>
       </section>
 
       {/* FAQ — stays in the active theme while preserving the editorial rhythm */}
-      <section id="faq" className="scroll-mt-24 border-y border-[#D6DFE8] bg-[#EEF3F9] px-5 py-14 text-ink sm:px-8 sm:py-16 dark:border-[#1F2A44] dark:bg-[#0B1220] dark:text-white">
+      <section id="faq" className="scroll-mt-24 bg-[#EEF3F9] px-5 py-14 text-ink sm:px-8 sm:py-16 dark:bg-[#0A0F1E] dark:text-white">
         <div className="mx-auto grid max-w-[1280px] gap-8 lg:grid-cols-[0.9fr_1.1fr]">
           <div>
-            <h2 className="font-display text-[28px] font-[700] tracking-[-0.03em] text-ink sm:text-[32px] dark:text-white">Edit log — plainly.</h2>
+            <h2 className="text-balance font-display text-[28px] font-[700] tracking-[-0.03em] text-ink sm:text-[32px] dark:text-white">Edit log — plainly.</h2>
             <p className="mt-3 max-w-[48ch] text-[15px] leading-7 text-mutedText dark:text-white/70">Free during early access, revocable in one click. The log is the truth.</p>
             <p className="mt-3 font-mono text-xs tracking-[0.14em] text-mutedText dark:text-white/40">CANONICAL · llms.txt + /md/faq</p>
           </div>
@@ -384,10 +389,10 @@ export function LandingPage() {
       </section>
 
       {/* FINAL CTA — follows the active theme */}
-      <section className="border-t border-[#D6DFE8] bg-[#EEF3F9] py-12 text-ink sm:py-16 dark:border-transparent dark:bg-[#0B1220] dark:text-white">
+      <section className="bg-[#EEF3F9] py-12 text-ink sm:py-16 dark:bg-[#0A0F1E] dark:text-white">
         <div className="mx-auto max-w-[760px] px-5 text-center sm:px-8">
           <p className="inline-flex items-center gap-2 rounded-full border border-[#D6DFE8] bg-white/70 px-3 py-1 font-mono text-[11px] tracking-[0.16em] text-mutedText dark:border-white/10 dark:bg-white/5 dark:text-white/60"><span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" /> EARLY ACCESS — READY</p>
-          <h2 className="mt-4 font-display text-[32px] font-[700] leading-[0.95] tracking-[-0.03em] text-ink sm:text-[40px] dark:text-white">Stop guessing.<br /><span className="font-[400] text-mutedText dark:text-white/70">Start remembering.</span></h2>
+          <h2 className="mt-4 text-balance font-display text-[32px] font-[700] leading-[0.95] tracking-[-0.03em] text-ink sm:text-[40px] dark:text-white">Stop guessing.<br /><span className="font-[400] text-mutedText dark:text-white/70">Start remembering.</span></h2>
           <p className="mx-auto mt-4 max-w-[58ch] text-[15px] leading-7 text-mutedText dark:text-white/60">Connect Meta to see your real engagement, or preview the workflow first with clearly labeled sample data.</p>
           <div className="mt-7 flex flex-wrap justify-center gap-3">
             <Button asChild className="rounded-full bg-[var(--accent)] text-ink shadow-[0_8px_20px_rgba(255,180,58,0.18)] hover:bg-[var(--accent-strong)]"><Link href="/signup">Start free <ArrowRight className="h-4 w-4" /></Link></Button>

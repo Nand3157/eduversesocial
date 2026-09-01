@@ -8,12 +8,12 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: "bg-ink text-background shadow-sm hover:-translate-y-px hover:shadow-md active:translate-y-0",
+        primary: "bg-primary text-ink shadow-sm hover:bg-primary-strong hover:-translate-y-px hover:shadow-md active:translate-y-0",
         secondary:
           "border border-borderSoft bg-card text-ink hover:border-mutedText/40 hover:bg-surface",
         ghost: "text-mutedText hover:bg-surface hover:text-ink",
-        success: "bg-success text-background shadow-sm hover:-translate-y-px hover:shadow-md",
-        accent: "bg-primary text-background shadow-sm hover:bg-primary-strong hover:-translate-y-px hover:shadow-md"
+        success: "bg-success text-ink shadow-sm hover:-translate-y-px hover:shadow-md",
+        accent: "bg-primary text-ink shadow-sm hover:bg-primary-strong hover:-translate-y-px hover:shadow-md"
       },
       size: {
         default: "h-11 px-5 min-h-[44px]",

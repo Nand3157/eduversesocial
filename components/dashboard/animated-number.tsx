@@ -5,8 +5,14 @@ import { useEffect, useRef } from "react";
 
 export function AnimatedNumber({ value, suffix = "" }: { value: number; suffix?: string }) {
   const ref = useRef<HTMLSpanElement>(null);
-  const count = useMotionValue(0);
-  const rounded = useTransform(count, (latest) => `${Math.round(latest).toLocaleString()}${suffix}`);
+  // Render the real value on first paint so screenshots, assistive tech, and
+  // reduced-motion users never encounter a misleading zero placeholder.
+  const count = useMotionValue(value);
+  const rounded = useTransform(count, (latest) => {
+    const precision = Number.isInteger(value) ? 0 : 1;
+    const formatted = latest.toLocaleString("en-US", { maximumFractionDigits: precision, minimumFractionDigits: precision });
+    return `${formatted}${suffix}`;
+  });
   const inView = useInView(ref, { once: true, amount: 0.5 });
   const reduceMotion = useReducedMotion();
 

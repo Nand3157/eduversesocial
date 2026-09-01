@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, Eye, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowLeft, Eye, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DemoDashboard } from "@/components/demo/demo-dashboard";
 import { ThemeToggle } from "@/components/providers/theme-toggle";
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 export default function DemoPage() {
   return (
-    <div className="min-h-screen bg-[#EEF3F9] dark:bg-[#0A0F1E]">
+    <div className="dashboard-canvas min-h-screen bg-[#EEF3F9] dark:bg-[#0A0F1E]">
       <header className="sticky top-0 z-30 border-b border-[#D6DFE8] dark:border-[#1F2A44] bg-white/85 dark:bg-[#0B1220]/85 backdrop-blur-xl">
         <div className="mx-auto flex h-[68px] max-w-6xl items-center justify-between px-5 sm:px-8">
           <Link href="/" className="inline-flex items-center gap-2.5">
@@ -35,7 +35,7 @@ export default function DemoPage() {
                 <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Back to site
               </Link>
             </Button>
-            <Button asChild size="sm" className="bg-ink text-background hover:bg-ink/90">
+            <Button asChild size="sm" className="bg-primary text-ink hover:bg-primary-strong">
               <Link href="/signup">Start free</Link>
             </Button>
           </div>
@@ -55,7 +55,7 @@ export default function DemoPage() {
         <DemoDashboard />
       </main>
 
-      <footer className="border-t border-[#D6DFE8] dark:border-[#1F2A44] bg-white dark:bg-[#0B1220] px-5 py-8 sm:px-8">
+      <footer className="bg-transparent px-5 py-8 sm:px-8">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 text-xs text-mutedText sm:flex-row">
           <p>Demo uses synthetic data inspired by real Meta Graph API shapes. Connect your accounts for live numbers.</p>
           <div className="flex gap-4">

@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { ArrowRight, BadgeCheck, Check, Eye, Heart, Sparkles } from "lucide-react";
-import { motion } from "framer-motion";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useReducedMotion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
@@ -47,7 +46,7 @@ export function DemoDashboard() {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button asChild size="sm" className="rounded-full bg-ink text-background hover:bg-ink/90">
+            <Button asChild size="sm" className="rounded-full bg-primary text-ink hover:bg-primary-strong">
               <Link href="/signup">
                 Create free account <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
               </Link>
@@ -70,7 +69,7 @@ export function DemoDashboard() {
         </div>
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>
-            <h1 className="font-heading text-[28px] font-[600] tracking-tight leading-none text-ink sm:text-[36px]">
+            <h1 className="text-balance font-heading text-[28px] font-[600] tracking-tight leading-none text-ink sm:text-[36px]">
               Good morning, <span className="text-primary">explorer.</span>
             </h1>
             <p className="mt-2 max-w-[60ch] text-sm leading-6 text-mutedText">This preview is populated with sample Meta analytics. Everything below becomes live after OAuth.</p>
@@ -264,7 +263,7 @@ export function DemoDashboard() {
                   <p className="mt-2 text-sm leading-relaxed text-mutedText">{detail}</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Button asChild className="rounded-full bg-ink text-background hover:bg-ink/90">
+                  <Button asChild className="rounded-full bg-primary text-ink hover:bg-primary-strong">
                     <Link href="/signup">
                       <Sparkles aria-hidden="true" className="h-4 w-4" /> Sign up to generate your own
                     </Link>
@@ -359,7 +358,7 @@ export function DemoDashboard() {
               Liked the preview? <strong className="text-ink">Create a free account</strong> and connect Meta for the live version. No credit card.
             </span>
           </div>
-          <Button asChild className="rounded-full bg-ink text-background hover:bg-ink/90">
+          <Button asChild className="rounded-full bg-primary text-ink hover:bg-primary-strong">
             <Link href="/signup">Start free — no OAuth needed to peek</Link>
           </Button>
         </CardContent>
@@ -382,7 +381,7 @@ export function DemoPreviewMini() {
           <div key={m.label} className="rounded-xl border border-borderSoft bg-surface px-3 py-2.5">
             <p className="text-[10px] leading-none text-mutedText">{m.label}</p>
             <p className="mt-1 font-display text-sm font-semibold text-ink">
-              {m.value.toLocaleString()}
+              {m.value.toLocaleString("en-US")}
               {m.suffix}
             </p>
           </div>

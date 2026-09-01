@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Script from "next/script";
 import { Mail, Phone } from "lucide-react";
 import { LandingPage } from "@/components/landing-page";
 import { SITE } from "@/lib/agentic/site";
@@ -86,7 +87,7 @@ const exploreLinks = [
 
 function Footer() {
   return (
-    <footer className="relative overflow-hidden border-t border-[var(--line-ink)] bg-[var(--surface-ink)] px-5 py-14 sm:px-8 text-white">
+    <footer className="relative overflow-hidden bg-[var(--surface-ink)] px-5 py-14 sm:px-8 text-white">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-3 sprocket-track opacity-20" aria-hidden />
       <div className="mx-auto grid max-w-[1280px] gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <div>
@@ -177,7 +178,8 @@ function Footer() {
 export default function Home() {
   return (
     <>
-      <script
+      <Script
+        id="site-jsonld"
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\u003c") }}
       />
