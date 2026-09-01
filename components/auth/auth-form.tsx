@@ -57,7 +57,7 @@ export function AuthForm({ mode, next }: { mode: Mode; next?: string }) {
   const strengthColor = ["bg-transparent", "bg-danger", "bg-warning", "bg-warning", "bg-success", "bg-success"][strength] ?? "bg-transparent";
 
   return (
-    <form ref={formRef} action={formAction} className="mt-4 space-y-3">
+    <form ref={formRef} action={formAction} className="mt-3 space-y-2.5">
       {next && <input name="next" type="hidden" value={next} />}
       {hasName && (
         <label className="block text-sm font-medium text-mutedText">
@@ -171,7 +171,7 @@ export function AuthForm({ mode, next }: { mode: Mode; next?: string }) {
       )}
       {state.error && <p role="alert" className="rounded-xl border border-danger/30 bg-danger/10 p-3 text-sm text-danger">{state.error}</p>}
       {state.message && <p role="status" className="rounded-xl border border-success/30 bg-success/10 p-3 text-sm text-success">{state.message}</p>}
-      <Button className="w-full" disabled={pending} type="submit">
+      <Button className="w-full h-9 text-sm" disabled={pending} type="submit">
         {pending && <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />}
         {details.submit}
       </Button>

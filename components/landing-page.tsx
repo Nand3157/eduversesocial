@@ -624,14 +624,16 @@ export function LandingPage() {
                   Schedule & publish directly via official Meta Graph API after verified account connection — idempotent, encrypted, retry-safe.
                 </p>
               </div>
-              <span
+              <Link
+                href="/dashboard"
+                onClick={(e) => e.stopPropagation()}
                 className={cn(
-                  "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium",
-                  activeFeature === 5 ? "border-[var(--accent)]/30 bg-[var(--accent)]/10 text-ink" : "border-white/20 bg-white/10 text-background"
+                  "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition hover:scale-[1.02]",
+                  activeFeature === 5 ? "border-[var(--accent)]/30 bg-[var(--accent)] text-ink hover:bg-[var(--accent-strong)]" : "border-white/20 bg-white/10 text-background hover:bg-white/20"
                 )}
               >
                 Publishing infra, not theatre <ArrowRight className="h-3.5 w-3.5" />
-              </span>
+              </Link>
             </motion.button>
           </motion.div>
         </section>
@@ -796,10 +798,10 @@ export function LandingPage() {
                 <details key={faq.question} className="group rounded-2xl border border-borderSoft bg-surface open:border-[var(--accent)]/30">
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-sm font-semibold outline-none hover:bg-surface-muted/40 focus-visible:ring-2 focus-visible:ring-[var(--accent)] [&::-webkit-details-marker]:hidden">
                     <span className="flex items-center gap-3">
-                      <span className="hidden sm:grid h-7 w-7 place-items-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border border-amber-200 dark:border-amber-800"><span className="text-xs font-bold">?</span></span>
+                      <span className="hidden sm:grid h-7 w-7 place-items-center rounded-full bg-[#0B1220] text-white dark:bg-white dark:text-[#0B1220] border border-black/10 dark:border-white/10"><span className="text-[13px] font-bold">?</span></span>
                       {faq.question}
                     </span>
-                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-borderSoft bg-background text-mutedText transition group-open:rotate-180 group-open:border-[var(--accent)]/40 group-open:text-[var(--accent-strong)]"><span className="text-[16px] leading-none group-open:rotate-0 transition">›</span></span>
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-borderSoft bg-background text-mutedText transition group-open:rotate-180 group-open:bg-ink group-open:text-background group-open:border-ink"><span className="text-[14px] leading-none">⌄</span></span>
                   </summary>
                   <p className="px-5 pb-5 pl-5 sm:pl-14 text-sm leading-7 text-mutedText">{faq.answer}</p>
                 </details>
