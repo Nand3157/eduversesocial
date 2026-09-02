@@ -78,6 +78,9 @@ const productLinks = [
 const exploreLinks = [
   { label: "How it works", href: "/#how" },
   { label: "Live Demo", href: "/demo" },
+  { label: "Developers", href: "/developers" },
+  { label: "About EduVerse", href: "/about" },
+  { label: "Contact", href: "/contact" },
   { label: "Features", href: "/#features" },
   { label: "Feedback", href: "/#feedback" },
   { label: "Pricing", href: "/#pricing" },
@@ -184,6 +187,16 @@ export default function Home() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\u003c") }}
       />
+      <noscript>
+        <main id="no-script-content" className="mx-auto max-w-3xl px-5 py-16">
+          <h1>EduVerse — social intelligence that remembers your audience</h1>
+          <p>EduVerse connects Instagram, Facebook, and Threads engagement to a practical audience memory. It helps educators, coaches, and small teams see which posts earned attention, understand when that happened, and choose what to try next. The product uses official Meta consent, keeps connected account tokens encrypted, and shows when data is simulated or unavailable.</p>
+          <h2>How it works</h2>
+          <p>Connect a Meta account, review the signals that came back, and act with context. The read-only demo is available without an account and uses sample numbers. Live analytics, publishing, scheduling, and the Gemini assistant are available after sign-in and account connection.</p>
+          <h2>Developer resources</h2>
+          <p>Agents can start with the <Link href="/developers">EduVerse developer guide</Link>, <Link href="/openapi.json">OpenAPI specification</Link>, <Link href="/llms.txt">agent guide</Link>, or public <Link href="/api/v1/health">health endpoint</Link>. Read the <Link href="/privacy">privacy page</Link> or <Link href="/contact">contact us</Link> when you need a human answer.</p>
+        </main>
+      </noscript>
       <LandingPage />
       <Footer />
     </>

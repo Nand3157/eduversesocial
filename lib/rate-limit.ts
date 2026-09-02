@@ -10,7 +10,7 @@ import { logger } from "@/lib/logger";
  * deployments should always configure the Redis backend. Talks to the Upstash
  * REST API directly (INCR + PEXPIRE), so no SDK dependency is required.
  */
-export type RateLimitResult = { allowed: boolean; remaining: number };
+export type RateLimitResult = { allowed: boolean; remaining: number; resetAt: number };
 
 const requests = new Map<string, { count: number; resetAt: number }>();
 const SWEEP_INTERVAL_MS = 60_000;
@@ -28,9 +28,9 @@ function memoryRateLimit(key: string, limit: number, windowMs: number): RateLimi
   const now = Date.now();
   sweepExpired(now);
   const current = requests.get(key);
-  if (!current || now > current.resetAt) { requests.set(key, { count: 1, resetAt: now + windowMs }); return { allowed: true, remaining: limit - 1 }; }
-  if (current.count >= limit) return { allowed: false, remaining: 0 };
-  current.count += 1; return { allowed: true, remaining: limit - current.count };
+  if (!current || now > current.resetAt) { requests.set(key, { count: 1, resetAt: now + windowMs }); return { allowed: true, remaining: limit - 1, resetAt: now + windowMs }; }
+  if (current.count >= limit) return { allowed: false, remaining: 0, resetAt: current.resetAt };
+  current.count += 1; return { allowed: true, remaining: limit - current.count, resetAt: current.resetAt };
 }
 
 function upstashConfig() {
@@ -68,10 +68,10 @@ async function upstashRateLimit(key: string, limit: number, windowMs: number): P
         // Best-effort: without a TTL the counter would stick, so reset it and
         // let this request through rather than locking the key forever.
         await upstashFetch(config, `/del/${namespacedKey}`).catch(() => undefined);
-        return { allowed: true, remaining: limit - 1 };
+        return { allowed: true, remaining: limit - 1, resetAt: Date.now() + windowMs };
       }
     }
-    return { allowed: count <= limit, remaining: Math.max(0, limit - count) };
+    return { allowed: count <= limit, remaining: Math.max(0, limit - count), resetAt: Date.now() + windowMs };
   } catch (error) {
     logger.warn("rate_limit_redis_unavailable", { reason: error instanceof Error ? error.message : "unknown" });
     return null;
@@ -87,7 +87,7 @@ export async function checkRateLimit(key: string, limit = 10, windowMs = 60_000)
   if (config) {
     if (process.env.NODE_ENV === "production") {
       logger.error("rate_limit_degraded_fail_closed", { key });
-      return { allowed: false, remaining: 0 };
+      return { allowed: false, remaining: 0, resetAt: Date.now() + windowMs };
     }
     logger.warn("rate_limit_redis_unavailable_falling_back_to_memory", { key });
     return memoryRateLimit(key, limit, windowMs);

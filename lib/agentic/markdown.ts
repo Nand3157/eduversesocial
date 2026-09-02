@@ -56,12 +56,16 @@ export function siteMapMarkdown(baseUrl: string): string[] {
     mdLink("Home (product overview)", `${baseUrl}/`),
     mdLink("FAQ (pricing, refunds/cancellation, support)", `${baseUrl}/md/faq`),
     mdLink("Sign up (free tier, self-serve)", `${baseUrl}/signup`),
+    mdLink("About EduVerse", `${baseUrl}/about`),
+    mdLink("Contact EduVerse", `${baseUrl}/contact`),
+    mdLink("Developer resources", `${baseUrl}/developers`),
     mdLink("Dashboard", `${baseUrl}/dashboard`),
     mdLink("OpenAPI specification (JSON)", `${baseUrl}/openapi.json`),
     mdLink("Function-calling tool definitions", `${baseUrl}/api/tools.json`),
     mdLink("Agent guide (llms.txt)", `${baseUrl}/llms.txt`),
     mdLink("MCP server (Streamable HTTP)", `${baseUrl}/.well-known/mcp`),
     mdLink("OAuth protected-resource metadata (RFC 9728)", `${baseUrl}/.well-known/oauth-protected-resource`),
+    mdLink("API root discovery", `${baseUrl}/api`),
     mdLink("XML sitemap", `${baseUrl}/sitemap.xml`)
   ];
 }
@@ -102,6 +106,18 @@ const PAGE_TITLES: Record<string, { title: string; body: string[] }> = {
   "/dashboard": {
     title: "EduVerse dashboard",
     body: ["The dashboard requires an authenticated session. Machine access goes through the HTTP API documented at /openapi.json."]
+  },
+  "/about": {
+    title: "About EduVerse",
+    body: ["EduVerse helps educators, coaches, and small teams learn from the attention they already earn. It connects official Instagram, Facebook, and Threads data, keeps the useful pattern, and turns it into a clear next step. The product is designed to make audience context easier to keep, not to replace human judgment."]
+  },
+  "/contact": {
+    title: "Contact EduVerse",
+    body: ["Contact EduVerse at hello@eduverse.app for product help, privacy@eduverse.app for privacy or deletion requests, and partners@eduverse.app for partnership questions. Please do not send passwords or access tokens by email. We aim to reply within two business days."]
+  },
+  "/developers": {
+    title: "EduVerse developer resources",
+    body: ["Start with the versioned health and reviews endpoints, then read the OpenAPI document for the full surface. Function-calling definitions, an MCP endpoint, llms.txt, and markdown page editions are linked from this guide. Protected operations use the signed-in EduVerse session today; a separate OAuth authorization server and self-serve API keys are not live yet."]
   }
 };
 

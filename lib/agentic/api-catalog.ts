@@ -10,6 +10,8 @@ import type { ApiScope } from "@/lib/agentic/site";
 export type JsonSchema = {
   type: "object" | "string" | "number" | "integer" | "boolean" | "array";
   description?: string;
+  format?: string;
+  example?: unknown;
   properties?: Record<string, JsonSchema & { enum?: string[]; format?: string; items?: JsonSchema; example?: unknown }>;
   required?: string[];
   additionalProperties?: boolean;
@@ -62,7 +64,8 @@ export const API_OPERATIONS: ApiOperation[] = [
     scopes: [],
     responses: {
       ...JSON_OK,
-      "200": { description: "JSON body: { status: \"ok\", timestamp: ISO-8601 string }." }
+      "200": { description: "JSON body: { status: \"ok\", timestamp: ISO-8601 string }." },
+      ...RATE_LIMITED
     },
     agentCallable: true
   },
@@ -75,7 +78,7 @@ export const API_OPERATIONS: ApiOperation[] = [
       "Reports which AI provider and model power the chat assistant right now (provider, model, displayName). Zero-auth.",
     tag: "System",
     scopes: [],
-    responses: JSON_OK,
+    responses: { ...JSON_OK, ...RATE_LIMITED },
     agentCallable: true
   },
   {
@@ -98,7 +101,7 @@ export const API_OPERATIONS: ApiOperation[] = [
     description:
       "Submits a customer review for moderation. Reviews are stored as pending and appear only after approval. Rate limited to 5 submissions per minute per client.",
     tag: "Reviews",
-    scopes: ["write:reviews"],
+    scopes: [],
     requestBody: {
       schema: {
         type: "object",

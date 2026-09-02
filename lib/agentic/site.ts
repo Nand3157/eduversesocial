@@ -1,6 +1,6 @@
 /**
  * Single source of truth for machine-readable site identity: organization
- * details, OAuth scopes, onboarding signals. Every agent-facing artifact
+ * details, API scopes, onboarding signals. Every agent-facing artifact
  * (JSON-LD, OpenAPI, llms.txt, RFC 9728 metadata) is generated from here so
  * they can never drift apart.
  */
@@ -42,10 +42,10 @@ export const SCOPE_NAMES = Object.keys(API_SCOPES) as ApiScope[];
 export const ONBOARDING = {
   freeTier: true,
   selfServeSignup: "/signup",
-  selfServeKeyGeneration: "Sign in at /signup then create an access token from Dashboard > Settings.",
+  selfServeKeyGeneration: "Self-serve API keys are not live yet. Protected operations use the signed-in EduVerse session.",
   sandboxEnvironment:
-    "Try /demo for a read-only sandbox dashboard with simulated Meta analytics — no login or OAuth required. Public read-only endpoints (/api/health, GET /api/reviews) are also open without credentials for smoke tests.",
-  zeroAuthEndpoints: ["/demo", "/privacy", "/api/health", "/api/reviews (GET)", "/openapi.json", "/llms.txt", "/.well-known/mcp"],
+    "Try /demo for a read-only sandbox dashboard with simulated Meta analytics — no login or OAuth required. Public read-only endpoints (/api/v1/health, GET /api/v1/reviews) are also open without credentials for smoke tests.",
+  zeroAuthEndpoints: ["/demo", "/privacy", "/about", "/contact", "/developers", "/api/v1/health", "/api/v1/reviews (GET)", "/openapi.json", "/llms.txt", "/.well-known/mcp"],
   rateLimits: "Public review submissions: 5 per minute per client. Chat: metered per session. Health: unmetered."
 } as const;
 

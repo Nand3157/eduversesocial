@@ -1,5 +1,6 @@
 import { handleMcpPostBody } from "@/lib/agentic/mcp";
 import { VARY_VALUE } from "@/lib/agentic/markdown";
+import { problemResponse } from "@/lib/api-response";
 
 export const dynamic = "force-dynamic";
 
@@ -27,16 +28,17 @@ export async function POST(request: Request) {
   return Response.json(result.body, { status: result.status, headers });
 }
 
-const METHOD_NOT_ALLOWED = (allow: string) => new Response(JSON.stringify({ error: `Method not allowed; use ${allow}` }), {
-  status: 405,
-  headers: { Allow: allow, "Content-Type": "application/json" }
-});
+const METHOD_NOT_ALLOWED = (request: Request, allow: string) => {
+  const response = problemResponse(405, "MCP_METHOD_NOT_ALLOWED", `Method not allowed; use ${allow}.`, "Send a JSON-RPC request with POST.", request);
+  response.headers.set("Allow", allow);
+  return response;
+};
 
 /** Server-initiated SSE streams are not offered; advertise POST-only. */
-export function GET() {
-  return METHOD_NOT_ALLOWED("POST");
+export function GET(request: Request) {
+  return METHOD_NOT_ALLOWED(request, "POST");
 }
 
-export function DELETE() {
-  return METHOD_NOT_ALLOWED("POST");
+export function DELETE(request: Request) {
+  return METHOD_NOT_ALLOWED(request, "POST");
 }

@@ -88,10 +88,12 @@ describe("OpenAPI specification (#3, #7)", () => {
     paths: Record<string, Partial<Record<"get" | "post" | "patch" | "delete", OperationDoc>>>;
     components: {
       securitySchemes: {
-        eduverseOAuth: { flows: { authorizationCode: { scopes: Record<string, string> } } };
+        sessionCookie: { type: string; in: string };
       };
     };
     "x-scopes-supported": string[];
+    "x-authentication": { status: string; plannedScopes: Record<string, string> };
+    "x-api-version": string;
   };
 
   it("is OpenAPI 3.1 with server info", () => {
@@ -124,20 +126,21 @@ describe("OpenAPI specification (#3, #7)", () => {
     expect(createReview.parameters ?? []).toHaveLength(0);
   });
 
-  it("declares named OAuth2 scopes in the security scheme (#5)", () => {
-    const oauth = spec.components.securitySchemes.eduverseOAuth;
-    const declaredScopes = Object.keys(oauth.flows.authorizationCode.scopes);
+  it("declares named planned API scopes and honest session auth (#5)", () => {
+    const declaredScopes = Object.keys(spec["x-authentication"].plannedScopes);
+    expect(spec.components.securitySchemes.sessionCookie).toMatchObject({ type: "apiKey", in: "cookie" });
     expect(declaredScopes.sort()).toEqual([...SCOPE_NAMES].sort());
     expect(spec["x-scopes-supported"].sort()).toEqual([...SCOPE_NAMES].sort());
     expect(declaredScopes.length).toBeGreaterThanOrEqual(5);
+    expect(spec["x-authentication"].status).toBe("session-based");
   });
 
   it("applies least-privilege scope requirements per operation", () => {
     expect(spec.paths["/api/health"]!.get!.security).toEqual([]);
     expect(spec.paths["/api/reviews"]!.get!.security).toEqual([]);
-    expect(spec.paths["/api/reviews"]!.post!.security).toEqual([{ eduverseOAuth: ["write:reviews"] }]);
-    expect(spec.paths["/api/meta/publish"]!.post!.security).toEqual([{ eduverseOAuth: ["meta:write"] }]);
-    expect(spec.paths["/api/account/delete"]!.delete!.security).toEqual([{ eduverseOAuth: ["account:delete"] }]);
+    expect(spec.paths["/api/reviews"]!.post!.security).toEqual([]);
+    expect(spec.paths["/api/meta/publish"]!.post!.security).toEqual([{ sessionCookie: [] }]);
+    expect(spec.paths["/api/account/delete"]!.delete!.security).toEqual([{ sessionCookie: [] }]);
   });
 
   it("covers every catalog path/method pair exactly once", () => {
@@ -153,6 +156,15 @@ describe("OpenAPI specification (#3, #7)", () => {
     expect(description).toContain("When to use");
     expect(description).toContain("/signup");
     expect(description).toContain(ONBOARDING.rateLimits.slice(0, 20));
+  });
+
+  it("documents typed success and RFC 9457 error responses", () => {
+    const health = spec.paths["/api/health"]!.get!;
+    const healthSchema = (health.responses["200"] as { content: { "application/json": { schema: { properties?: Record<string, unknown> } } } }).content["application/json"].schema;
+    expect(healthSchema.properties).toHaveProperty("timestamp");
+    const error = health.responses["429"] as { content: { "application/problem+json": { schema: { properties?: Record<string, unknown> } } } };
+    expect(error.content["application/problem+json"].schema.properties).toHaveProperty("resolution");
+    expect(spec["x-api-version"]).toBe("v1");
   });
 });
 
@@ -301,6 +313,6 @@ describe("YAML emitter used by /api/openapi.yaml", () => {
   it("serializes the full OpenAPI document without crashing", () => {
     const yaml = toYaml(buildOpenApiSpec(BASE));
     expect(yaml).toContain("operationId: getHealth");
-    expect(yaml).toContain("eduverseOAuth:");
+    expect(yaml).toContain("sessionCookie:");
   });
 });

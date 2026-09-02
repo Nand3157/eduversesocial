@@ -1,4 +1,4 @@
-import { API_OPERATIONS, type ApiOperation } from "@/lib/agentic/api-catalog";
+import { API_OPERATIONS, type ApiOperation, type JsonSchema } from "@/lib/agentic/api-catalog";
 import { API_SCOPES, ONBOARDING, SCOPE_NAMES, SITE } from "@/lib/agentic/site";
 import { schemaToObject } from "@/lib/agentic/yaml";
 
@@ -11,8 +11,75 @@ import { schemaToObject } from "@/lib/agentic/yaml";
 
 function operationSecurity(operation: ApiOperation): Array<Record<string, string[]>> {
   if (operation.scopes.length === 0) return [];
-  return [{ eduverseOAuth: [...operation.scopes] }];
+  return [{ sessionCookie: [] }];
 }
+
+const PROBLEM_SCHEMA: JsonSchema = {
+  type: "object",
+  properties: {
+    type: { type: "string", format: "uri" },
+    title: { type: "string" },
+    status: { type: "integer" },
+    code: { type: "string" },
+    message: { type: "string" },
+    resolution: { type: "string" },
+    requestId: { type: "string" }
+  },
+  required: ["type", "title", "status", "code", "message", "resolution"],
+  additionalProperties: false
+};
+
+const RESPONSE_SCHEMAS: Record<string, JsonSchema> = {
+  getHealth: {
+    type: "object",
+    properties: { status: { type: "string", enum: ["ok"] }, timestamp: { type: "string", format: "date-time" } },
+    required: ["status", "timestamp"],
+    additionalProperties: false
+  },
+  getAiStatus: {
+    type: "object",
+    properties: { provider: { type: "string" }, model: { type: "string" }, displayName: { type: "string" } },
+    required: ["provider", "model", "displayName"],
+    additionalProperties: false
+  },
+  listReviews: {
+    type: "object",
+    properties: {
+      reviews: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            id: { type: "string" },
+            name: { type: "string" },
+            role: { type: "string" },
+            rating: { type: "integer", minimum: 1, maximum: 5 },
+            content: { type: "string" },
+            created_at: { type: "string", format: "date-time" }
+          },
+          required: ["id", "name", "rating", "content"],
+          additionalProperties: false
+        }
+      }
+    },
+    required: ["reviews"],
+    additionalProperties: false
+  },
+  createReview: {
+    type: "object",
+    properties: { success: { type: "boolean" }, message: { type: "string" } },
+    required: ["success", "message"],
+    additionalProperties: false
+  },
+  getChatStatus: { type: "object", properties: { conversations: { type: "array" }, messages: { type: "array" }, conversationId: { type: "string", format: "uuid" } }, additionalProperties: true },
+  getMetaConnection: { type: "object", properties: { success: { type: "boolean" }, live: { type: "boolean" }, accounts: { type: "array" } }, required: ["success", "accounts"], additionalProperties: true },
+  disconnectMetaAccount: { type: "object", properties: { success: { type: "boolean" } }, required: ["success"], additionalProperties: false },
+  getMetaAnalytics: { type: "object", properties: { live: { type: "boolean" }, accounts: { type: "array" }, metrics: { type: "object" }, recentPosts: { type: "array" } }, required: ["live"], additionalProperties: true },
+  uploadMedia: { type: "object", properties: { success: { type: "boolean" }, url: { type: "string", format: "uri" } }, required: ["success", "url"], additionalProperties: false },
+  publishPost: { type: "object", properties: { success: { type: "boolean" }, platform: { type: "string" }, postId: { type: "string" }, status: { type: "string" }, url: { type: "string", format: "uri" } }, required: ["success"], additionalProperties: true },
+  runSchedulerTick: { type: "object", properties: { processed: { type: "integer" }, succeeded: { type: "integer" }, failed: { type: "integer" } }, additionalProperties: true },
+  deleteAccount: { type: "object", properties: { success: { type: "boolean" }, partial: { type: "boolean" }, message: { type: "string" } }, required: ["success"], additionalProperties: true }
+};
 
 export function buildOpenApiSpec(baseUrl: string): Record<string, unknown> {
   const paths: Record<string, Record<string, unknown>> = {};
@@ -26,8 +93,8 @@ export function buildOpenApiSpec(baseUrl: string): Record<string, unknown> {
         status.startsWith("2") || status === "200"
           ? isStreaming
             ? { "text/plain": { schema: { type: "string", description: "Streamed assistant text." } } }
-            : { "application/json": { schema: { type: "object" } } }
-          : { "application/json": { schema: { type: "object", properties: { error: { type: "string" } }, required: ["error"] } } };
+            : { "application/json": { schema: RESPONSE_SCHEMAS[operation.operationId] ?? { type: "object", additionalProperties: true } } }
+          : { "application/problem+json": { schema: PROBLEM_SCHEMA } };
       responses[status] = { description, content: okBody };
     }
 
@@ -37,6 +104,7 @@ export function buildOpenApiSpec(baseUrl: string): Record<string, unknown> {
       summary: operation.summary,
       description: `${operation.description}\n\nScopes required: ${operation.scopes.length > 0 ? operation.scopes.join(", ") : "none (zero-auth)"}.`,
       security: operationSecurity(operation),
+      "x-required-scopes": [...operation.scopes],
       ...(operation.parameters ? { parameters: operation.parameters.map((parameter) => ({ ...parameter, schema: { ...parameter.schema } })) } : {}),
       ...(operation.requestBody
         ? {
@@ -67,7 +135,7 @@ export function buildOpenApiSpec(baseUrl: string): Record<string, unknown> {
         "",
         `**When to use:** an agent should reach for this API when it needs to check service health, read or submit customer reviews, or drive Meta publishing workflows on behalf of a signed-in EduVerse account.`,
         "",
-        "**Onboarding:** free tier available; self-serve signup at `/signup`; zero-auth smoke tests at `/api/health` and `GET /api/reviews`. Rate limits: " + ONBOARDING.rateLimits,
+        "**Onboarding:** free tier available; self-serve signup at `/signup`; zero-auth smoke tests at `/api/v1/health` and `GET /api/v1/reviews`. Rate limits: " + ONBOARDING.rateLimits,
         "",
         "Machine-readable companions: `/api/tools.json` (LLM function-calling definitions), `/.well-known/mcp` (Model Context Protocol server), `/.well-known/oauth-protected-resource` (RFC 9728 scope discovery), `/llms.txt` (agent guide)."
       ].join("\n"),
@@ -86,22 +154,23 @@ export function buildOpenApiSpec(baseUrl: string): Record<string, unknown> {
       securitySchemes: {
         // Session cookies authenticate the dashboard's own fetch calls.
         sessionCookie: { type: "apiKey", in: "cookie", name: "sb-auth-token", description: "Supabase session cookie set by /login. Used implicitly by same-origin calls." },
-        schedulerSecret: { type: "http", scheme: "bearer", description: "Shared secret for the cron-only scheduler endpoint (SCHEDULER_SECRET)." },
-        eduverseOAuth: {
-          type: "oauth2",
-          description: "OAuth2 authorization-code flow with named least-privilege scopes. Scope names are mirrored at /.well-known/oauth-protected-resource.",
-          flows: {
-            authorizationCode: {
-              authorizationUrl: "/api/meta/oauth",
-              tokenUrl: "/api/meta/oauth/callback",
-              scopes: { ...API_SCOPES }
-            }
-          }
-        }
+        schedulerSecret: { type: "http", scheme: "bearer", description: "Shared secret for the cron-only scheduler endpoint (SCHEDULER_SECRET)." }
       }
     },
     security: [],
     "x-scopes-supported": [...SCOPE_NAMES],
+    "x-api-version": "v1",
+    "x-versioning": {
+      strategy: "URL path",
+      current: "v1",
+      stablePublicAliases: ["/api/v1/health", "/api/v1/reviews"],
+      deprecation: "Unversioned paths remain for compatibility. Future retirement will be announced here and use Deprecation and Sunset headers before removal."
+    },
+    "x-authentication": {
+      status: "session-based",
+      note: "A separate OAuth 2.0 authorization server and self-serve API keys are not live yet. Protected operations require the EduVerse Supabase session cookie.",
+      plannedScopes: { ...API_SCOPES }
+    },
     paths,
     "x-agent-usage": {
       whenToUse: "Health checks, review retrieval/submission, and authenticated Meta analytics/publishing automation.",

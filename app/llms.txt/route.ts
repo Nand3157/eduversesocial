@@ -39,14 +39,14 @@ Do **not** use EduVerse for: cross-posting to non-Meta networks (YouTube/TikTok/
 
 ## Zero-auth endpoints (no signup needed)
 
-- [Health probe](/api/health): returns status and timestamp.
+- [Health probe](/api/v1/health): returns status, timestamp, and rate-limit headers.
 - [AI provider status](/api/ai/status): which model currently powers chat.
-- [Approved reviews](/api/reviews): public read.
+- [Approved reviews](/api/v1/reviews): public read.
 
 ## Onboarding
 
 - Free tier: yes, with no credit card at ${baseUrl}/signup (self-serve).
-- Credentials: sign in, then generate tokens from Dashboard > Settings (${ONBOARDING.selfServeKeyGeneration}).
+- Credentials: ${ONBOARDING.selfServeKeyGeneration}
 - Sandbox: the zero-auth endpoints above are open for smoke tests; ${ONBOARDING.sandboxEnvironment}
 - Rate limits: ${ONBOARDING.rateLimits}
 
@@ -77,9 +77,9 @@ ${FAQS.map((faq) => `### ${faq.question}\n\n${faq.answer}`).join("\n\n")}
 
 ${callable}
 
-## Scopes and permissions
+## API versioning and permissions
 
-OAuth2 authorization-code flow with named least-privilege scopes; machine-readable declarations live in the OpenAPI securitySchemes and at /.well-known/oauth-protected-resource. Scopes: read:health, read:reviews, write:reviews, invoke:chat, meta:read, meta:write, account:delete.
+Current public aliases use \`/api/v1/\`. Unversioned paths remain for compatibility. Planned permission names are documented in OpenAPI, but a separate OAuth2 authorization server and API-key flow are not live yet. Protected app operations use the signed-in EduVerse session.
 
 ## CLI
 

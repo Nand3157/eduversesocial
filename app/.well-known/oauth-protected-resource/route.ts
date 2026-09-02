@@ -13,11 +13,11 @@ export function GET(request: Request) {
     {
       resource: `${baseUrl}/`,
       resource_documentation: `${baseUrl}/llms.txt`,
-      authorization_servers: [baseUrl],
       scopes_supported: Object.keys(API_SCOPES),
       bearer_methods_supported: ["header"],
       resource_signing_alg_values_supported: ["RS256"],
-      service_documentation: `${baseUrl}/openapi.json`
+        service_documentation: `${baseUrl}/openapi.json`,
+        "x-eduverse-authentication": "Protected app operations currently use the signed-in Supabase session. A standalone OAuth authorization server is not live yet."
     },
     {
       headers: {
