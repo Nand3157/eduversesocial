@@ -31,6 +31,7 @@ import { useDashboardStore } from "@/lib/stores/dashboard-store";
 import { MetaConnectModal } from "@/components/meta/meta-connect-modal";
 import { MetaPublisherModal } from "@/components/meta/meta-publisher-modal";
 import { AnalyticsProvider } from "@/components/dashboard/analytics-context";
+import { GlassHeader } from "@/components/layout/glass-header";
 
 const baseNavigation = [
   ["Dashboard", "/dashboard", LayoutDashboard, "FAC 001"],
@@ -198,7 +199,7 @@ export function AppShell({ children, email, profile }: { children: React.ReactNo
         </AnimatePresence>
 
         <div className="min-w-0">
-          <header className="sticky top-0 z-30 flex h-[64px] items-center gap-3 border-b border-borderSoft bg-background px-4 backdrop-blur-xl sm:px-6">
+          <GlassHeader className="flex h-[64px] items-center gap-3 px-4 sm:px-6">
             <Button aria-label="Open cabinet" className="lg:hidden bg-surface text-ink hover:bg-surface-muted border border-borderSoft" onClick={() => setOpen(true)} size="icon" variant="secondary"><Menu aria-hidden="true" className="h-5 w-5" /></Button>
             <div className="hidden items-center gap-2 sm:flex">
               <span className="mono text-[10px] tracking-[0.16em] text-faintText">DRAWER</span>
@@ -220,7 +221,7 @@ export function AppShell({ children, email, profile }: { children: React.ReactNo
                 </button>
               </form>
             </div>
-          </header>
+          </GlassHeader>
 
           <main id="main-content" className="p-4 sm:p-6 lg:p-8">
             <motion.div key={pathname} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}>

@@ -116,6 +116,7 @@ export function LandingPage() {
   const [feedbackStatus, setFeedbackStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [scrolled, setScrolled] = useState(false);
+  const landingShellRef = useRef<HTMLDivElement>(null);
   const landingHeaderRef = useRef<HTMLElement>(null);
   const reduceMotion = useReducedMotion();
 
@@ -126,8 +127,12 @@ export function LandingPage() {
       frame = window.requestAnimationFrame(() => {
         const maxScroll = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
         const progress = Math.min(window.scrollY / maxScroll, 1);
-        landingHeaderRef.current?.style.setProperty("--landing-glass-shift", `${-40 + progress * 120}%`);
-        landingHeaderRef.current?.style.setProperty("--landing-glass-opacity", `${0.12 + progress * 0.12}`);
+        const glassShift = `${-40 + progress * 120}%`;
+        const glassOpacity = `${0.12 + progress * 0.12}`;
+        landingShellRef.current?.style.setProperty("--landing-glass-shift", glassShift);
+        landingShellRef.current?.style.setProperty("--landing-glass-opacity", glassOpacity);
+        landingHeaderRef.current?.style.setProperty("--landing-glass-shift", glassShift);
+        landingHeaderRef.current?.style.setProperty("--landing-glass-opacity", glassOpacity);
         setScrolled(window.scrollY > 12);
         frame = 0;
       });
@@ -153,14 +158,14 @@ export function LandingPage() {
   const navLabel = (id: string) => id === "how" ? "How it works" : id[0].toUpperCase() + id.slice(1);
 
   return (
-    <div id="top" className="landing-shell min-h-screen">
+    <div ref={landingShellRef} id="top" className="landing-shell min-h-screen">
       <header ref={landingHeaderRef} className={cn("landing-header sticky top-0 z-40", scrolled && "landing-header-scrolled", mobileOpen && "landing-header-open")}>
         <div className="landing-wrap flex h-[64px] items-center justify-between"><Wordmark /><nav aria-label="Primary navigation" className="hidden items-center gap-1 lg:flex">{navItems.map((id) => <button key={id} onClick={() => scrollTo(id)} className="landing-nav-link min-h-11 rounded-full px-3.5 text-[13px] font-medium">{navLabel(id)}</button>)}</nav><div className="flex items-center gap-2"><ThemeToggle /><Button asChild variant="ghost" size="sm" className="hidden rounded-full text-[var(--landing-muted)] sm:inline-flex"><Link href="/login">Sign in</Link></Button><Button asChild size="sm" className="hidden rounded-full bg-[var(--landing-signal)] px-5 text-white hover:bg-[var(--landing-signal-dark)] sm:inline-flex"><Link href="/signup">Start free <ArrowRight className="h-3.5 w-3.5" /></Link></Button><button type="button" aria-label={mobileOpen ? "Close menu" : "Open menu"} aria-expanded={mobileOpen} onClick={() => setMobileOpen((open) => !open)} className="landing-menu-button lg:hidden">{mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button></div></div>
         <AnimatePresence>{mobileOpen && <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="landing-mobile-menu lg:hidden"><div className="landing-wrap grid gap-1 py-3">{navItems.map((id) => <button key={id} onClick={() => scrollTo(id)} className="min-h-11 px-3 text-left text-sm font-medium text-[var(--landing-ink)]">{navLabel(id)}</button>)}<Button asChild className="mt-2 rounded-full bg-[var(--landing-signal)] text-white hover:bg-[var(--landing-signal-dark)]"><Link href="/signup">Start free — no credit card</Link></Button></div></motion.div>}</AnimatePresence>
       </header>
 
       <main id="main-content">
-        <section className="landing-hero" aria-labelledby="hero-heading"><div className="landing-wrap landing-hero-grid"><motion.div initial={reduceMotion ? undefined : { opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}><p className="landing-overline"><i aria-hidden="true" /> SOCIAL INTELLIGENCE FOR PEOPLE WHO TEACH</p><h1 id="hero-heading">Your audience leaves signals.<br /><em>Keep the pattern.</em></h1><p className="landing-hero-copy">EduVerse turns real Instagram, Facebook, and Threads engagement into a memory you can act on — what worked, why it worked, and what to post next.</p><div className="landing-actions"><Button asChild className="h-12 rounded-full bg-[var(--landing-signal)] px-6 text-white shadow-[0_10px_24px_rgba(182,83,39,0.2)] hover:bg-[var(--landing-signal-dark)]"><Link href="/signup">Start free <ArrowRight className="h-4 w-4" /></Link></Button><Link href="/demo" className="landing-text-link"><Eye className="h-4 w-4" /> Preview the demo</Link></div><div className="landing-proof-row"><span><Check aria-hidden="true" /> No credit card</span><span><LockKeyhole aria-hidden="true" /> Encrypted &amp; revocable</span></div></motion.div><motion.div initial={reduceMotion ? undefined : { opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.65, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}><SignalBoard /></motion.div></div></section>
+        <section className="landing-hero" aria-labelledby="hero-heading"><div className="landing-wrap landing-hero-grid"><motion.div initial={reduceMotion ? undefined : { opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}><p className="landing-overline"><i aria-hidden="true" /> SOCIAL INTELLIGENCE FOR PEOPLE WHO TEACH</p><h1 id="hero-heading">Your audience leaves signals.<br /><em>Keep the pattern.</em></h1><p className="landing-hero-copy">EduVerse turns real Instagram, Facebook, and Threads engagement into a memory you can act on — what worked, why it worked, and what to post next.</p><p className="landing-hero-activation">Free to start · no card · connect Meta when you&apos;re ready for live data.</p><div className="landing-actions"><Button asChild className="h-12 rounded-full bg-[var(--landing-signal)] px-6 text-white shadow-[0_10px_24px_rgba(182,83,39,0.2)] hover:bg-[var(--landing-signal-dark)]"><Link href="/signup">Start free <ArrowRight className="h-4 w-4" /></Link></Button><Link href="/demo" className="landing-text-link"><Eye className="h-4 w-4" /> Preview the demo</Link></div><div className="landing-proof-row"><span><Check aria-hidden="true" /> No credit card</span><span><LockKeyhole aria-hidden="true" /> Encrypted &amp; revocable</span></div></motion.div><motion.div initial={reduceMotion ? undefined : { opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.65, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}><SignalBoard /></motion.div></div></section>
 
         <div className="landing-wrap landing-platform-rail" aria-label="Supported platforms"><span className="landing-rail-label">ONE MEMORY / THREE SOURCES</span><div className="landing-platforms"><span><i className="platform-dot platform-dot-ig" /> Instagram</span><span><i className="platform-dot platform-dot-fb" /> Facebook</span><span><i className="platform-dot platform-dot-th" /> Threads</span></div><span className="landing-rail-label landing-rail-right">OFFICIAL META GRAPH API</span></div>
 

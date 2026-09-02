@@ -5,6 +5,7 @@ import { ArrowLeft, Eye, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DemoDashboard } from "@/components/demo/demo-dashboard";
 import { ThemeToggle } from "@/components/providers/theme-toggle";
+import { GlassHeader } from "@/components/layout/glass-header";
 
 export const metadata: Metadata = {
   title: "Live Demo — Sandbox Dashboard",
@@ -15,7 +16,7 @@ export const metadata: Metadata = {
 export default function DemoPage() {
   return (
     <div className="dashboard-canvas min-h-screen">
-      <header className="sticky top-0 z-30 border-b border-borderSoft bg-card backdrop-blur-xl">
+      <GlassHeader>
         <div className="mx-auto flex h-[68px] max-w-6xl items-center justify-between px-5 sm:px-8">
           <Link href="/" className="inline-flex items-center gap-2.5">
             <Image src="/icon.svg" alt="EduVerse" width={32} height={32} className="h-8 w-8 rounded-[9px] shadow-sm object-cover" />
@@ -41,7 +42,7 @@ export default function DemoPage() {
             </Button>
           </div>
         </div>
-      </header>
+      </GlassHeader>
 
       <main id="main-content" className="mx-auto max-w-6xl px-5 py-8 sm:px-8 sm:py-10">
         <div className="mb-6 flex flex-wrap items-center gap-2 text-xs text-mutedText">

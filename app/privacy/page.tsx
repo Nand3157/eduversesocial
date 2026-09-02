@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/providers/theme-toggle";
 import { SITE } from "@/lib/agentic/site";
+import { GlassHeader } from "@/components/layout/glass-header";
 
 export const metadata: Metadata = {
   title: "Privacy Policy & Data Security",
@@ -31,7 +32,7 @@ function Section({ icon: Icon, title, children, id }: { icon: React.ElementType;
 export default function PrivacyPage() {
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-30 border-b border-borderSoft bg-card backdrop-blur-xl">
+      <GlassHeader>
         <div className="mx-auto flex h-[68px] max-w-5xl items-center justify-between px-5 sm:px-8">
           <Link href="/" className="inline-flex items-center gap-2.5">
             <span className="grid h-8 w-8 place-items-center rounded-full bg-primary text-background">
@@ -55,7 +56,7 @@ export default function PrivacyPage() {
             </Button>
           </div>
         </div>
-      </header>
+      </GlassHeader>
 
       <main id="main-content" className="mx-auto max-w-5xl px-5 py-10 sm:px-8 sm:py-14">
         <div className="mx-auto max-w-3xl">
