@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   LayoutDashboard,
   Menu,
+  PlugZap,
   Send,
   Settings,
   Sparkles,
@@ -41,6 +42,7 @@ const baseNavigation = [
   ["Recommendations", "/dashboard/recommendations", WandSparkles, "FAC 041"],
   ["AI Chat", "/dashboard/chat", Bot, "FAC 055"],
   ["Notifications", "/dashboard/notifications", Bell, "FAC 063"],
+  ["Integrations", "/dashboard/integrations", PlugZap, "FAC 082"],
   ["Settings", "/dashboard/settings", Settings, "FAC 088"],
 ] as const;
 
