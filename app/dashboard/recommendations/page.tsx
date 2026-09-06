@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { TiltCard } from "@/components/ui/tilt-card";
 import { Modal, ModalContent, ModalTitle, ModalDescription } from "@/components/ui/modal";
 import { MetaPublisherModal } from "@/components/meta/meta-publisher-modal";
+import { BestTimeCard } from "@/components/dashboard/lazy-charts";
 import { fadeUp, staggerContainer, staggerItem } from "@/components/motion-variants";
 
 type Rec = [string, string, string];
@@ -60,6 +61,7 @@ export default function RecommendationsPage() {
   return (
     <div className="space-y-6">
       <PageHeading description="Practical ideas generated only from live Meta audience and post data. Dismiss what’s not useful — it stays hidden." eyebrow="Your next best move" title="Recommendations" />
+      <BestTimeCard />
       {toast && <div role="status" aria-live="polite" className="rounded-xl border border-success/25 bg-success/10 px-4 py-3 text-sm text-success flex items-center justify-between"><span>{toast}</span><button onClick={() => setToast(null)} aria-label="Dismiss message" className="ml-2 rounded-lg p-1.5 text-success/70 hover:text-success focus-visible:ring-2 focus-visible:ring-success/50 focus-visible:outline-none"><X aria-hidden="true" className="h-4 w-4" /></button></div>}
       {dismissedCount > 0 && (
         <div className="flex items-center gap-2 text-xs text-mutedText">

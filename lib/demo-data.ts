@@ -1,4 +1,22 @@
 import type { AnalyticsSnapshot } from "@/lib/meta-analytics";
+import { computeBestTimes, type TimedPost } from "@/lib/best-time";
+
+const DEMO_SIGNALS: TimedPost[] = [
+  { timestamp: "2026-07-22T13:30:00Z", platform: "instagram", engagement: 4521, likes: 4200, comments: 312, shares: 9, mediaType: "CAROUSEL", accountId: "demo_ig_001", accountLabel: "@eduverse.demo" },
+  { timestamp: "2026-07-24T13:15:00Z", platform: "instagram", engagement: 3950, likes: 3600, comments: 248, shares: 102, mediaType: "CAROUSEL", accountId: "demo_ig_001", accountLabel: "@eduverse.demo" },
+  { timestamp: "2026-07-29T13:45:00Z", platform: "instagram", engagement: 4680, likes: 4300, comments: 290, shares: 90, mediaType: "IMAGE", accountId: "demo_ig_001", accountLabel: "@eduverse.demo" },
+  { timestamp: "2026-08-05T13:20:00Z", platform: "instagram", engagement: 4590, likes: 4200, comments: 301, shares: 89, mediaType: "CAROUSEL", accountId: "demo_ig_001", accountLabel: "@eduverse.demo" },
+  { timestamp: "2026-07-23T01:30:00Z", platform: "facebook", engagement: 3160, likes: 2800, comments: 204, shares: 156, mediaType: "TEXT", accountId: "demo_fb_001", accountLabel: "EduVerse Demo Page" },
+  { timestamp: "2026-07-30T01:45:00Z", platform: "facebook", engagement: 2980, likes: 2600, comments: 210, shares: 170, mediaType: "TEXT", accountId: "demo_fb_001", accountLabel: "EduVerse Demo Page" },
+  { timestamp: "2026-08-02T02:00:00Z", platform: "facebook", engagement: 1539, likes: 1400, comments: 96, shares: 43, mediaType: "VIDEO", accountId: "demo_fb_001", accountLabel: "EduVerse Demo Page" },
+  { timestamp: "2026-07-26T04:00:00Z", platform: "threads", engagement: 2145, likes: 1900, comments: 178, shares: 67, mediaType: "TEXT", accountId: "demo_th_001", accountLabel: "@eduverse.demo" },
+  { timestamp: "2026-07-28T14:00:00Z", platform: "threads", engagement: 1980, likes: 1750, comments: 160, shares: 70, mediaType: "TEXT", accountId: "demo_th_001", accountLabel: "@eduverse.demo" },
+  { timestamp: "2026-08-01T13:00:00Z", platform: "instagram", engagement: 4100, likes: 3800, comments: 220, shares: 80, mediaType: "VIDEO", accountId: "demo_ig_001", accountLabel: "@eduverse.demo" },
+  { timestamp: "2026-07-20T13:30:00Z", platform: "instagram", engagement: 3800, likes: 3500, comments: 210, shares: 90, mediaType: "CAROUSEL", accountId: "demo_ig_001", accountLabel: "@eduverse.demo" },
+  { timestamp: "2026-07-21T01:30:00Z", platform: "facebook", engagement: 2750, likes: 2400, comments: 190, shares: 160, mediaType: "TEXT", accountId: "demo_fb_001", accountLabel: "EduVerse Demo Page" }
+];
+
+const DEMO_BEST_TIMES = computeBestTimes(DEMO_SIGNALS, { timezone: "UTC", topN: 3 });
 
 export const DEMO_SNAPSHOT: AnalyticsSnapshot = {
   success: true,
@@ -89,6 +107,9 @@ export const DEMO_SNAPSHOT: AnalyticsSnapshot = {
       shares: "89",
       reach: "28.4K",
       status: "Live",
+      timestamp: "2026-08-05T13:20:00Z",
+      mediaType: "CAROUSEL",
+      accountLabel: "@eduverse.demo"
     },
     {
       platform: "Facebook Pages",
@@ -99,6 +120,9 @@ export const DEMO_SNAPSHOT: AnalyticsSnapshot = {
       shares: "156",
       reach: "19.1K",
       status: "Live",
+      timestamp: "2026-07-23T01:30:00Z",
+      mediaType: "TEXT",
+      accountLabel: "EduVerse Demo Page"
     },
     {
       platform: "Threads",
@@ -109,6 +133,9 @@ export const DEMO_SNAPSHOT: AnalyticsSnapshot = {
       shares: "67",
       reach: "14.3K",
       status: "Live",
+      timestamp: "2026-07-26T04:00:00Z",
+      mediaType: "TEXT",
+      accountLabel: "@eduverse.demo"
     },
     {
       platform: "Instagram Business",
@@ -119,6 +146,9 @@ export const DEMO_SNAPSHOT: AnalyticsSnapshot = {
       shares: "102",
       reach: "22.7K",
       status: "Live",
+      timestamp: "2026-07-24T13:15:00Z",
+      mediaType: "CAROUSEL",
+      accountLabel: "@eduverse.demo"
     },
     {
       platform: "Facebook Pages",
@@ -129,8 +159,13 @@ export const DEMO_SNAPSHOT: AnalyticsSnapshot = {
       shares: "43",
       reach: "11.2K",
       status: "Live",
+      timestamp: "2026-08-02T02:00:00Z",
+      mediaType: "VIDEO",
+      accountLabel: "EduVerse Demo Page"
     },
   ],
+  timingSignals: DEMO_SIGNALS,
+  bestTimes: DEMO_BEST_TIMES,
   memoryItems: [
     "3 connected Meta surfaces returned by Graph API (simulated sample).",
     "47 posts from the last 28 days are available for analysis (simulated).",
@@ -143,6 +178,11 @@ export const DEMO_SNAPSHOT: AnalyticsSnapshot = {
       "Based on Aug 7",
       "This post led the sample with 4.2K likes and a 12.9% engagement rate. In a live workspace EduVerse would generate the brief, caption, and dispatch via Meta Graph publish.",
     ],
+    [
+      "Post on Wed 1–2 PM (UTC) — simulated best window",
+      "Best window · high confidence · 12 timed posts (simulated)",
+      "Simulated sample: early-afternoon UTC slots averaged the highest engagement for Instagram carousels. In a live workspace this window is recomputed from your real timestamps."
+    ]
   ],
 };
 

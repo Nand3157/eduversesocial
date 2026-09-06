@@ -7,8 +7,9 @@ describe("report export rows", () => {
     const rows = snapshotExportRows(DEMO_SNAPSHOT);
     const sections = new Set(rows.map((row) => row.section));
 
-    expect(sections).toEqual(new Set(["metric", "platform", "posting", "audience", "engagement", "sentiment", "post", "memory", "recommendation"]));
+    expect(sections).toEqual(new Set(["metric", "platform", "posting", "audience", "engagement", "sentiment", "post", "memory", "recommendation", "besttime"]));
     expect(rows.find((row) => row.section === "post")?.reach).toBe("28.4K");
     expect(rows.find((row) => row.section === "recommendation")?.status).toBe("Based on Aug 7");
+    expect(rows.find((row) => row.section === "besttime")?.label).toMatch(/UTC/);
   });
 });

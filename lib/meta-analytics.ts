@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { decrypt } from "@/lib/crypto";
 import { mapLimit } from "@/lib/async";
 import { logger } from "@/lib/logger";
+import { computeBestTimes, describeBestWindow, normalizeContentType, normalizePlatform, type BestTimeResult, type TimedPost } from "@/lib/best-time";
 
 export type AnalyticsPost = {
   platform: string;
@@ -15,6 +16,12 @@ export type AnalyticsPost = {
   shares: string;
   reach: string;
   status: "Live";
+  /** ISO timestamp from Meta when available — powers best-time predictions. */
+  timestamp?: string;
+  /** Normalized content type (IMAGE | VIDEO | CAROUSEL | TEXT) when known. */
+  mediaType?: string;
+  /** Human account label for per-account breakdowns. */
+  accountLabel?: string;
 };
 
 export type AnalyticsSnapshot = {
@@ -31,6 +38,10 @@ export type AnalyticsSnapshot = {
   recentPosts: AnalyticsPost[];
   memoryItems: string[];
   recommendations: Array<[string, string, string]>;
+  /** Per-post timing signals backing best-time predictions (UTC ISO). */
+  timingSignals?: TimedPost[];
+  /** Best-time-to-post windows in UTC (client re-buckets per timezone). */
+  bestTimes?: BestTimeResult;
   error?: string;
 };
 
@@ -61,6 +72,7 @@ type GraphPost = {
   created_time?: string;
   permalink?: string;
   permalink_url?: string;
+  media_type?: string;
   like_count?: number;
   comments_count?: number;
   shares?: { count?: number };
@@ -81,6 +93,8 @@ const emptyAnalytics = (error: string): AnalyticsSnapshot => ({
   recentPosts: [],
   memoryItems: [],
   recommendations: [],
+  timingSignals: [],
+  bestTimes: { timezone: "UTC", sampleSize: 0, windows: [], byPlatform: {}, byContentType: {}, byAccount: [], confidence: "low", reason: error },
   error
 });
 
@@ -148,6 +162,7 @@ function accountFromStored(row: StoredAccount): MetaAccount[] {
 type ThreadsInsightsResult = {
   accounts: MetaAccount[];
   posts: AnalyticsPost[];
+  timingSignals: TimedPost[];
   reach: number;
   engaged: number;
   followers: number;
@@ -190,16 +205,45 @@ async function fetchThreadsAnalytics(token: string): Promise<ThreadsInsightsResu
     return { post, values };
   });
 
-  const postRows = postsWithInsights.map(({ post, values }): AnalyticsPost => ({
-    platform: "Threads",
-    post: post.text || "Untitled thread",
-    date: post.timestamp ? new Date(post.timestamp).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "—",
-    likes: compact(values.get("likes") ?? 0),
-    comments: compact(values.get("replies") ?? 0),
-    shares: compact((values.get("reposts") ?? 0) + (values.get("quotes") ?? 0)),
-    reach: compact(values.get("views") ?? 0),
-    status: "Live"
-  }));
+  const postRows = postsWithInsights.map(({ post, values }): AnalyticsPost => {
+    const likes = values.get("likes") ?? 0;
+    const replies = values.get("replies") ?? 0;
+    const shares = (values.get("reposts") ?? 0) + (values.get("quotes") ?? 0);
+    const mediaType = normalizeContentType((post as { media_type?: string }).media_type ?? "TEXT");
+    const accountLabel = profile?.username ? `@${profile.username}` : profile?.name ?? "Threads";
+    return {
+      platform: "Threads",
+      post: post.text || "Untitled thread",
+      date: post.timestamp ? new Date(post.timestamp).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "—",
+      likes: compact(likes),
+      comments: compact(replies),
+      shares: compact(shares),
+      reach: compact(values.get("views") ?? 0),
+      status: "Live",
+      timestamp: post.timestamp,
+      mediaType,
+      accountLabel
+    };
+  });
+
+  const timingSignals: TimedPost[] = postsWithInsights
+    .filter(({ post }) => Boolean(post.timestamp))
+    .map(({ post, values }) => {
+      const likes = values.get("likes") ?? 0;
+      const replies = values.get("replies") ?? 0;
+      const shares = (values.get("reposts") ?? 0) + (values.get("quotes") ?? 0);
+      return {
+        timestamp: post.timestamp!,
+        platform: "threads",
+        engagement: likes + replies + shares,
+        likes,
+        comments: replies,
+        shares,
+        mediaType: normalizeContentType((post as { media_type?: string }).media_type ?? "TEXT"),
+        accountId: profile?.id ?? "threads",
+        accountLabel: profile?.username ? `@${profile.username}` : profile?.name ?? "Threads"
+      };
+    });
 
   // Keyed by ISO date (not a formatted label) so entries can be merged and
   // sorted reliably across platforms; "recent" is a fallback for missing
@@ -216,6 +260,7 @@ async function fetchThreadsAnalytics(token: string): Promise<ThreadsInsightsResu
   return {
     accounts,
     posts: postRows,
+    timingSignals,
     reach: totalValues.get("views") ?? postRows.reduce((total, row) => total + expandCompact(row.reach), 0),
     engaged: (totalValues.get("likes") ?? 0) + (totalValues.get("replies") ?? 0) + (totalValues.get("reposts") ?? 0) + (totalValues.get("quotes") ?? 0),
     followers: totalValues.get("followers_count") ?? 0,
@@ -249,7 +294,12 @@ async function readAnalyticsCache(supabase: SupabaseClient, accountId: string | 
   const payload = data?.payload as AnalyticsSnapshot | undefined;
   // Snapshots that carry an error (e.g. a metric Graph API rejected) are
   // treated as stale: serving them would replay the failure for a whole day.
-  if (payload && payload.success && !payload.error) return payload;
+  // Payloads predating best-time signals are also treated as stale so the
+  // next read recomputes timing windows instead of serving a day of empties.
+  if (payload && payload.success && !payload.error) {
+    if (!payload.bestTimes || !payload.timingSignals) return null;
+    return payload;
+  }
   return null;
 }
 
@@ -325,7 +375,7 @@ export async function fetchMetaAnalytics(token?: string, bypassCache = false): P
       const instagramChildren = stored.filter((child) => child.platform === "instagram" && child.parent_account_id === row.id && child.external_id);
       const [pageInsights, pagePosts, pageFans, childResults] = await Promise.all([
         graphData<InsightRow[]>(pageToken, `${row.external_id!}/insights?metric=page_views_total,page_post_engagements&period=day&date_preset=last_28d`).catch((error) => { errors.push(error instanceof Error ? error.message : "Page insights unavailable."); return []; }),
-        graphData<GraphPost[]>(pageToken, `${row.external_id!}/posts?fields=id,message,created_time,permalink_url,shares&limit=25`).catch((error) => { errors.push(error instanceof Error ? error.message : "Page posts unavailable."); return []; }),
+        graphData<GraphPost[]>(pageToken, `${row.external_id!}/posts?fields=id,message,created_time,permalink_url,shares,likes.summary(true).limit(0),comments.summary(true).limit(0)&limit=25`).catch((error) => { errors.push(error instanceof Error ? error.message : "Page posts unavailable."); return []; }),
         // Profile fields (fan_count, followers_count) return a flat object,
         // not a {data: [...]} envelope — graphData unwraps the envelope, so
         // these must go through graphRequest directly.
@@ -337,14 +387,14 @@ export async function fetchMetaAnalytics(token?: string, bypassCache = false): P
             graphData<GraphPost[]>(childToken, `${child.external_id!}/media?fields=id,caption,media_type,timestamp,permalink,like_count,comments_count&limit=25`).catch((error) => { errors.push(error instanceof Error ? error.message : "Instagram media unavailable."); return []; }),
             graphRequest<{ followers_count?: number }>("facebook", `${child.external_id!}?fields=followers_count`, childToken).catch((): { followers_count?: number } => ({})),
           ]);
-          return { insights, media, followers: profile.followers_count };
+          return { insights, media, followers: profile.followers_count, account: child };
         }))
       ]);
       return {
         pageInsights,
-        pagePosts,
+        pagePosts: pagePosts.map((post) => ({ post, accountId: row.id, accountLabel: row.display_name ?? row.external_id! })),
+        instagramPosts: childResults.flatMap((result) => result.media.map((post) => ({ post, accountId: result.account.id, accountLabel: result.account.username ? `@${result.account.username}` : result.account.display_name ?? result.account.external_id! }))),
         instagramInsights: childResults.flatMap((result) => result.insights),
-        instagramPosts: childResults.flatMap((result) => result.media),
         pageLabel: row.display_name ?? row.external_id!,
         fanCount: pageFans.fan_count,
         instagramFollowers: instagramChildren.map((child, index) => ({ label: child.username ? `@${child.username}` : child.display_name ?? child.external_id!, followers: childResults[index]?.followers })).filter((item): item is { label: string; followers: number } => item.followers !== undefined)
@@ -385,26 +435,62 @@ export async function fetchMetaAnalytics(token?: string, bypassCache = false): P
 
     const platformTotals = insightGroups.map((group) => ({ name: group.platform, value: sumInsight(group.rows, ["page_post_engagements", "total_interactions"]) + (group.platform === "Threads" ? (threads?.engaged ?? 0) : 0) }));
     const platformTotal = platformTotals.reduce((total, item) => total + item.value, 0);
+    const postTimestamp = (post: GraphPost) => post.timestamp ?? post.created_time;
     const posts = [
       ...pageResults.flatMap((result) => [
-        ...result.pagePosts.map((post) => ({ post, platform: "Facebook Pages" })),
-        ...result.instagramPosts.map((post) => ({ post, platform: "Instagram Business" }))
-      ]).map(({ post, platform }): AnalyticsPost => ({
-        platform,
-        post: post.caption || post.message || "Untitled post",
-        date: post.timestamp ? new Date(post.timestamp).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "—",
-        likes: compact(post.like_count ?? post.likes?.summary?.total_count ?? 0),
-        comments: compact(post.comments_count ?? post.comments?.summary?.total_count ?? 0),
-        shares: compact(post.shares?.count ?? 0),
-        reach: "—",
-        status: "Live"
-      })),
+        ...result.pagePosts.map(({ post, accountLabel }) => ({ post, platform: "Facebook Pages" as const, accountLabel, mediaType: "TEXT" as const })),
+        ...result.instagramPosts.map(({ post, accountLabel }) => ({ post, platform: "Instagram Business" as const, accountLabel, mediaType: normalizeContentType(post.media_type) }))
+      ]).map(({ post, platform, accountLabel, mediaType }): AnalyticsPost => {
+        const iso = postTimestamp(post);
+        const likes = post.like_count ?? post.likes?.summary?.total_count ?? 0;
+        const comments = post.comments_count ?? post.comments?.summary?.total_count ?? 0;
+        return {
+          platform,
+          post: post.caption || post.message || "Untitled post",
+          date: iso ? new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "—",
+          likes: compact(likes),
+          comments: compact(comments),
+          shares: compact(post.shares?.count ?? 0),
+          reach: "—",
+          status: "Live",
+          timestamp: iso,
+          mediaType,
+          accountLabel
+        };
+      }),
       ...(threads?.posts ?? [])
     ];
     const topPost = [...posts].sort((a, b) => {
       const score = (post: AnalyticsPost) => expandCompact(post.likes) + expandCompact(post.comments) + expandCompact(post.shares);
       return score(b) - score(a);
     })[0];
+
+    // Timing signals for best-time predictions: one entry per post that
+    // carries a usable timestamp, tagged by account + platform + content type.
+    const timingSignals: TimedPost[] = [
+      ...pageResults.flatMap((result) => [
+        ...result.pagePosts.map(({ post, accountId, accountLabel }) => {
+          const iso = postTimestamp(post);
+          if (!iso) return null;
+          const likes = post.likes?.summary?.total_count ?? 0;
+          const comments = post.comments?.summary?.total_count ?? 0;
+          const shares = post.shares?.count ?? 0;
+          return { timestamp: iso, platform: "facebook", engagement: likes + comments + shares, likes, comments, shares, mediaType: "TEXT", accountId, accountLabel } as TimedPost;
+        }),
+        ...result.instagramPosts.map(({ post, accountId, accountLabel }) => {
+          const iso = post.timestamp;
+          if (!iso) return null;
+          const likes = post.like_count ?? 0;
+          const comments = post.comments_count ?? 0;
+          return { timestamp: iso, platform: "instagram", engagement: likes + comments, likes, comments, shares: 0, mediaType: normalizeContentType(post.media_type), accountId, accountLabel } as TimedPost;
+        })
+      ]).filter((signal): signal is TimedPost => signal !== null),
+      ...(threads?.timingSignals ?? [])
+    ];
+
+    // Server baseline is UTC; the client re-buckets the same signals into the
+    // viewer's timezone for display and scheduling without another fetch.
+    const bestTimes = computeBestTimes(timingSignals, { timezone: "UTC", topN: 5 });
 
 const followers = [
       ...pageResults.flatMap((result) => result.fanCount !== undefined ? [{ label: result.pageLabel, followers: result.fanCount }] : []),
@@ -418,6 +504,25 @@ const followers = [
       { label: "Published posts", value: postCount, suffix: "", detail: "Returned by Meta" },
       { label: "Engagement rate", value: reach ? Number(((engaged / reach) * 100).toFixed(1)) : 0, suffix: "%", detail: "Calculated from Meta data" }
     ];
+
+    const bestTimeMemory = bestTimes.windows.length
+      ? `Best posting window (UTC): ${describeBestWindow(bestTimes.windows[0]!, "UTC", bestTimes.sampleSize)}`
+      : `Not enough timed history for posting-window predictions (${bestTimes.sampleSize} timed posts, need 5+).`;
+
+    const bestTimeRecs: Array<[string, string, string]> = bestTimes.windows.slice(0, 2).map((window) => {
+      const platformLabel = (() => {
+        // Attribute the window to the platform/content slice that produced it
+        // when the top overall bucket is dominated by one surface; otherwise
+        // keep it account-agnostic so we never over-claim provenance.
+        const platforms = [...new Set(timingSignals.map((s) => normalizePlatform(s.platform)).filter(Boolean))];
+        return platforms.length === 1 ? `${platforms[0]![0]!.toUpperCase()}${platforms[0]!.slice(1)}` : "All connected accounts";
+      })();
+      return [
+        `Post on ${window.label} (${platformLabel})`,
+        `Best window · ${bestTimes.confidence} confidence · ${bestTimes.sampleSize} timed posts`,
+        `Posts published around ${window.label} UTC averaged ${window.avgEngagement} engagement across ${window.postCount} posts (score ${window.score}/100). Schedule the next ${platformLabel === "All connected accounts" ? "post" : platformLabel + " post"} at the upcoming ${window.label} slot and compare.`
+      ];
+    });
 
     const snapshot: AnalyticsSnapshot = {
       success: true,
@@ -434,16 +539,22 @@ const followers = [
       growthData: followers,
       sentimentData: [],
       recentPosts: posts.slice(0, 25),
+      timingSignals,
+      bestTimes,
       memoryItems: [
         accounts.length ? `${accounts.length} connected Meta account${accounts.length === 1 ? "" : "s"} returned by Graph API.` : "Meta returned no linked accounts for this token.",
         posts.length ? `The latest ${posts.length} returned post${posts.length === 1 ? "" : "s"} are available for analysis.` : "Meta returned no recent posts for the connected accounts.",
-        topPost ? `Highest recent interaction volume: ${topPost.likes} likes, ${topPost.comments} comments, and ${topPost.shares} shares.` : "Interaction history will appear when Meta returns post data."
+        topPost ? `Highest recent interaction volume: ${topPost.likes} likes, ${topPost.comments} comments, and ${topPost.shares} shares.` : "Interaction history will appear when Meta returns post data.",
+        bestTimeMemory
       ],
-      recommendations: topPost ? [[
-        "Review and repurpose the strongest recent Meta post",
-        `Based on ${topPost.date}`,
-        `This post led the returned sample with ${topPost.likes} likes, ${topPost.comments} comments, and ${topPost.shares} shares. Use its topic and format as the next experiment.`
-      ]] : [],
+      recommendations: [
+        ...(topPost ? [[
+          "Review and repurpose the strongest recent Meta post",
+          `Based on ${topPost.date}`,
+          `This post led the returned sample with ${topPost.likes} likes, ${topPost.comments} comments, and ${topPost.shares} shares. Use its topic and format as the next experiment.`
+        ] as [string, string, string]] : []),
+        ...bestTimeRecs
+      ],
       ...(errors.length ? { error: errors[0] } : {})
     };
 

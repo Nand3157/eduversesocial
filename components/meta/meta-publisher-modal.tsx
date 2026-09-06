@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Send, Wand2, X, CheckCircle2, AlertCircle, Loader2, ImagePlus, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Send, Wand2, X, CheckCircle2, AlertCircle, Loader2, ImagePlus, Trash2, CalendarClock } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import * as Dialog from "@radix-ui/react-dialog";
 import type { MetaAccount } from "@/lib/meta-api";
+import { computeBestTimes } from "@/lib/best-time";
+import { useAnalytics } from "@/components/dashboard/analytics-context";
 import { EASE_OUT } from "@/components/motion-variants";
 
 interface MetaPublisherModalProps {
@@ -13,6 +15,8 @@ interface MetaPublisherModalProps {
   onSuccess?: () => void;
   initialCaption?: string;
   initialPlatform?: "instagram" | "facebook" | "threads";
+  /** UTC ISO timestamp to prefill the schedule field (e.g. from best-time). */
+  initialScheduleTime?: string;
 }
 
 type UploadedMedia = { url: string; preview: string };
@@ -27,7 +31,14 @@ const FIELD_CLASS =
 const isErrorResult = (message: string) =>
   /^(failed|could not|connect|no connected)/i.test(message);
 
-export function MetaPublisherModal({ isOpen, onClose, onSuccess, initialCaption, initialPlatform }: MetaPublisherModalProps) {
+function toDatetimeLocalValue(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+export function MetaPublisherModal({ isOpen, onClose, onSuccess, initialCaption, initialPlatform, initialScheduleTime }: MetaPublisherModalProps) {
   const [platform, setPlatform] = useState<"instagram" | "facebook" | "threads">("instagram");
   const [selectedAccount, setSelectedAccount] = useState<MetaAccount | null>(null);
   const [mediaType, setMediaType] = useState<"CAROUSEL" | "IMAGE" | "VIDEO" | "TEXT">("CAROUSEL");
@@ -52,9 +63,49 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess, initialCaption,
     setWasOpen(true);
     if (initialCaption) setCaption(initialCaption);
     if (initialPlatform) setPlatform(initialPlatform);
+    if (initialScheduleTime) {
+      const local = toDatetimeLocalValue(initialScheduleTime);
+      if (local) setScheduleDate(local);
+    }
   } else if (!isOpen && wasOpen) {
     setWasOpen(false);
   }
+
+  // Best-time prefill: BestTimeCard dispatches this when the user picks a
+  // window. When this modal is open we adopt the suggested slot + platform.
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<{ iso?: string; platform?: string; label?: string }>).detail;
+      if (!detail?.iso) return;
+      const local = toDatetimeLocalValue(detail.iso);
+      if (local) setScheduleDate(local);
+      if (detail.platform === "instagram" || detail.platform === "facebook" || detail.platform === "threads") {
+        setPlatform(detail.platform);
+      }
+      setPublishedResult(
+        detail.label ? `Best-time slot applied: ${detail.label}. Review media + caption, then dispatch.` : "Best-time slot applied. Review media + caption, then dispatch."
+      );
+    };
+    window.addEventListener("eduverse:besttime-schedule", handler as EventListener);
+    return () => window.removeEventListener("eduverse:besttime-schedule", handler as EventListener);
+  }, [isOpen]);
+
+  // Best-time suggestion for the currently selected platform, computed from
+  // live timing signals in the viewer's timezone. Shown inline under the
+  // schedule field so "when" is one click, not a separate research trip.
+  const { data: analyticsData } = useAnalytics();
+  const bestSuggestion = useMemo(() => {
+    if (!isOpen) return null;
+    const signals = analyticsData?.timingSignals ?? [];
+    if (signals.length < 5) return null;
+    let browserTz = "UTC";
+    try {
+      browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+    } catch {}
+    const result = computeBestTimes(signals, { timezone: browserTz, topN: 1, platform });
+    return result.windows[0] ? { window: result.windows[0], timezone: browserTz } : null;
+  }, [isOpen, analyticsData, platform]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -290,6 +341,19 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess, initialCaption,
                   onChange={(e) => setScheduleDate(e.target.value)}
                   className={`${FIELD_CLASS} p-2`}
                 />
+                {bestSuggestion && !scheduleDate && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const local = bestSuggestion.window.nextOccurrenceUtc ? toDatetimeLocalValue(bestSuggestion.window.nextOccurrenceUtc) : "";
+                      if (local) setScheduleDate(local);
+                    }}
+                    className="mt-1.5 inline-flex touch-manipulation items-center gap-1.5 rounded-lg border border-primary/25 bg-accent-soft px-2 py-1 text-[11px] font-medium text-primary transition hover:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+                  >
+                    <CalendarClock aria-hidden="true" className="h-3 w-3" />
+                    Best for {platform}: {bestSuggestion.window.label} ({bestSuggestion.timezone})
+                  </button>
+                )}
               </div>
             </div>
 

@@ -43,6 +43,21 @@ export function snapshotExportRows(snapshot: AnalyticsSnapshot) {
   snapshot.recentPosts.forEach((post) => rows.push({ section: "post", platform: post.platform, date: post.date, label: post.post, value: "", likes: post.likes, comments: post.comments, shares: post.shares, reach: post.reach, status: post.status, detail: "" }));
   snapshot.memoryItems.forEach((item) => rows.push({ section: "memory", platform: "", date: "", label: item, value: "", likes: "", comments: "", shares: "", reach: "", status: "", detail: "Derived from live insights" }));
   snapshot.recommendations.forEach(([title, timing, detail]) => rows.push({ section: "recommendation", platform: "", date: "", label: title, value: "", likes: "", comments: "", shares: "", reach: "", status: timing, detail }));
+  (snapshot.bestTimes?.windows ?? []).forEach((window) =>
+    rows.push({
+      section: "besttime",
+      platform: "",
+      date: "",
+      label: `${window.label} (${snapshot.bestTimes?.timezone ?? "UTC"})`,
+      value: window.score,
+      likes: "",
+      comments: window.postCount,
+      shares: "",
+      reach: "",
+      status: `avg ${window.avgEngagement}`,
+      detail: `Next ${window.nextOccurrenceUtc ?? ""} · sample ${snapshot.bestTimes?.sampleSize ?? 0}`
+    })
+  );
 
   return rows;
 }
@@ -86,10 +101,15 @@ export function openSnapshotPdf(snapshot: AnalyticsSnapshot) {
   const postRows = snapshot.recentPosts.map((post) => [post.platform, post.date, post.post, post.likes, post.comments, post.reach]);
   const memoryRows = snapshot.memoryItems.map((item) => [item]);
   const recommendationRows = snapshot.recommendations.map(([title, timing, detail]) => [title, timing, detail]);
+  const bestTimeRows = (snapshot.bestTimes?.windows ?? []).map((window) => [
+    `${window.label} (${snapshot.bestTimes?.timezone ?? "UTC"})`,
+    `score ${window.score}/100`,
+    `avg ${window.avgEngagement} · ${window.postCount} posts`
+  ]);
 
   printWindow.document.write(`<!doctype html><html><head><title>EduVerse analytics report</title><meta name="color-scheme" content="light"><style>
     @page{size:auto;margin:16mm}*{box-sizing:border-box}body{margin:0;color:#201b16;background:#fff;font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}main{max-width:980px;margin:0 auto}header{display:flex;justify-content:space-between;gap:24px;align-items:flex-end;border-bottom:2px solid #c66b3d;padding-bottom:18px;margin-bottom:22px}h1{font:700 30px/1.1 Georgia,serif;margin:0}h2{font:700 17px/1.2 Georgia,serif;margin:28px 0 10px}p{margin:5px 0;color:#6f665e}.meta{font-size:12px;text-align:right;color:#6f665e}.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.metric{border:1px solid #ded7ce;border-radius:10px;padding:13px}.metric span,.metric small{display:block;color:#6f665e;font-size:11px}.metric strong{display:block;font-size:25px;line-height:1.2;margin:5px 0}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border-bottom:1px solid #e7e1d9;text-align:left;padding:8px 7px;vertical-align:top}th{background:#f5f1ec;color:#6f665e;font-size:10px;text-transform:uppercase;letter-spacing:.08em}td:nth-child(3){max-width:360px}footer{border-top:1px solid #ded7ce;margin-top:30px;padding-top:12px;color:#6f665e;font-size:11px}@media print{h2{break-after:avoid}.metrics,table{break-inside:avoid}}
-  </style></head><body><main><header><div><p>EDUVERSE / AUDIENCE MEMORY</p><h1>Analytics report</h1><p>Live snapshot${snapshot.cached ? " · cached" : ""}</p></div><div class="meta">Generated ${escapeHtml(generatedAt)}<br>${snapshot.accounts.length} connected account${snapshot.accounts.length === 1 ? "" : "s"}</div></header><section class="metrics">${metrics || "<p>No metrics available.</p>"}</section><h2>Platform mix</h2>${reportTable(["Platform", "Value"], platformRows)}<h2>Recent posts</h2>${reportTable(["Platform", "Date", "Post", "Likes", "Comments", "Reach"], postRows)}<h2>Audience memory</h2>${reportTable(["Signal"], memoryRows)}<h2>Recommendations</h2>${reportTable(["Recommendation", "Window", "Why this"], recommendationRows)}<footer>EduVerse keeps recommendations grounded in connected Meta data. This report was generated from the current workspace snapshot.</footer></main></body></html>`);
+  </style></head><body><main><header><div><p>EDUVERSE / AUDIENCE MEMORY</p><h1>Analytics report</h1><p>Live snapshot${snapshot.cached ? " · cached" : ""}</p></div><div class="meta">Generated ${escapeHtml(generatedAt)}<br>${snapshot.accounts.length} connected account${snapshot.accounts.length === 1 ? "" : "s"}</div></header><section class="metrics">${metrics || "<p>No metrics available.</p>"}</section><h2>Platform mix</h2>${reportTable(["Platform", "Value"], platformRows)}<h2>Recent posts</h2>${reportTable(["Platform", "Date", "Post", "Likes", "Comments", "Reach"], postRows)}<h2>Best times to post${snapshot.bestTimes ? ` (${escapeHtml(snapshot.bestTimes.timezone)} · ${snapshot.bestTimes.confidence} confidence)` : ""}</h2>${bestTimeRows.length ? reportTable(["Window", "Score", "Evidence"], bestTimeRows) : "<p>No posting windows yet — connect more history.</p>"}<h2>Audience memory</h2>${reportTable(["Signal"], memoryRows)}<h2>Recommendations</h2>${reportTable(["Recommendation", "Window", "Why this"], recommendationRows)}<footer>EduVerse keeps recommendations grounded in connected Meta data. This report was generated from the current workspace snapshot.</footer></main></body></html>`);
   printWindow.document.close();
   printWindow.focus();
   printWindow.setTimeout(() => printWindow.print(), 250);

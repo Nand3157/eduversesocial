@@ -33,3 +33,7 @@ export const PlatformBreakdownCard = dynamic(() => import("@/components/chart-ca
   ssr: false,
   loading: tallFallback
 });
+export const BestTimeCard = dynamic(() => import("@/components/dashboard/best-time-card").then((module) => module.BestTimeCard), {
+  ssr: false,
+  loading: fallback
+});

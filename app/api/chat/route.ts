@@ -91,6 +91,15 @@ async function getLiveWorkspaceContext(userId?: string) {
         accounts: analytics.accounts.map((account) => ({ name: account.name, platform: account.platform, handle: account.handle, followers: account.followers })),
         metrics: analytics.metrics,
         recentPosts: analytics.recentPosts,
+        bestTimes: analytics.bestTimes
+          ? {
+              timezone: analytics.bestTimes.timezone,
+              sampleSize: analytics.bestTimes.sampleSize,
+              confidence: analytics.bestTimes.confidence,
+              windows: analytics.bestTimes.windows.slice(0, 3),
+              byAccount: analytics.bestTimes.byAccount.slice(0, 4)
+            }
+          : null,
         error: analytics.error
       })}`;
     } catch {

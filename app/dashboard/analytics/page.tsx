@@ -1,4 +1,4 @@
-import { AudienceGrowthCard, EngagementChartCard, PlatformBreakdownCard, PostingFrequencyCard, SentimentTrendCard } from "@/components/dashboard/lazy-charts";
+import { AudienceGrowthCard, BestTimeCard, EngagementChartCard, PlatformBreakdownCard, PostingFrequencyCard, SentimentTrendCard } from "@/components/dashboard/lazy-charts";
 import { PageHeading } from "@/components/dashboard/page-heading";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ExportActions } from "@/components/dashboard/export-actions";
@@ -27,6 +27,7 @@ export default function AnalyticsPage() {
         <AudienceGrowthCard />
         <SentimentTrendCard />
       </div>
+      <BestTimeCard />
     </div>
   );
 }
