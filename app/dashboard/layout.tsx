@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/dashboard/app-shell";
 import { createClient } from "@/lib/supabase/server";
+import { fetchMetaAnalytics } from "@/lib/meta-analytics";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -20,8 +21,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
     profile = data;
   }
 
+  // Server-first analytics: fetch the live snapshot here so the dashboard
+  // paints with data instead of skeleton → client fetch → API route. The
+  // provider still revalidates on explicit refresh. Never throws — failures
+  // resolve to an error snapshot the UI renders as an empty state.
+  const initialAnalytics = await fetchMetaAnalytics().catch(() => null);
+
   return (
-    <AppShell email={user.email} profile={profile}>
+    <AppShell email={user.email} profile={profile} initialAnalytics={initialAnalytics}>
       {children}
     </AppShell>
   );

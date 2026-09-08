@@ -33,6 +33,7 @@ import { MetaConnectModal } from "@/components/meta/meta-connect-modal";
 import { MetaPublisherModal } from "@/components/meta/meta-publisher-modal";
 import { AnalyticsProvider } from "@/components/dashboard/analytics-context";
 import { GlassHeader } from "@/components/layout/glass-header";
+import type { AnalyticsSnapshot } from "@/lib/meta-analytics";
 
 const baseNavigation = [
   ["Dashboard", "/dashboard", LayoutDashboard, "FAC 001"],
@@ -52,7 +53,7 @@ const subscribeNothing = () => () => undefined;
 const getMounted = () => true;
 const getServerMounted = () => false;
 
-export function AppShell({ children, email, profile }: { children: React.ReactNode; email?: string; profile?: { display_name?: string | null; role?: string | null; bio?: string | null } | null }) {
+export function AppShell({ children, email, profile, initialAnalytics }: { children: React.ReactNode; email?: string; profile?: { display_name?: string | null; role?: string | null; bio?: string | null } | null; initialAnalytics?: AnalyticsSnapshot | null }) {
   const pathname = usePathname();
   const { mobileNavOpen: open, sidebarCollapsed: collapsed, setMobileNavOpen: setOpen, toggleSidebar, userName, userEmail, setProfile } = useDashboardStore();
   const [connectModalOpen, setConnectModalOpen] = useState(false);
@@ -180,7 +181,7 @@ export function AppShell({ children, email, profile }: { children: React.ReactNo
   return (
     <div className={cn("dashboard-canvas min-h-screen text-ink", collapsed ? "lg:grid lg:grid-cols-[76px_1fr]" : "lg:grid lg:grid-cols-[272px_1fr]")}>
       <ScrollProgress />
-      <AnalyticsProvider>
+      <AnalyticsProvider initialData={initialAnalytics ?? null}>
         <MetaConnectModal isOpen={connectModalOpen} onClose={() => setConnectModalOpen(false)} onConnected={() => window.dispatchEvent(new Event("eduverse:analytics-refresh"))} />
         <MetaPublisherModal isOpen={publisherModalOpen} onClose={() => setPublisherModalOpen(false)} />
 

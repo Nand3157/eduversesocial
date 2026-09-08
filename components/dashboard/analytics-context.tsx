@@ -6,13 +6,24 @@ import type { AnalyticsSnapshot } from "@/lib/meta-analytics";
 type AnalyticsContextValue = { data: AnalyticsSnapshot | null; loading: boolean; error: boolean; refresh: () => void };
 const AnalyticsContext = createContext<AnalyticsContextValue>({ data: null, loading: true, error: false, refresh: () => undefined });
 
-export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
-  const [data, setData] = useState<AnalyticsSnapshot | null>(null);
-  const [loading, setLoading] = useState(true);
+/**
+ * Server-first provider. The dashboard layout fetches the snapshot in a
+ * Server Component and passes it as `initialData`, so the first paint already
+ * has live analytics instead of skeleton → client fetch → API route → the
+ * same server function. Explicit refreshes (and the
+ * `eduverse:analytics-refresh` event) still revalidate through the API route.
+ */
+export function AnalyticsProvider({ children, initialData }: { children: React.ReactNode; initialData?: AnalyticsSnapshot | null }) {
+  const [data, setData] = useState<AnalyticsSnapshot | null>(initialData ?? null);
+  const [loading, setLoading] = useState(!initialData);
   const [error, setError] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const seeded = initialData != null;
 
   useEffect(() => {
+    // Seeded snapshots render immediately; skip the mount fetch and only
+    // revalidate when the user (or an event) explicitly asks for fresh data.
+    if (refreshKey === 0 && seeded) return;
     let cancelled = false;
     queueMicrotask(() => { if (!cancelled) { setLoading(true); setError(false); } });
     // The server caches snapshots per day; manual refreshes bypass the cache.
@@ -37,7 +48,7 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [refreshKey]);
+  }, [refreshKey, seeded]);
 
   useEffect(() => {
     const refresh = () => setRefreshKey((value) => value + 1);

@@ -22,9 +22,8 @@ const productionHeaders = [
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  experimental: {
-    optimizePackageImports: ["lucide-react", "framer-motion", "recharts"]
-  },
+  // Stable top-level key since Next 15 (no longer under `experimental`).
+  optimizePackageImports: ["lucide-react", "framer-motion", "recharts"],
   async headers() {
     return [
       {
