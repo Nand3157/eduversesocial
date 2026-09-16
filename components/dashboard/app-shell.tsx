@@ -33,6 +33,7 @@ import { MetaConnectModal } from "@/components/meta/meta-connect-modal";
 import { MetaPublisherModal } from "@/components/meta/meta-publisher-modal";
 import { AnalyticsProvider } from "@/components/dashboard/analytics-context";
 import { GlassHeader } from "@/components/layout/glass-header";
+import { DashboardMobileDock } from "@/components/ui/mobile-bottom-nav";
 import type { AnalyticsSnapshot } from "@/lib/meta-analytics";
 
 const baseNavigation = [
@@ -226,11 +227,12 @@ export function AppShell({ children, email, profile, initialAnalytics }: { child
             </div>
           </GlassHeader>
 
-          <main id="main-content" className="p-4 sm:p-6 lg:p-8">
+          <main id="main-content" className="p-4 pb-24 sm:p-6 sm:pb-6 lg:p-8 lg:pb-8">
             <motion.div key={pathname} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}>
               {children}
             </motion.div>
           </main>
+          <DashboardMobileDock />
         </div>
       </AnalyticsProvider>
     </div>

@@ -44,7 +44,7 @@ export default function DemoPage() {
         </div>
       </GlassHeader>
 
-      <main id="main-content" className="mx-auto max-w-6xl px-5 py-8 sm:px-8 sm:py-10">
+      <main id="main-content" className="mx-auto max-w-6xl px-4 py-6 pb-28 sm:px-8 sm:py-10 sm:pb-10 md:pb-10">
         <div className="mb-6 flex flex-wrap items-center gap-2 text-xs text-mutedText">
           <Link href="/" className="hover:text-ink">
             Home
@@ -57,7 +57,7 @@ export default function DemoPage() {
         <DemoDashboard />
       </main>
 
-      <footer className="bg-transparent px-5 py-8 sm:px-8">
+      <footer className="bg-transparent px-4 py-6 pb-28 sm:px-8 sm:py-8 md:pb-8">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 text-xs text-mutedText sm:flex-row">
           <p>Demo uses synthetic data inspired by real Meta Graph API shapes. Connect your accounts for live numbers.</p>
           <div className="flex gap-4">

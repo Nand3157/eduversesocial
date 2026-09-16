@@ -745,3 +745,44 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); box-sha
   letter-spacing: .04em;
   line-height: 1.55;
 }
+
+/* ————— Best-in-class mobile ergonomics ————— */
+@supports (padding: max(0px)) {
+  .pb-safe { padding-bottom: max(0.75rem, env(safe-area-inset-bottom)); }
+}
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scroll-padding-top: 72px; }
+@media (max-width: 768px) {
+  html { scroll-padding-bottom: 96px; }
+  /* Ensure all interactive elements meet 44px minimum on mobile */
+  button, a[role="button"], [role="button"] { min-height: 44px; }
+  /* Beautiful momentum scroll */
+  * { -webkit-overflow-scrolling: touch; }
+  /* Prevent horizontal overflow from charts/tables */
+  body { overflow-x: hidden; }
+  /* Card performance: promote layers for expandables */
+  .catalog-card, .atlas-sheet, .landing-feedback-form, .landing-demo-strip, .signal-board, .signal-receipt {
+    transform: translateZ(0);
+    will-change: auto;
+  }
+}
+@media (max-width: 640px) {
+  /* Smaller header footprint on mobile for more viewport */
+  .landing-header { top: 0.5rem; }
+  .app-glass-header { top: 0.5rem; }
+  /* Ensure chart containers never overflow viewport */
+  .recharts-wrapper { max-width: 100vw; }
+  .recharts-responsive-container { min-width: 0; }
+}
+
+/* Content-visibility for below-the-fold performance (modern browsers) */
+@supports (content-visibility: auto) {
+  .landing-section, .atlas-sheet, .catalog-card { content-visibility: auto; contain-intrinsic-size: auto 400px; }
+  /* Keep header and hero instant */
+  .landing-hero, .landing-header, .app-glass-header { content-visibility: visible; }
+}
+
+/* Smooth expandable affordance */
+@media (prefers-reduced-motion: no-preference) {
+  details > summary { transition: background-color 180ms ease; }
+  details[open] > summary { background-color: color-mix(in srgb, var(--surface-muted) 60%, transparent); }
+}

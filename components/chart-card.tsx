@@ -58,5 +58,31 @@ export function PlatformBreakdownCard({ className }: { className?: string } = {}
   const chartData = data?.platformBreakdown ?? [];
   const colors = ["var(--accent)", "var(--ok)", "var(--warn)", "var(--muted)"];
   if (loading || chartData.length === 0) return <ChartState loading={loading} className={className} />;
-  return <div className={cn("grid w-full min-w-0 gap-5 lg:grid-cols-[220px_1fr] lg:items-center", className)}><div role="img" aria-label={`Pie chart: share of engagement across ${chartData.map((p) => p.name).join(", ")}.`} className="h-[210px]"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie animationDuration={900} isAnimationActive={!reduceMotion} cx="50%" cy="50%" data={chartData} dataKey="value" innerRadius={54} outerRadius={82} paddingAngle={4}>{chartData.map((entry, index) => <Cell fill={colors[index % colors.length]} key={entry.name} />)}</Pie><Tooltip contentStyle={tooltipStyle} /></PieChart></ResponsiveContainer></div><div className="grid gap-3">{chartData.map((platform, index) => <div className="flex items-center justify-between gap-3 text-sm" key={platform.name}><span className="flex items-center gap-2 text-mutedText"><span aria-hidden="true" className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: colors[index % colors.length] }} />{platform.name}</span><strong className="tabular-nums text-ink">{new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(platform.value)}%</strong></div>)}</div></div>;
+  return (
+    <div className={cn("flex w-full min-w-0 flex-col items-center gap-5 sm:flex-row sm:items-center", className)}>
+      <div role="img" aria-label={`Pie chart: share of engagement across ${chartData.map((p) => p.name).join(", ")}.`} className="h-[176px] w-[176px] shrink-0 sm:h-[168px] sm:w-[168px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie animationDuration={900} isAnimationActive={!reduceMotion} cx="50%" cy="50%" data={chartData} dataKey="value" innerRadius={46} outerRadius={70} paddingAngle={4}>
+              {chartData.map((entry, index) => (
+                <Cell fill={colors[index % colors.length]} key={entry.name} stroke="var(--surface)" strokeWidth={1} />
+              ))}
+            </Pie>
+            <Tooltip contentStyle={tooltipStyle} />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="grid w-full min-w-0 flex-1 gap-2.5">
+        {chartData.map((platform, index) => (
+          <div className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-borderSoft/60 bg-surface/60 px-3 py-2.5 text-sm" key={platform.name}>
+            <span className="flex min-w-0 items-center gap-2.5 text-mutedText">
+              <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: colors[index % colors.length] }} />
+              <span className="truncate text-[13px] font-medium leading-none">{platform.name}</span>
+            </span>
+            <strong className="shrink-0 tabular-nums text-sm font-semibold text-ink">{new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(platform.value)}%</strong>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }

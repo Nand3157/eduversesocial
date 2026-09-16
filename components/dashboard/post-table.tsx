@@ -131,44 +131,75 @@ export function PostTable({ csvRows }: { csvRows?: CsvRow[] }) {
         </div>
       )}
 
-      {loading ? <div role="status" className="rounded-xl border border-dashed border-borderSoft bg-surface/50 p-8 text-center text-xs text-mutedText">Loading live Meta posts…</div> : filtered.length === 0 ? <div className="rounded-xl border border-dashed border-borderSoft bg-surface/50 p-8 text-center text-xs leading-relaxed text-mutedText">No live Meta posts returned yet. Connect a Meta account with post read permissions to populate this library.</div> : <div className="overflow-x-auto">
-        <table className="w-full min-w-[800px] border-separate border-spacing-y-2 text-left text-sm">
-          <thead className="text-xs text-mutedText">
-            <tr>
-              {["Platform", "Content", "Date", "Likes", "Comments", "Shares", "Reach", "Status"].map((column) => (
-                <th className="px-3 py-2 font-medium sticky top-0 z-10 bg-surface" key={column}>
-                  {column}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            <AnimatePresence initial={false}>
-              {items.map((post, index) => (
-                <motion.tr
-                  className="bg-surface text-mutedText transition-colors duration-150 hover:bg-borderSoft/60"
-                  key={[post.platform, post.post, post.date, post.likes, post.comments, post.shares, post.reach, index].join("\u0000")}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-                >
-                  <td className="sticky left-0 z-10 rounded-l-xl bg-surface px-3 py-3 font-medium text-ink shadow-[2px_0_4px_rgba(0,0,0,0.04)]">{post.platform}</td>
-                  <td className="max-w-[280px] truncate px-3 py-3 text-ink" title={post.post}>{post.post}</td>
-                  <td className="px-3 py-3 tabular-nums">{post.date}</td>
-                  <td className="px-3 py-3 tabular-nums">{post.likes}</td>
-                  <td className="px-3 py-3 tabular-nums">{post.comments}</td>
-                  <td className="px-3 py-3 tabular-nums">{post.shares}</td>
-                  <td className="px-3 py-3 tabular-nums">{post.reach}</td>
-                  <td className="rounded-r-xl px-3 py-3">
-                    <Badge variant={statusVariant[post.status]}>{post.status}</Badge>
-                  </td>
-                </motion.tr>
-              ))}
-            </AnimatePresence>
-          </tbody>
-        </table>
-      </div>}
+      {loading ? <div role="status" className="rounded-xl border border-dashed border-borderSoft bg-surface/50 p-8 text-center text-xs text-mutedText">Loading live Meta posts…</div> : filtered.length === 0 ? <div className="rounded-xl border border-dashed border-borderSoft bg-surface/50 p-8 text-center text-xs leading-relaxed text-mutedText">No live Meta posts returned yet. Connect a Meta account with post read permissions to populate this library.</div> : <>
+        {/* Desktop table */}
+        <div className="hidden overflow-x-auto md:block">
+          <table className="w-full min-w-[800px] border-separate border-spacing-y-2 text-left text-sm">
+            <thead className="text-xs text-mutedText">
+              <tr>
+                {["Platform", "Content", "Date", "Likes", "Comments", "Shares", "Reach", "Status"].map((column) => (
+                  <th className="px-3 py-2 font-medium sticky top-0 z-10 bg-surface" key={column}>
+                    {column}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              <AnimatePresence initial={false}>
+                {items.map((post, index) => (
+                  <motion.tr
+                    className="bg-surface text-mutedText transition-colors duration-150 hover:bg-borderSoft/60"
+                    key={[post.platform, post.post, post.date, post.likes, post.comments, post.shares, post.reach, index].join("\u0000")}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                  >
+                    <td className="sticky left-0 z-10 rounded-l-xl bg-surface px-3 py-3 font-medium text-ink shadow-[2px_0_4px_rgba(0,0,0,0.04)]">{post.platform}</td>
+                    <td className="max-w-[280px] truncate px-3 py-3 text-ink" title={post.post}>{post.post}</td>
+                    <td className="px-3 py-3 tabular-nums">{post.date}</td>
+                    <td className="px-3 py-3 tabular-nums">{post.likes}</td>
+                    <td className="px-3 py-3 tabular-nums">{post.comments}</td>
+                    <td className="px-3 py-3 tabular-nums">{post.shares}</td>
+                    <td className="px-3 py-3 tabular-nums">{post.reach}</td>
+                    <td className="rounded-r-xl px-3 py-3">
+                      <Badge variant={statusVariant[post.status]}>{post.status}</Badge>
+                    </td>
+                  </motion.tr>
+                ))}
+              </AnimatePresence>
+            </tbody>
+          </table>
+        </div>
+        {/* Mobile cards - beautiful expand */}
+        <div className="grid gap-3 md:hidden">
+          <AnimatePresence initial={false}>
+            {items.map((post, index) => (
+              <motion.div
+                key={[post.platform, post.post, post.date, index].join("\u0000")}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+                className="rounded-2xl border border-borderSoft bg-surface p-4 shadow-sm"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="rounded-full bg-ink px-2.5 py-1 mono text-[10px] font-semibold tracking-[0.08em] text-background">{post.platform}</span>
+                  <Badge variant={statusVariant[post.status]} className="text-[11px]">{post.status}</Badge>
+                </div>
+                <p className="mt-3 text-sm font-medium leading-6 text-ink line-clamp-2">{post.post}</p>
+                <div className="mt-3 grid grid-cols-4 gap-2">
+                  <span className="rounded-xl border border-borderSoft bg-card px-2 py-2.5 text-center"><span className="block mono text-[9px] tracking-[0.08em] text-faintText">LIKES</span><span className="block text-xs font-semibold tabular-nums text-ink">{post.likes}</span></span>
+                  <span className="rounded-xl border border-borderSoft bg-card px-2 py-2.5 text-center"><span className="block mono text-[9px] tracking-[0.08em] text-faintText">COMMENTS</span><span className="block text-xs font-semibold tabular-nums text-ink">{post.comments}</span></span>
+                  <span className="rounded-xl border border-borderSoft bg-card px-2 py-2.5 text-center"><span className="block mono text-[9px] tracking-[0.08em] text-faintText">SHARES</span><span className="block text-xs font-semibold tabular-nums text-ink">{post.shares}</span></span>
+                  <span className="rounded-xl border border-borderSoft bg-card px-2 py-2.5 text-center"><span className="block mono text-[9px] tracking-[0.08em] text-faintText">REACH</span><span className="block text-xs font-semibold tabular-nums text-ink">{post.reach}</span></span>
+                </div>
+                <p className="mt-2 text-right mono text-[10px] tracking-[0.06em] text-faintText">{post.date}</p>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      </>}
 
       <div className="mt-4 flex items-center justify-between text-sm tabular-nums text-mutedText">
         <span aria-live="polite">

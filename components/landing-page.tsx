@@ -13,7 +13,10 @@ import {
   MessageCircleMore,
   ShieldCheck,
   Star,
-  X
+  X,
+  Sparkles,
+  Zap,
+  Layers
 } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Image from "next/image";
@@ -22,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { FAQS } from "@/lib/agentic/faq";
 import { ThemeToggle } from "@/components/providers/theme-toggle";
+import { LandingMobileDock } from "@/components/ui/mobile-bottom-nav";
 
 type Review = {
   id: string;
@@ -54,9 +58,9 @@ const memoryStages = [
 ];
 
 const featureColumns = [
-  { icon: BarChart3, title: "A live view across platforms", copy: "One timeline for Instagram, Facebook, and Threads, with graceful empty states when a platform has no data." },
-  { icon: MessageCircleMore, title: "Memory that compounds", copy: "Patterns stay with your workspace, so the next decision starts with what your audience actually did." },
-  { icon: ShieldCheck, title: "Publishing with receipts", copy: "Schedule or publish through verified Meta delivery, with encrypted tokens and retry-safe execution." }
+  { icon: BarChart3, title: "A live view across platforms", copy: "One timeline for Instagram, Facebook, and Threads, with graceful empty states when a platform has no data.", kicker: "FAC 014" },
+  { icon: MessageCircleMore, title: "Memory that compounds", copy: "Patterns stay with your workspace, so the next decision starts with what your audience actually did.", kicker: "FAC 022" },
+  { icon: ShieldCheck, title: "Publishing with receipts", copy: "Schedule or publish through verified Meta delivery, with encrypted tokens and retry-safe execution.", kicker: "FAC 041" }
 ];
 
 function Wordmark({ className }: { className?: string }) {
@@ -108,6 +112,61 @@ function MemoryStages() {
   return <div className="memory-stages">{memoryStages.map((stage, index) => <div className="memory-stage" key={stage.number}><div className="memory-stage-mark" aria-hidden="true"><span>{stage.number}</span>{index < memoryStages.length - 1 && <i />}</div><div><h3>{stage.title}</h3><p>{stage.copy}</p></div></div>)}</div>;
 }
 
+// Mobile collapsible section - beautiful expand on click, smaller footprint
+function MobileExpandable({
+  kicker,
+  title,
+  subtitle,
+  defaultOpen = false,
+  children,
+  icon,
+}: {
+  kicker?: string;
+  title: string;
+  subtitle?: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+  icon?: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  const reduceMotion = useReducedMotion();
+  return (
+    <div className="overflow-hidden rounded-[20px] border border-[var(--landing-line)] bg-[var(--landing-island-strong)] shadow-[0_12px_32px_-16px_rgba(15,17,21,0.18)] backdrop-blur-[16px] lg:hidden">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className="flex min-h-[68px] w-full items-center justify-between gap-3 px-4 py-4 text-left touch-manipulation active:bg-[var(--landing-paper-deep)]/50"
+      >
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          {icon && <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-[var(--landing-signal)]/20 bg-[var(--landing-signal)]/10 text-[var(--landing-signal)]">{icon}</span>}
+          <div className="min-w-0">
+            {kicker && <p className="mono text-[10px] font-semibold tracking-[0.14em] text-[var(--landing-signal)]">{kicker}</p>}
+            <p className="truncate font-display text-[15px] font-semibold tracking-tight text-[var(--landing-ink)]">{title}</p>
+            {subtitle && <p className="mt-0.5 line-clamp-1 text-xs leading-4 text-[var(--landing-muted)]">{subtitle}</p>}
+          </div>
+        </div>
+        <span className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-full border bg-[var(--landing-paper)] text-[var(--landing-muted)] transition-all duration-200", open ? "rotate-180 border-[var(--landing-signal)] bg-[var(--landing-signal)] text-[var(--landing-action-ink)]" : "border-[var(--landing-line)]")}>
+          <ChevronDown className="h-4 w-4" />
+        </span>
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={reduceMotion ? false : { height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={reduceMotion ? undefined : { height: 0, opacity: 0 }}
+            transition={{ duration: 0.34, ease: [0.16, 1, 0.3, 1] }}
+            className="overflow-hidden border-t border-[var(--landing-line)]"
+          >
+            <div className="p-4">{children}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 export function LandingPage() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -143,6 +202,14 @@ export function LandingPage() {
   }, []);
   useEffect(() => { fetch("/api/reviews", { cache: "no-store" }).then((response) => (response.ok ? response.json() : { reviews: [] })).then((data) => setReviews(data.reviews ?? [])).catch(() => setReviews([])).finally(() => setLoadingReviews(false)); }, []);
 
+  // Prevent body scroll when mobile menu open + focus trap
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [mobileOpen]);
+
   const submitFeedback = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault(); setFeedbackStatus("submitting"); setFeedbackMessage("");
     try {
@@ -158,10 +225,31 @@ export function LandingPage() {
   const navLabel = (id: string) => id === "how" ? "How it works" : id[0].toUpperCase() + id.slice(1);
 
   return (
-    <div ref={landingShellRef} id="top" className="landing-shell min-h-screen">
+    <div ref={landingShellRef} id="top" className="landing-shell min-h-screen pb-[96px] lg:pb-0">
       <header ref={landingHeaderRef} className={cn("landing-header sticky top-0 z-40", scrolled && "landing-header-scrolled", mobileOpen && "landing-header-open")}>
         <div className="landing-wrap flex h-[64px] items-center justify-between"><Wordmark /><nav aria-label="Primary navigation" className="hidden items-center gap-1 lg:flex">{navItems.map((id) => <button key={id} onClick={() => scrollTo(id)} className="landing-nav-link min-h-11 rounded-full px-3.5 text-[13px] font-medium">{navLabel(id)}</button>)}</nav><div className="flex items-center gap-2"><ThemeToggle /><Button asChild variant="ghost" size="sm" className="hidden rounded-full text-[var(--landing-muted)] sm:inline-flex"><Link href="/login">Sign in</Link></Button><Button asChild size="sm" className="hidden rounded-full bg-[var(--landing-signal)] px-5 text-white hover:bg-[var(--landing-signal-dark)] sm:inline-flex"><Link href="/signup">Start free <ArrowRight className="h-3.5 w-3.5" /></Link></Button><button type="button" aria-label={mobileOpen ? "Close menu" : "Open menu"} aria-expanded={mobileOpen} onClick={() => setMobileOpen((open) => !open)} className="landing-menu-button lg:hidden">{mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button></div></div>
-        <AnimatePresence>{mobileOpen && <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="landing-mobile-menu lg:hidden"><div className="landing-wrap grid gap-1 py-3">{navItems.map((id) => <button key={id} onClick={() => scrollTo(id)} className="min-h-11 px-3 text-left text-sm font-medium text-[var(--landing-ink)]">{navLabel(id)}</button>)}<Button asChild className="mt-2 rounded-full bg-[var(--landing-signal)] text-white hover:bg-[var(--landing-signal-dark)]"><Link href="/signup">Start free — no credit card</Link></Button></div></motion.div>}</AnimatePresence>
+        <AnimatePresence>
+          {mobileOpen && (
+            <>
+              <motion.button aria-label="Close menu backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setMobileOpen(false)} className="fixed inset-0 top-[64px] z-30 bg-[var(--landing-ink)]/20 backdrop-blur-sm lg:hidden" />
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }} className="landing-mobile-menu relative z-40 overflow-hidden border-t border-[var(--landing-line)] bg-[var(--landing-island-strong)]/95 backdrop-blur-xl lg:hidden">
+                <div className="landing-wrap grid gap-1.5 py-4">
+                  {navItems.map((id) => (
+                    <button key={id} onClick={() => scrollTo(id)} className="flex min-h-[52px] items-center justify-between rounded-2xl border border-[var(--landing-line)] bg-[var(--landing-paper)] px-4 text-left text-[15px] font-medium text-[var(--landing-ink)] active:bg-[var(--landing-paper-deep)]">
+                      <span>{navLabel(id)}</span><ArrowRight className="h-4 w-4 text-[var(--landing-muted)]" />
+                    </button>
+                  ))}
+                  <div className="mt-2 grid gap-2">
+                    <Button asChild className="h-12 rounded-full bg-[var(--landing-signal)] text-[15px] font-semibold text-[var(--landing-action-ink)] hover:bg-[var(--landing-signal-dark)]"><Link href="/signup" onClick={() => setMobileOpen(false)}>Start free — no credit card <ArrowRight className="h-4 w-4" /></Link></Button>
+                    <Button asChild variant="secondary" className="h-12 rounded-full border-[var(--landing-line)] bg-transparent text-[var(--landing-ink)]"><Link href="/demo" onClick={() => setMobileOpen(false)}><Eye className="h-4 w-4" /> Explore live demo</Link></Button>
+                    <Button asChild variant="ghost" className="h-11 rounded-full"><Link href="/login" onClick={() => setMobileOpen(false)}>Sign in</Link></Button>
+                  </div>
+                  <p className="pt-2 text-center mono text-[10px] tracking-[0.08em] text-[var(--landing-muted)]">Trusted by educators · Meta Graph OAuth · Encrypted & revocable</p>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </header>
 
       <main id="main-content">
@@ -169,21 +257,156 @@ export function LandingPage() {
 
         <div className="landing-wrap landing-platform-rail" aria-label="Supported platforms"><span className="landing-rail-label">ONE MEMORY / THREE SOURCES</span><div className="landing-platforms"><span><i className="platform-dot platform-dot-ig" /> Instagram</span><span><i className="platform-dot platform-dot-fb" /> Facebook</span><span><i className="platform-dot platform-dot-th" /> Threads</span></div><span className="landing-rail-label landing-rail-right">OFFICIAL META GRAPH API</span></div>
 
-        <section id="how" className="landing-section landing-section-rule" aria-labelledby="how-heading"><div className="landing-wrap landing-two-col"><div className="landing-section-intro"><p className="landing-section-label">THE MEMORY LOOP</p><h2 id="how-heading">A post becomes useful when the reason stays with it.</h2><p>Most dashboards make you re-learn the same lesson every week. EduVerse keeps the signal attached to the work, so your next decision starts further ahead.</p></div><MemoryStages /></div></section>
+        {/* Desktop: original two-col. Mobile: beautiful expandable stacked */}
+        <section id="how" className="landing-section landing-section-rule" aria-labelledby="how-heading">
+          <div className="landing-wrap">
+            {/* Mobile beautiful expandables */}
+            <div className="grid gap-3 lg:hidden">
+              <div className="text-center">
+                <p className="landing-section-label">THE MEMORY LOOP</p><h2 id="how-heading-mobile" className="mt-3 font-display text-[26px] font-semibold leading-[0.95] tracking-[-0.05em] text-[var(--landing-ink)]">A post becomes useful when the reason stays with it.</h2><p className="mx-auto mt-3 max-w-[32ch] text-sm leading-6 text-[var(--landing-muted)]">Tap to explore each step — compact, clear, no scrolling marathon.</p>
+              </div>
+              <MobileExpandable kicker="STEP 01" title="Connect once" subtitle="Link Meta sources in one OAuth" icon={<Sparkles className="h-4 w-4" />} defaultOpen>
+                <p className="text-sm leading-6 text-[var(--landing-muted)]">Link Instagram Business, Facebook Pages, or Threads through Meta’s official consent flow. Tokens encrypted, revocable anytime.</p>
+              </MobileExpandable>
+              <MobileExpandable kicker="STEP 02" title="Read the signal" subtitle="Reach, saves, timing in one view" icon={<BarChart3 className="h-4 w-4" />}>
+                <p className="text-sm leading-6 text-[var(--landing-muted)]">Reach, saves, comments, timing, and post format arrive together in one live timeline — no tab hopping.</p>
+              </MobileExpandable>
+              <MobileExpandable kicker="STEP 03" title="Keep the reason" subtitle="Every suggestion has receipts" icon={<Layers className="h-4 w-4" />}>
+                <p className="text-sm leading-6 text-[var(--landing-muted)]">Every recommendation points back to the post and signal that earned it. Provenance, not guesswork.</p>
+              </MobileExpandable>
+            </div>
+            {/* Desktop unchanged */}
+            <div className="hidden lg:grid landing-two-col"><div className="landing-section-intro"><p className="landing-section-label">THE MEMORY LOOP</p><h2 id="how-heading">A post becomes useful when the reason stays with it.</h2><p>Most dashboards make you re-learn the same lesson every week. EduVerse keeps the signal attached to the work, so your next decision starts further ahead.</p></div><MemoryStages /></div>
+          </div>
+        </section>
 
-        <section id="features" className="landing-section landing-section-quiet" aria-labelledby="features-heading"><div className="landing-wrap"><div className="landing-section-intro landing-section-intro-wide"><p className="landing-section-label">BUILT FOR THE NEXT POST</p><h2 id="features-heading">Less dashboard theatre.<br /><em>More useful context.</em></h2></div><div className="landing-feature-grid">{featureColumns.map(({ icon: Icon, title, copy }) => <article key={title} className="landing-feature"><Icon aria-hidden="true" className="h-5 w-5 text-[var(--landing-signal)]" /><h3>{title}</h3><p>{copy}</p></article>)}</div></div></section>
+        <section id="features" className="landing-section landing-section-quiet" aria-labelledby="features-heading">
+          <div className="landing-wrap">
+            {/* Mobile: expandable feature cards */}
+            <div className="lg:hidden">
+              <div className="text-center">
+                <p className="landing-section-label">BUILT FOR THE NEXT POST</p><h2 className="mx-auto mt-3 max-w-[14ch] font-display text-[26px] font-semibold leading-[0.95] tracking-[-0.06em] text-[var(--landing-ink)]">Less dashboard theatre. <em className="font-serif font-normal text-[var(--landing-signal)]">More useful context.</em></h2>
+              </div>
+              <div className="mt-6 grid gap-3">
+                {featureColumns.map(({ icon: Icon, title, copy, kicker }) => (
+                  <MobileExpandable key={title} kicker={kicker} title={title} subtitle={copy.slice(0, 44) + "…"} icon={<Icon className="h-4 w-4" />}>
+                    <div className="flex gap-3">
+                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[var(--landing-paper-deep)] text-[var(--landing-signal)]"><Icon className="h-5 w-5" /></span>
+                      <div>
+                        <h3 className="font-display text-[15px] font-semibold text-[var(--landing-ink)]">{title}</h3>
+                        <p className="mt-1 text-sm leading-6 text-[var(--landing-muted)]">{copy}</p>
+                      </div>
+                    </div>
+                  </MobileExpandable>
+                ))}
+              </div>
+            </div>
+            {/* Desktop */}
+            <div className="hidden lg:block"><div className="landing-section-intro landing-section-intro-wide"><p className="landing-section-label">BUILT FOR THE NEXT POST</p><h2 id="features-heading">Less dashboard theatre.<br /><em>More useful context.</em></h2></div><div className="landing-feature-grid">{featureColumns.map(({ icon: Icon, title, copy }) => <article key={title} className="landing-feature"><Icon aria-hidden="true" className="h-5 w-5 text-[var(--landing-signal)]" /><h3>{title}</h3><p>{copy}</p></article>)}</div></div>
+          </div>
+        </section>
 
-        <section className="landing-wrap landing-receipt-section" aria-labelledby="receipt-heading"><div className="signal-receipt"><div className="signal-receipt-header"><span>RECOMMENDATION RECEIPT</span><span>SIMULATED WORKSPACE · AUG 12</span></div><div className="signal-receipt-grid"><div><p className="signal-board-kicker">WHY THIS?</p><h2 id="receipt-heading">Repeat the format<br /><em>that earned saves.</em></h2><p className="signal-receipt-copy">“Exam prep carousel” outperformed your recent post average by 3.2× on saves.</p></div><div className="signal-receipt-data"><div><span>RECOMMENDATION</span><strong>Carousel</strong></div><div><span>BEST WINDOW</span><strong>Wed · 18:30</strong></div><div><span>SOURCE SIGNAL</span><strong>Save velocity</strong></div><Link href="/demo" className="signal-receipt-link">See sample provenance <ArrowRight aria-hidden="true" /></Link></div></div></div></section>
+        <section className="landing-wrap landing-receipt-section" aria-labelledby="receipt-heading">
+          {/* Mobile collapsed */}
+          <div className="lg:hidden">
+            <MobileExpandable kicker="RECOMMENDATION RECEIPT" title="Repeat the format that earned saves." subtitle="Sample provenance included" icon={<Zap className="h-4 w-4" />} defaultOpen>
+              <div className="space-y-4">
+                <p className="text-sm leading-6 text-[var(--landing-muted)]">“Exam prep carousel” outperformed your recent post average by 3.2× on saves.</p>
+                <div className="grid gap-2">
+                  <div className="flex items-center justify-between rounded-xl border border-[var(--landing-line)] bg-[var(--landing-paper)] px-3 py-2.5"><span className="mono text-[11px] text-[var(--landing-muted)]">RECOMMENDATION</span><strong className="text-sm text-[var(--landing-ink)]">Carousel</strong></div>
+                  <div className="flex items-center justify-between rounded-xl border border-[var(--landing-line)] bg-[var(--landing-paper)] px-3 py-2.5"><span className="mono text-[11px] text-[var(--landing-muted)]">BEST WINDOW</span><strong className="text-sm text-[var(--landing-ink)]">Wed · 18:30</strong></div>
+                  <div className="flex items-center justify-between rounded-xl border border-[var(--landing-line)] bg-[var(--landing-paper)] px-3 py-2.5"><span className="mono text-[11px] text-[var(--landing-muted)]">SOURCE SIGNAL</span><strong className="text-sm text-[var(--landing-ink)]">Save velocity</strong></div>
+                </div>
+                <Link href="/demo" className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-[var(--landing-signal)] px-4 py-2.5 text-sm font-semibold text-[var(--landing-action-ink)]">See sample provenance <ArrowRight className="h-4 w-4" /></Link>
+              </div>
+            </MobileExpandable>
+          </div>
+          {/* Desktop */}
+          <div className="hidden lg:block">
+            <div className="signal-receipt"><div className="signal-receipt-header"><span>RECOMMENDATION RECEIPT</span><span>SIMULATED WORKSPACE · AUG 12</span></div><div className="signal-receipt-grid"><div><p className="signal-board-kicker">WHY THIS?</p><h2 id="receipt-heading">Repeat the format<br /><em>that earned saves.</em></h2><p className="signal-receipt-copy">“Exam prep carousel” outperformed your recent post average by 3.2× on saves.</p></div><div className="signal-receipt-data"><div><span>RECOMMENDATION</span><strong>Carousel</strong></div><div><span>BEST WINDOW</span><strong>Wed · 18:30</strong></div><div><span>SOURCE SIGNAL</span><strong>Save velocity</strong></div><Link href="/demo" className="signal-receipt-link">See sample provenance <ArrowRight aria-hidden="true" /></Link></div></div></div>
+          </div>
+        </section>
 
-        <section id="feedback" className="landing-section landing-section-rule" aria-labelledby="feedback-heading"><div className="landing-wrap"><div className="landing-section-heading-row"><div><p className="landing-section-label">EARLY NOTES</p><h2 id="feedback-heading">People are still writing the first draft.</h2></div><span className="landing-count">{reviews.length ? `${reviews.length} VERIFIED NOTES` : "NO APPROVED NOTES YET"}</span></div><div className={cn("landing-feedback-grid", !loadingReviews && !reviews.length && "landing-feedback-empty")}>{(loadingReviews || reviews.length > 0) && <div className="landing-reviews">{(loadingReviews ? Array.from({ length: 3 }).map((_, index) => <div key={index} className="landing-review landing-review-skeleton" />) : reviews.slice(0, 3).map((review) => <article key={review.id} className="landing-review"><div className="landing-stars">{Array.from({ length: 5 }).map((_, index) => <Star key={index} className={cn("h-3.5 w-3.5", index < review.rating ? "fill-[var(--landing-signal)] text-[var(--landing-signal)]" : "text-[var(--landing-line]")} />)}</div><blockquote>“{review.content}”</blockquote><footer><span>{review.name.split(" ").map((part) => part[0]).join("").slice(0, 2)}</span><div><strong>{review.name}</strong><small>{review.role ?? "Creator"}</small></div></footer></article>))}</div>}<form onSubmit={submitFeedback} className="landing-feedback-form landing-glass-island"><p className="landing-section-label">SHARE YOUR EXPERIENCE</p><h3>Give feedback.</h3><p>Tell us what helped or what needs work. Submissions are moderated before they appear publicly.</p><div className="landing-form-grid"><label>Name<input required maxLength={80} autoComplete="name" value={feedbackForm.name} onChange={(event) => setFeedbackForm((current) => ({ ...current, name: event.target.value }))} /></label><label>Role <span>(optional)</span><input maxLength={120} autoComplete="organization-title" value={feedbackForm.role} onChange={(event) => setFeedbackForm((current) => ({ ...current, role: event.target.value }))} /></label></div><fieldset><legend>Rating</legend><div className="landing-rating-group" role="radiogroup" aria-label="Rating from one to five stars">{[1, 2, 3, 4, 5].map((rating) => <label key={rating}><input type="radio" name="rating" value={rating} checked={feedbackForm.rating === rating} onChange={() => setFeedbackForm((current) => ({ ...current, rating }))} /><span>{rating}</span></label>)}</div></fieldset><label className="landing-message-label">Feedback<textarea required maxLength={800} rows={4} value={feedbackForm.content} onChange={(event) => setFeedbackForm((current) => ({ ...current, content: event.target.value }))} /><small>{feedbackForm.content.length}/800</small></label><div className="landing-form-submit"><Button type="submit" disabled={feedbackStatus === "submitting"} className="rounded-full bg-[var(--landing-signal)] text-white hover:bg-[var(--landing-signal-dark)]">{feedbackStatus === "submitting" ? "Sending…" : "Send feedback"}<ArrowRight className="h-4 w-4" /></Button>{feedbackMessage && <p role={feedbackStatus === "error" ? "alert" : "status"} aria-live="polite" className={feedbackStatus === "error" ? "text-danger" : "text-[var(--landing-success)]"}>{feedbackMessage}</p>}</div></form></div></div></section>
+        <section id="feedback" className="landing-section landing-section-rule" aria-labelledby="feedback-heading"><div className="landing-wrap">
+          {/* Mobile expandable wrapper */}
+          <div className="lg:hidden">
+            <MobileExpandable kicker="EARLY NOTES" title={reviews.length ? `${reviews.length} verified notes` : "Be the first to leave a note"} subtitle="People are still writing the first draft." icon={<Star className="h-4 w-4" />} defaultOpen>
+              <div className="space-y-4">
+                {(loadingReviews ? Array.from({ length: 2 }).map((_, i) => <div key={i} className="h-24 animate-pulse rounded-xl bg-[var(--landing-paper-deep)]" />) : reviews.length ? reviews.slice(0,2).map((review) => (
+                  <article key={review.id} className="rounded-xl border border-[var(--landing-line)] bg-[var(--landing-paper)] p-4">
+                    <div className="flex gap-1">{Array.from({ length: 5 }).map((_, i) => <Star key={i} className={cn("h-3.5 w-3.5", i < review.rating ? "fill-[var(--landing-signal)] text-[var(--landing-signal)]" : "text-[var(--landing-line)]")} />)}</div>
+                    <blockquote className="mt-2 font-serif text-sm leading-6 text-[var(--landing-ink)]">“{review.content}”</blockquote>
+                    <footer className="mt-3 flex items-center gap-2"><span className="grid h-7 w-7 place-items-center rounded-full bg-[var(--landing-ink)] mono text-[10px] text-white">{review.name.split(" ").map((p) => p[0]).join("").slice(0,2)}</span><div><strong className="text-xs text-[var(--landing-ink)]">{review.name}</strong><small className="ml-1 text-xs text-[var(--landing-muted)]">{review.role ?? "Creator"}</small></div></footer>
+                  </article>
+                )) : <p className="rounded-xl border border-dashed border-[var(--landing-line)] p-6 text-center text-sm text-[var(--landing-muted)]">No approved notes yet — yours could be first.</p>)}
+                <details className="group">
+                  <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between rounded-xl border border-[var(--landing-line)] bg-[var(--landing-paper)] px-4 py-3 text-sm font-semibold text-[var(--landing-ink)]">Share your experience <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" /></summary>
+                  <div className="pt-3">
+                    <MobileFeedbackForm feedbackForm={feedbackForm} setFeedbackForm={setFeedbackForm} feedbackStatus={feedbackStatus} feedbackMessage={feedbackMessage} submitFeedback={submitFeedback} />
+                  </div>
+                </details>
+              </div>
+            </MobileExpandable>
+          </div>
+
+          {/* Desktop original */}
+          <div className="hidden lg:block">
+            <div className="landing-section-heading-row"><div><p className="landing-section-label">EARLY NOTES</p><h2 id="feedback-heading">People are still writing the first draft.</h2></div><span className="landing-count">{reviews.length ? `${reviews.length} VERIFIED NOTES` : "NO APPROVED NOTES YET"}</span></div><div className={cn("landing-feedback-grid", !loadingReviews && !reviews.length && "landing-feedback-empty")}>{(loadingReviews || reviews.length > 0) && <div className="landing-reviews">{(loadingReviews ? Array.from({ length: 3 }).map((_, index) => <div key={index} className="landing-review landing-review-skeleton" />) : reviews.slice(0, 3).map((review) => <article key={review.id} className="landing-review"><div className="landing-stars">{Array.from({ length: 5 }).map((_, index) => <Star key={index} className={cn("h-3.5 w-3.5", index < review.rating ? "fill-[var(--landing-signal)] text-[var(--landing-signal)]" : "text-[var(--landing-line]")} />)}</div><blockquote>“{review.content}”</blockquote><footer><span>{review.name.split(" ").map((part) => part[0]).join("").slice(0, 2)}</span><div><strong>{review.name}</strong><small>{review.role ?? "Creator"}</small></div></footer></article>))}</div>}<form onSubmit={submitFeedback} className="landing-feedback-form landing-glass-island"><p className="landing-section-label">SHARE YOUR EXPERIENCE</p><h3>Give feedback.</h3><p>Tell us what helped or what needs work. Submissions are moderated before they appear publicly.</p><div className="landing-form-grid"><label>Name<input required maxLength={80} autoComplete="name" value={feedbackForm.name} onChange={(event) => setFeedbackForm((current) => ({ ...current, name: event.target.value }))} /></label><label>Role <span>(optional)</span><input maxLength={120} autoComplete="organization-title" value={feedbackForm.role} onChange={(event) => setFeedbackForm((current) => ({ ...current, role: event.target.value }))} /></label></div><label className="mt-3 block">Feedback<textarea required maxLength={2000} rows={4} value={feedbackForm.content} onChange={(event) => setFeedbackForm((current) => ({ ...current, content: event.target.value }))} placeholder="What helped? What needs work?" /></label><fieldset><legend>Rating</legend><div className="landing-rating-group">{[1,2,3,4,5].map((value) => <label key={value}><input type="radio" name="rating" value={value} checked={feedbackForm.rating===value} onChange={() => setFeedbackForm((c)=>({ ...c, rating: value }))} /><span>{value}</span></label>)}</div></fieldset><Button type="submit" disabled={feedbackStatus==="submitting"} className="mt-4 w-full rounded-full bg-[var(--landing-signal)] text-[var(--landing-action-ink)] hover:bg-[var(--landing-signal-dark)]">{feedbackStatus==="submitting" ? "Sending…" : "Submit for moderation"}</Button>{feedbackMessage && <p className={cn("mt-3 rounded-xl px-3 py-2 text-sm", feedbackStatus==="error" ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700")}>{feedbackMessage}</p>}</form></div>
+          </div>
+        </div></section>
 
         <section id="pricing" className="landing-wrap landing-demo-section"><div className="landing-demo-strip"><div><p className="landing-section-label">WANT TO LOOK AROUND FIRST?</p><h2>See the workflow before you connect.</h2><p>Read-only demo. Simulated numbers clearly labeled. No login needed.</p></div><Button asChild variant="secondary" className="rounded-full border-[var(--landing-line)] bg-transparent text-[var(--landing-ink)] hover:bg-[var(--landing-paper)]"><Link href="/demo"><Eye className="h-4 w-4" /> Open the demo</Link></Button></div></section>
 
-        <section id="faq" className="landing-section landing-section-quiet" aria-labelledby="faq-heading"><div className="landing-wrap landing-two-col landing-faq-grid"><div className="landing-section-intro"><p className="landing-section-label">PLAIN ANSWERS</p><h2 id="faq-heading">Questions worth asking before you connect.</h2><p>EduVerse is deliberately clear about what is live, what is simulated, and what stays under your control.</p></div><div className="landing-faq-list">{FAQS.slice(0, 4).map((faq) => <details key={faq.question}><summary>{faq.question}<span><ChevronDown aria-hidden="true" className="h-4 w-4" /></span></summary><p>{faq.answer}</p></details>)}</div></div></section>
+        <section id="faq" className="landing-section landing-section-quiet" aria-labelledby="faq-heading">
+          {/* Mobile accordion beautiful */}
+          <div className="landing-wrap lg:hidden">
+            <p className="landing-section-label text-center">PLAIN ANSWERS</p><h2 className="mx-auto mt-3 max-w-[16ch] text-center font-display text-[26px] font-semibold leading-[0.95] tracking-[-0.05em]">Questions worth asking before you connect.</h2>
+            <div className="mt-6 grid gap-3">
+              {FAQS.slice(0,4).map((faq) => (
+                <MobileExpandable key={faq.question} title={faq.question} kicker="FAQ">
+                  <p className="text-sm leading-6 text-[var(--landing-muted)]">{faq.answer}</p>
+                </MobileExpandable>
+              ))}
+            </div>
+          </div>
+          <div className="hidden lg:block landing-wrap landing-two-col landing-faq-grid"><div className="landing-section-intro"><p className="landing-section-label">PLAIN ANSWERS</p><h2 id="faq-heading">Questions worth asking before you connect.</h2><p>EduVerse is deliberately clear about what is live, what is simulated, and what stays under your control.</p></div><div className="landing-faq-list">{FAQS.slice(0, 4).map((faq) => <details key={faq.question}><summary>{faq.question}<span><ChevronDown aria-hidden="true" className="h-4 w-4" /></span></summary><p>{faq.answer}</p></details>)}</div></div>
+        </section>
 
         <section className="landing-closing" aria-labelledby="closing-heading"><div className="landing-wrap landing-closing-inner"><p className="landing-overline"><i aria-hidden="true" /> LIVE-ONLY · NO FAKE METRICS</p><h2 id="closing-heading">Stop guessing.<br /><em>Start remembering.</em></h2><p>Connect Meta to see your real engagement, or preview the workflow first with clearly labeled sample data.</p><div className="landing-actions landing-actions-centered"><Button asChild className="h-12 rounded-full bg-[var(--landing-signal)] px-6 text-white hover:bg-[var(--landing-signal-dark)]"><Link href="/signup">Start free <ArrowRight className="h-4 w-4" /></Link></Button><Button asChild variant="secondary" className="h-12 rounded-full border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white"><Link href="/demo"><Eye className="h-4 w-4" /> Preview the demo</Link></Button></div><p className="landing-privacy-note">By connecting you agree to <Link href="/privacy">Privacy</Link> · AES-256-GCM · RLS · revocable.</p></div></section>
       </main>
 
+      <LandingMobileDock />
     </div>
+  );
+}
+
+type FeedbackFormState = typeof EMPTY_FEEDBACK;
+function MobileFeedbackForm({
+  feedbackForm,
+  setFeedbackForm,
+  feedbackStatus,
+  feedbackMessage,
+  submitFeedback,
+}: {
+  feedbackForm: FeedbackFormState;
+  setFeedbackForm: React.Dispatch<React.SetStateAction<FeedbackFormState>>;
+  feedbackStatus: "idle" | "submitting" | "success" | "error";
+  feedbackMessage: string;
+  submitFeedback: (event: FormEvent<HTMLFormElement>) => void;
+}) {
+  return (
+    <form onSubmit={submitFeedback} className="grid gap-3 rounded-2xl border border-[var(--landing-line)] bg-[var(--landing-paper)] p-4">
+      <div className="grid gap-3">
+        <label className="text-xs font-semibold text-[var(--landing-ink)]">Name<input required maxLength={80} value={feedbackForm.name} onChange={(e) => setFeedbackForm((c) => ({ ...c, name: e.target.value }))} className="mt-1 w-full rounded-xl border border-[var(--landing-line)] bg-white px-3 py-3 text-sm outline-none focus:border-[var(--landing-signal)]" placeholder="Ada Lovelace" /></label>
+        <label className="text-xs font-semibold text-[var(--landing-ink)]">Role <span className="font-normal text-[var(--landing-muted)]">(optional)</span><input maxLength={120} value={feedbackForm.role} onChange={(e) => setFeedbackForm((c) => ({ ...c, role: e.target.value }))} className="mt-1 w-full rounded-xl border border-[var(--landing-line)] bg-white px-3 py-3 text-sm outline-none focus:border-[var(--landing-signal)]" placeholder="Educator, creator…" /></label>
+        <label className="text-xs font-semibold text-[var(--landing-ink)]">Feedback<textarea required maxLength={2000} rows={3} value={feedbackForm.content} onChange={(e) => setFeedbackForm((c) => ({ ...c, content: e.target.value }))} className="mt-1 w-full rounded-xl border border-[var(--landing-line)] bg-white px-3 py-3 text-sm outline-none focus:border-[var(--landing-signal)]" placeholder="What helped? What needs work?" /></label>
+      </div>
+      <fieldset className="border-0 p-0">
+        <legend className="text-xs font-semibold text-[var(--landing-ink)]">Rating</legend>
+        <div className="mt-2 flex gap-2">{[1,2,3,4,5].map((v) => <label key={v} className="flex-1"><input type="radio" name="mobile-rating" value={v} checked={feedbackForm.rating===v} onChange={() => setFeedbackForm((c)=>({ ...c, rating: v }))} className="peer sr-only" /><span className="grid h-11 place-items-center rounded-xl border border-[var(--landing-line)] bg-white text-sm font-medium text-[var(--landing-muted)] peer-checked:border-[var(--landing-signal)] peer-checked:bg-[var(--landing-signal)] peer-checked:text-[var(--landing-action-ink)]">{v}</span></label>)}</div>
+      </fieldset>
+      <Button type="submit" disabled={feedbackStatus==="submitting"} className="h-12 rounded-full bg-[var(--landing-signal)] text-[var(--landing-action-ink)] hover:bg-[var(--landing-signal-dark)]">{feedbackStatus==="submitting" ? "Sending…" : "Submit for moderation"}</Button>
+      {feedbackMessage && <p className={cn("rounded-xl px-3 py-2 text-sm", feedbackStatus==="error" ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700")}>{feedbackMessage}</p>}
+    </form>
   );
 }

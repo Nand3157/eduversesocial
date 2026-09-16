@@ -2,8 +2,8 @@
 
 import { useSyncExternalStore, useState } from "react";
 import Link from "next/link";
-import { Check, Eye, Lock, MessageSquareText, Send, ShieldCheck, Sparkles, Layers, MapPinned, Bookmark } from "lucide-react";
-import { motion } from "framer-motion";
+import { BarChart3, Check, ChevronDown, Eye, LineChart as LineChartIcon, Lock, MessageSquareText, Send, ShieldCheck, Sparkles, Layers, MapPinned, Bookmark, Users } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { AudienceGrowthCard, EngagementChartCard, PlatformBreakdownCard, PostingFrequencyCard, SentimentTrendCard } from "@/components/dashboard/lazy-charts";
 import { AnimatedNumber } from "@/components/dashboard/animated-number";
 import { PostTable } from "@/components/dashboard/post-table";
@@ -14,6 +14,66 @@ import { useDashboardStore } from "@/lib/stores/dashboard-store";
 import { MetaConnectModal } from "@/components/meta/meta-connect-modal";
 import { MetaPublisherModal } from "@/components/meta/meta-publisher-modal";
 import { staggerContainer, staggerItemFast } from "@/components/motion-variants";
+import { cn } from "@/lib/utils";
+
+function MobileExpandable({
+  kicker,
+  title,
+  subtitle,
+  icon,
+  defaultOpen = false,
+  children,
+  count,
+}: {
+  kicker?: string;
+  title: string;
+  subtitle?: string;
+  icon?: React.ReactNode;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+  count?: string;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  const reduceMotion = useReducedMotion();
+  return (
+    <div className="overflow-hidden rounded-2xl border border-borderSoft bg-card shadow-glass md:hidden">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className="flex min-h-[64px] w-full items-center justify-between gap-3 px-4 py-3.5 text-left touch-manipulation active:bg-surface-muted/50"
+      >
+        <span className="flex min-w-0 flex-1 items-center gap-3">
+          {icon && <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-primary/20 bg-accent-soft text-primary">{icon}</span>}
+          <span className="min-w-0">
+            {kicker && <span className="mono block text-[10px] font-semibold tracking-[0.12em] text-faintText">{kicker}</span>}
+            <span className="block truncate font-heading text-sm font-semibold tracking-tight text-ink">{title}</span>
+            {subtitle && <span className="mt-0.5 line-clamp-1 block text-xs leading-4 text-mutedText">{subtitle}</span>}
+          </span>
+        </span>
+        <span className="flex shrink-0 items-center gap-2">
+          {count && <span className="hidden sm:inline-flex mono text-[10px] tracking-[0.08em] text-faintText">{count}</span>}
+          <span className={cn("grid h-8 w-8 place-items-center rounded-full border bg-surface text-mutedText transition-all", open ? "rotate-180 border-primary/20 bg-primary text-ink" : "border-borderSoft")}>
+            <ChevronDown className="h-4 w-4" />
+          </span>
+        </span>
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={reduceMotion ? false : { height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={reduceMotion ? undefined : { height: 0, opacity: 0 }}
+            transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+            className="overflow-hidden border-t border-borderSoft bg-card"
+          >
+            <div className="p-4">{children}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 export function DashboardHome() {
   const userName = useDashboardStore((state) => state.userName);
@@ -28,7 +88,7 @@ export function DashboardHome() {
   const recommendations = analytics?.recommendations ?? [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-6 md:pb-0">
       <MetaConnectModal isOpen={connectModalOpen} onClose={() => setConnectModalOpen(false)} />
       <MetaPublisherModal isOpen={publisherModalOpen} onClose={() => setPublisherModalOpen(false)} />
 
@@ -155,7 +215,8 @@ export function DashboardHome() {
         </div>
       </div>
 
-      <div className="grid items-stretch gap-5 xl:grid-cols-3">
+      {/* Desktop charts */}
+      <div className="hidden md:grid items-stretch gap-5 xl:grid-cols-3">
         <div className="flex h-full xl:col-span-2">
           <div className="catalog-card flex h-full w-full flex-col overflow-hidden">
             <div className="flex items-center justify-between gap-3 border-b border-borderSoft bg-surface-muted px-4 py-3">
@@ -177,14 +238,36 @@ export function DashboardHome() {
             <div className="flex min-h-0 flex-1 flex-col bg-card p-3 sm:p-4"><div className="flex h-full w-full flex-1 items-center"><PlatformBreakdownCard className="h-full" /></div></div>
           </div>
       </div>
+      {/* Mobile charts expandable */}
+      <div className="grid gap-3 md:hidden">
+        <MobileExpandable kicker="FAC 022 · TIMELINE" title="14-day engagement contour" subtitle="Tap to inspect · live acetate" icon={<LineChartIcon className="h-4 w-4" />} defaultOpen>
+          <div className="min-h-[260px]"><EngagementChartCard /></div>
+        </MobileExpandable>
+        <MobileExpandable kicker="FAC 014 · TELEMETRY" title="Channel telemetry" subtitle="Share across networks" icon={<Users className="h-4 w-4" />}>
+          <div className="min-h-[240px] flex items-center"><PlatformBreakdownCard className="h-full" /></div>
+        </MobileExpandable>
+      </div>
 
-      <div className="grid gap-5 lg:grid-cols-3">
+      {/* Desktop secondary charts */}
+      <div className="hidden md:grid gap-5 lg:grid-cols-3">
         <div className="catalog-card overflow-hidden"><div className="flex items-center gap-2 border-b border-borderSoft bg-surface-muted px-4 py-2.5"><span className="mono text-[10px] tracking-[0.12em] text-faintText">FAC 031</span><span className="text-sm font-medium text-ink">Posting frequency</span></div><div className="p-3"><PostingFrequencyCard /></div></div>
         <div className="catalog-card overflow-hidden"><div className="flex items-center gap-2 border-b border-borderSoft bg-surface-muted px-4 py-2.5"><span className="mono text-[10px] tracking-[0.12em] text-faintText">FAC 032</span><span className="text-sm font-medium text-ink">Audience growth</span></div><div className="p-3"><AudienceGrowthCard /></div></div>
         <div className="catalog-card overflow-hidden"><div className="flex items-center gap-2 border-b border-borderSoft bg-surface-muted px-4 py-2.5"><span className="mono text-[10px] tracking-[0.12em] text-faintText">FAC 033</span><span className="text-sm font-medium text-ink">Sentiment trend</span></div><div className="p-3"><SentimentTrendCard /></div></div>
       </div>
+      <div className="grid gap-3 md:hidden">
+        <MobileExpandable kicker="FAC 031" title="Posting frequency" subtitle="Published posts · Meta Graph" icon={<BarChart3 className="h-4 w-4" />}>
+          <div className="min-h-[220px]"><PostingFrequencyCard /></div>
+        </MobileExpandable>
+        <MobileExpandable kicker="FAC 032" title="Audience growth" subtitle="Follower counts · linked IG" icon={<Users className="h-4 w-4" />}>
+          <div className="min-h-[220px]"><AudienceGrowthCard /></div>
+        </MobileExpandable>
+        <MobileExpandable kicker="FAC 033" title="Sentiment trend" subtitle="Comment-level sentiment" icon={<MessageSquareText className="h-4 w-4" />}>
+          <div className="min-h-[220px]"><SentimentTrendCard /></div>
+        </MobileExpandable>
+      </div>
 
-      <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
+      {/* Desktop recommendations + memory */}
+      <div className="hidden md:grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
         <div className="catalog-card overflow-hidden">
           <div className="flex items-center justify-between gap-3 border-b border-borderSoft bg-surface-muted px-4 py-3">
             <div className="flex items-center gap-2">
@@ -236,13 +319,51 @@ export function DashboardHome() {
           </div>
         </div>
       </div>
+      <div className="grid gap-3 md:hidden">
+        <MobileExpandable kicker="FAC 041 · RECOMMENDATIONS" title="Pin to rail" subtitle={recommendations.length ? `${recommendations.length} ready to pin` : "No recommendations yet"} icon={<Sparkles className="h-4 w-4" />} defaultOpen>
+          {recommendations.length ? (
+            <div className="space-y-3">
+              {recommendations.map(([title, timing, detail], i) => (
+                <div key={title} className="rounded-2xl border border-borderSoft bg-surface p-4">
+                  <p className="mono text-[10px] tracking-[0.10em] text-primary">WINDOW · {timing.toUpperCase()}</p>
+                  <h3 className="mt-1 font-display text-base font-semibold leading-tight text-ink">{title}</h3>
+                  <p className="mt-1.5 text-sm leading-6 text-mutedText">{detail}</p>
+                  <Button onClick={() => setPublisherModalOpen(true)} variant="accent" className="mt-3 w-full rounded-full text-xs"><Sparkles className="h-3.5 w-3.5" /> Generate draft & schedule</Button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-borderSoft bg-surface p-4 mono text-xs leading-6 text-mutedText">No recommendations yet — connect Meta to generate grounded next steps.</div>
+          )}
+        </MobileExpandable>
+        <MobileExpandable kicker="FAC 022 · MEMORY" title="Audience memory" subtitle={memoryItems.length ? `${memoryItems.length} cards filed` : "Empty drawer"} icon={<Bookmark className="h-4 w-4" />} count={memoryItems.length ? `${memoryItems.length} cards` : undefined}>
+          {memoryItems.length ? (
+            <div className="space-y-3">
+              {memoryItems.map((item, index) => (
+                <div key={item} className="flex gap-3 rounded-xl border border-borderSoft bg-surface px-3 py-3">
+                  <span aria-hidden="true" className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full border border-primary/20 bg-accent-soft text-primary"><Check className="h-3.5 w-3.5" /></span>
+                  <p className="text-sm font-medium leading-5 text-ink">{item}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-borderSoft bg-surface p-4 mono text-xs leading-6 text-mutedText">Memory files after live Meta content is analyzed — each card is a catalog entry.</div>
+          )}
+        </MobileExpandable>
+      </div>
 
-      <div className="catalog-card overflow-hidden">
+      {/* Ledger */}
+      <div className="hidden md:block catalog-card overflow-hidden">
         <div className="flex items-center justify-between gap-3 border-b border-borderSoft bg-surface-muted px-4 py-3">
           <div className="flex items-center gap-2"><span className="mono text-[10px] tracking-[0.14em] text-faintText">FAC 030 · LEDGER</span><span className="text-sm font-semibold tracking-tight text-ink">Recent posts — telemetry ledger</span></div>
           <span className="mono text-[10px] tracking-[0.10em] text-faintText">{analytics?.recentPosts?.length ?? 0} ROWS</span>
         </div>
         <div className="bg-card p-3 sm:p-4"><PostTable /></div>
+      </div>
+      <div className="md:hidden">
+        <MobileExpandable kicker="FAC 030 · LEDGER" title="Recent posts" subtitle={analytics?.recentPosts?.length ? `${analytics.recentPosts.length} rows · telemetry ledger` : "No rows yet"} icon={<Eye className="h-4 w-4" />}>
+          <div className="bg-card"><PostTable /></div>
+        </MobileExpandable>
       </div>
     </div>
   );

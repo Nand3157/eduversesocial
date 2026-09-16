@@ -91,7 +91,7 @@ const exploreLinks = [
 
 function Footer() {
   return (
-    <footer className="landing-footer-shell relative overflow-hidden bg-[var(--surface-ink)] px-5 py-14 sm:px-8 text-white">
+    <footer className="landing-footer-shell relative overflow-hidden bg-[var(--surface-ink)] px-5 pb-28 pt-14 sm:px-8 sm:pb-14 lg:pb-14 text-white">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-3 sprocket-track opacity-20" aria-hidden />
       <div className="mx-auto grid max-w-[1280px] gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <div>
