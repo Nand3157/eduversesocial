@@ -1,12 +1,14 @@
 "use client";
 
 import React, { FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
-import { Bot, ImageIcon, Send, Sparkles, Cpu, X } from "lucide-react";
+import { Bot, ImageIcon, Mic, Send, Sparkles, Cpu, Globe, Loader2, Square, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SPRING_SOFT } from "@/components/motion-variants";
 import { useAnalytics } from "@/components/dashboard/analytics-context";
+import { useVoiceRecorder } from "@/components/dashboard/use-voice-recorder";
+import { VOICE_LANGUAGES } from "@/lib/ai/voice-input";
 
 type Message = {
   role: "assistant" | "user";
@@ -177,6 +179,40 @@ export function ChatInterface() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loadingConversation, setLoadingConversation] = useState(false);
   const [showSources, setShowSources] = useState<Record<number, boolean>>({});
+
+  // Voice input (Gemini 3.5 Transcribe). The chosen code is only a hint — the
+  // model detects the language on its own and follows code-switching.
+  const [languageCode, setLanguageCode] = useState("auto");
+  const [transcribing, setTranscribing] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+
+  const transcribeClip = async (audioDataUrl: string) => {
+    setTranscribing(true);
+    setVoiceError(null);
+    try {
+      const response = await fetch("/api/ai/transcribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ audio: audioDataUrl, languageCode })
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(payload?.error ?? "Could not transcribe the recording. Try again.");
+      }
+      const text = (payload?.text as string | undefined)?.trim();
+      if (!text) {
+        throw new Error("No speech was detected in the recording.");
+      }
+      setInput((current) => (current ? `${current} ${text}` : text));
+      textareaRef.current?.focus();
+    } catch (error) {
+      setVoiceError(error instanceof Error ? error.message : "Could not transcribe the recording.");
+    } finally {
+      setTranscribing(false);
+    }
+  };
+
+  const recorder = useVoiceRecorder(transcribeClip);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -455,6 +491,9 @@ export function ChatInterface() {
               <strong className="text-ink">Shift+Enter</strong> — new line
             </li>
             <li>Attach an image for visual analysis</li>
+            <li>
+              <strong className="text-ink">Mic</strong> — dictate in any language; speech is transcribed with Gemini 3.5 Transcribe and lands in the message box for review before sending
+            </li>
           </ul>
         </div>
       </aside>
@@ -594,6 +633,41 @@ export function ChatInterface() {
             <p role="alert" className="mb-2 text-xs text-danger">{imageError}</p>
           )}
 
+          {recorder.state === "recording" && (
+            <div className="mb-2 flex items-center gap-3 rounded-2xl border border-primary/40 bg-accent-soft px-3 py-2" role="status">
+              <span className="relative grid h-8 w-8 shrink-0 place-items-center">
+                <span className="absolute inset-0 rounded-full bg-danger/20" style={{ transform: `scale(${1 + recorder.level})` }} aria-hidden="true" />
+                <span className="relative h-2.5 w-2.5 rounded-full bg-danger" />
+              </span>
+              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-borderSoft">
+                <div className="h-full rounded-full bg-primary transition-[width] duration-100" style={{ width: `${Math.round(recorder.level * 100)}%` }} />
+              </div>
+              <span className="shrink-0 text-xs font-medium tabular-nums text-mutedText">
+                {Math.floor(recorder.seconds / 60)}:{String(recorder.seconds % 60).padStart(2, "0")} · max 1:00
+              </span>
+              <button
+                type="button"
+                onClick={recorder.cancel}
+                className="min-h-[32px] rounded-full px-2.5 text-xs font-medium text-mutedText transition hover:text-danger focus-visible:ring-2 focus-visible:ring-danger/50 focus-visible:outline-none"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+          {(transcribing || voiceError || recorder.state === "denied" || recorder.state === "unsupported" || recorder.state === "error") && (
+            <p role={voiceError || recorder.state === "denied" ? "alert" : "status"} className={`mb-2 text-xs ${voiceError || recorder.state === "denied" ? "text-danger" : "text-mutedText"}`}>
+              {transcribing
+                ? "Transcribing your recording…"
+              : recorder.state === "denied"
+                ? "Microphone access was blocked. Allow it in your browser settings and try again."
+              : recorder.state === "unsupported"
+                ? "Voice input needs a browser with microphone recording support."
+              : recorder.state === "error"
+                ? "Could not start the microphone. Check that no other app is using it."
+              : voiceError}
+            </p>
+          )}
+
           <form className="flex items-end gap-2" onSubmit={handleSubmit}>
             <input
               ref={fileInputRef}
@@ -612,6 +686,29 @@ export function ChatInterface() {
             >
               <ImageIcon aria-hidden="true" className="h-4 w-4" />
             </button>
+
+            {recorder.state === "recording" ? (
+              <button
+                type="button"
+                onClick={recorder.stop}
+                aria-label="Stop recording and transcribe"
+                title="Stop and transcribe"
+                className="flex h-11 w-11 shrink-0 touch-manipulation items-center justify-center rounded-full bg-danger text-background transition hover:bg-danger/90 focus-visible:ring-2 focus-visible:ring-danger/50 focus-visible:outline-none"
+              >
+                <Square aria-hidden="true" className="h-4 w-4" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => void recorder.start()}
+                disabled={transcribing}
+                aria-label="Record a voice message"
+                title="Record a voice message"
+                className="flex h-11 w-11 shrink-0 touch-manipulation items-center justify-center rounded-full border border-borderSoft text-mutedText transition hover:border-primary hover:text-primary focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {transcribing ? <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" /> : <Mic aria-hidden="true" className="h-4 w-4" />}
+              </button>
+            )}
 
             <label className="sr-only" htmlFor="chat-message">
               Ask EduVerse Assistant
@@ -638,8 +735,26 @@ export function ChatInterface() {
             </Button>
           </form>
 
-          <p className="mt-2 text-center text-[10px] text-faintText">
-            Enter to send · Shift+Enter for new line · Image attachments supported
+          <div className="mt-2 flex items-center justify-center gap-1.5 text-[10px] text-faintText">
+            <Globe aria-hidden="true" className="h-3 w-3" />
+            <label className="sr-only" htmlFor="voice-language">Speech language for voice input</label>
+            <select
+              id="voice-language"
+              value={languageCode}
+              onChange={(e) => setLanguageCode(e.target.value)}
+              className="max-w-[220px] cursor-pointer truncate rounded-md border border-transparent bg-transparent py-0.5 text-[10px] text-mutedText outline-none transition hover:border-borderSoft focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              {VOICE_LANGUAGES.map((language) => (
+                <option key={language.code} value={language.code}>
+                  {language.label}
+                </option>
+              ))}
+            </select>
+            <span aria-hidden="true">·</span>
+            <span>Voice transcription powered by Gemini 3.5 Transcribe</span>
+          </div>
+          <p className="mt-1 text-center text-[10px] text-faintText">
+            Enter to send · Shift+Enter for new line · Image and voice input supported
           </p>
         </div>
       </section>
