@@ -32,6 +32,14 @@ function sniffImageMime(buffer: Buffer): string | null {
   return null;
 }
 
+// Per-user media quota, counted in the same units it limits: the number of
+// image objects the user has stored (including orphans that were never
+// attached to a post — those leave no DB row, so only the object store knows
+// about them). The previous check counted `scheduled_posts` rows instead, so
+// text-only workspaces could be locked out of uploads at 1000 posts while
+// orphaned media grew without bound.
+const UPLOAD_FILE_QUOTA = 500;
+
 export async function POST(request: Request) {
   const parsed = uploadSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ success: false, message: "Invalid image payload." }, { status: 400 });
@@ -46,14 +54,14 @@ export async function POST(request: Request) {
   if (!(await checkRateLimit(`upload:daily:${user.id}`, 100, 24 * 60 * 60 * 1000)).allowed) {
     return NextResponse.json({ success: false, message: "Daily upload limit reached (100/day). Try again tomorrow." }, { status: 429 });
   }
-  // Per-workspace storage quota — prevent 200GB overnight via 4MB loops
-  const { data: member } = await supabase.from("workspace_members").select("workspace_id").eq("user_id", user.id).limit(1).maybeSingle();
-  if (member) {
-    const { count } = await supabase.from("scheduled_posts").select("id", { count: "exact", head: true }).eq("workspace_id", member.workspace_id);
-    // lightweight head count guards DB bloat; full storage quota checked via storage.list head
-    if (count !== null && count > 1000) {
-      return NextResponse.json({ success: false, message: "Workspace limit reached (1000 posts). Delete old posts before uploading more." }, { status: 429 });
-    }
+  // Storage quota: count this user's stored media objects. A listing failure
+  // must not lock the user out, so it fails open (the daily rate limit above
+  // remains the anti-loop guard either way).
+  const { data: objects, error: listError } = await supabase.storage
+    .from("post-media")
+    .list(`uploads/${user.id}`, { limit: 1000 });
+  if (!listError && objects && objects.length >= UPLOAD_FILE_QUOTA) {
+    return NextResponse.json({ success: false, message: `Upload storage limit reached (${UPLOAD_FILE_QUOTA} files). Delete old media before uploading more.` }, { status: 429 });
   }
 
   const match = parsed.data.image.match(/^data:([^;]+);base64,(.*)$/);
@@ -63,8 +71,11 @@ export async function POST(request: Request) {
   if (!ext) return NextResponse.json({ success: false, message: "Only PNG, JPEG, WebP and GIF images are supported." }, { status: 400 });
 
   const buffer = Buffer.from(match[2], "base64");
-  if (!buffer.length || buffer.length > 4 * 1024 * 1024) {
-    return NextResponse.json({ success: false, message: "Image must be under 4 MB." }, { status: 400 });
+  // RFC 9110: a body that is too large for the endpoint to process is 413
+  // (Payload Too Large), not a generic 400 — the request itself is well-formed.
+  if (!buffer.length) return NextResponse.json({ success: false, message: "Image must be under 4 MB." }, { status: 400 });
+  if (buffer.length > 4 * 1024 * 1024) {
+    return NextResponse.json({ success: false, errorCode: "IMAGE_TOO_LARGE", message: "Image must be under 4 MB." }, { status: 413 });
   }
   const sniffedMime = sniffImageMime(buffer);
   if (!sniffedMime || sniffedMime !== mime) {

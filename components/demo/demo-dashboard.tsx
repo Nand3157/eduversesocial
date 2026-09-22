@@ -497,7 +497,7 @@ export function DemoDashboard() {
         </MobileExpandable>
         <MobileExpandable kicker="FAC 022 · MEMORY" title="Audience memory" subtitle={`${snap.memoryItems.length} cards filed · simulated`} icon={<Check className="h-3.5 w-3.5" />} count={`${snap.memoryItems.length} cards`}>
           <div className="space-y-3">
-            {snap.memoryItems.map((item, index) => (
+            {snap.memoryItems.map((item) => (
               <div key={item} className="flex gap-3 rounded-xl border border-borderSoft bg-surface px-3 py-3">
                 <span aria-hidden="true" className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full border border-success/20 bg-success/10"><Check className="h-3.5 w-3.5 text-success" /></span>
                 <p className="text-sm font-medium leading-5 text-ink">{item}</p>

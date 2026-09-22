@@ -88,7 +88,7 @@ export function DashboardHome() {
   const recommendations = analytics?.recommendations ?? [];
 
   return (
-    <div className="space-y-6 pb-6 md:pb-0">
+    <div className="space-y-6 pb-6 lg:pb-0">
       <MetaConnectModal isOpen={connectModalOpen} onClose={() => setConnectModalOpen(false)} />
       <MetaPublisherModal isOpen={publisherModalOpen} onClose={() => setPublisherModalOpen(false)} />
 
@@ -323,7 +323,7 @@ export function DashboardHome() {
         <MobileExpandable kicker="FAC 041 · RECOMMENDATIONS" title="Pin to rail" subtitle={recommendations.length ? `${recommendations.length} ready to pin` : "No recommendations yet"} icon={<Sparkles className="h-4 w-4" />} defaultOpen>
           {recommendations.length ? (
             <div className="space-y-3">
-              {recommendations.map(([title, timing, detail], i) => (
+              {recommendations.map(([title, timing, detail]) => (
                 <div key={title} className="rounded-2xl border border-borderSoft bg-surface p-4">
                   <p className="mono text-[10px] tracking-[0.10em] text-primary">WINDOW · {timing.toUpperCase()}</p>
                   <h3 className="mt-1 font-display text-base font-semibold leading-tight text-ink">{title}</h3>
@@ -339,7 +339,7 @@ export function DashboardHome() {
         <MobileExpandable kicker="FAC 022 · MEMORY" title="Audience memory" subtitle={memoryItems.length ? `${memoryItems.length} cards filed` : "Empty drawer"} icon={<Bookmark className="h-4 w-4" />} count={memoryItems.length ? `${memoryItems.length} cards` : undefined}>
           {memoryItems.length ? (
             <div className="space-y-3">
-              {memoryItems.map((item, index) => (
+              {memoryItems.map((item) => (
                 <div key={item} className="flex gap-3 rounded-xl border border-borderSoft bg-surface px-3 py-3">
                   <span aria-hidden="true" className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full border border-primary/20 bg-accent-soft text-primary"><Check className="h-3.5 w-3.5" /></span>
                   <p className="text-sm font-medium leading-5 text-ink">{item}</p>

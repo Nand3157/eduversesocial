@@ -38,20 +38,23 @@ export default function PrivacyPage() {
             <span className="grid h-8 w-8 place-items-center rounded-full bg-primary text-background">
               <ShieldCheck className="h-4 w-4" />
             </span>
-            <span className="font-display text-lg font-semibold tracking-tight text-ink">
+            {/* Icon-only wordmark below sm: the full row (~490px) clips ≤400px */}
+            <span className="hidden font-display text-lg font-semibold tracking-tight text-ink sm:inline">
               Edu<em className="font-normal text-primary">Verse</em>
             </span>
           </Link>
           <div className="flex items-center gap-2">
             <Button asChild size="sm" variant="secondary">
-              <Link href="/demo">
-                <Eye className="h-3.5 w-3.5" aria-hidden="true" /> Explore demo
+              <Link href="/demo" aria-label="Explore demo" title="Explore demo">
+                <Eye className="h-3.5 w-3.5" aria-hidden="true" />
+                <span className="hidden sm:inline">Explore demo</span>
               </Link>
             </Button>
             <ThemeToggle />
             <Button asChild size="sm" variant="ghost">
-              <Link href="/">
-                <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Back to site
+              <Link href="/" aria-label="Back to site" title="Back to site">
+                <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+                <span className="hidden sm:inline">Back to site</span>
               </Link>
             </Button>
           </div>
@@ -99,7 +102,7 @@ export default function PrivacyPage() {
             </CardContent>
           </Card>
 
-          <div className="mt-10 grid gap-10">
+          <div className="mt-10 grid gap-10 [&>*]:min-w-0">
             <Section icon={FileText} title="Data we collect — what user data we collect" id="collect">
               <p>
                 <strong className="font-semibold text-ink">We collect user data</strong> in three categories. We only collect what is needed to
@@ -261,7 +264,7 @@ export default function PrivacyPage() {
               <p className="rounded-xl border border-success/30 bg-success/10 px-4 py-3 text-xs leading-relaxed text-ink">
                 <strong className="text-success">Security posture:</strong> Nonce-based CSP in production (
                 <code className="rounded bg-surface border border-borderSoft px-1 py-0.5 font-mono text-[11px] text-ink">script-src &apos;nonce-…&apos; &apos;strict-dynamic&apos;</code>),
-                HSTS 30 days, X-Frame-Options DENY, COOP/COEP, and a minimal Permissions-Policy. Media URLs for publishing are validated
+                HSTS 30 days, X-Frame-Options DENY, COOP/CORP, and a minimal Permissions-Policy. Media URLs for publishing are validated
                 to be public HTTPS (localhost/private IPs are rejected).
               </p>
             </Section>
@@ -320,7 +323,7 @@ export default function PrivacyPage() {
                 EduVerse. We do not sell your data or share it for advertising.
               </p>
               <div className="overflow-x-auto rounded-xl border border-borderSoft">
-                <table className="w-full text-left text-xs leading-6">
+                  <table className="w-full text-left text-xs leading-6">
                   <thead className="bg-surface text-ink">
                     <tr>
                       <th className="px-3 py-2 font-semibold">Third party</th>
@@ -366,10 +369,9 @@ export default function PrivacyPage() {
                         when <code className="rounded bg-surface px-1 py-0.5">UPSTASH_REDIS_REST_URL</code> is set; otherwise in-memory fallback.
                       </td>
                     </tr>
-                  </tbody>
-                </table>
+                  </tbody>                </table>
               </div>
-              <p className="text-xs">
+                <p className="text-xs">
                 All processors are bound by their terms and, where required, a DPA. Subprocessors may change; material changes will be noted
                 in the version history below and, for active users, via email or in-app notice.
               </p>

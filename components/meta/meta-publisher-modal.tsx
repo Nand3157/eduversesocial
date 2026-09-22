@@ -21,15 +21,14 @@ interface MetaPublisherModalProps {
 
 type UploadedMedia = { url: string; preview: string };
 
+type PublishResult = { message: string; isError: boolean };
+
 const MAX_UPLOAD_MB = 4;
 const MAX_UPLOADS = 4;
 const DEFAULT_HASHTAGS = ["#AI", "#Automation", "#CreatorEconomy", "#EduVerse"];
 
 const FIELD_CLASS =
   "w-full rounded-xl border border-borderSoft bg-surface p-2.5 text-xs text-ink placeholder:text-faintText transition-[border-color,box-shadow] outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/40";
-
-const isErrorResult = (message: string) =>
-  /^(failed|could not|connect|no connected)/i.test(message);
 
 function toDatetimeLocalValue(iso: string): string {
   const d = new Date(iso);
@@ -51,7 +50,7 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess, initialCaption,
   const [generatingHook, setGeneratingHook] = useState(false);
   const [hookError, setHookError] = useState<string | null>(null);
   const [hookSuggestions, setHookSuggestions] = useState<string[]>([]);
-  const [publishedResult, setPublishedResult] = useState<string | null>(null);
+  const [publishedResult, setPublishedResult] = useState<PublishResult | null>(null);
   const [connectedAccounts, setConnectedAccounts] = useState<MetaAccount[]>([]);
   const [celebrateKey, setCelebrateKey] = useState(0);
   const [hashtags, setHashtags] = useState<string[]>(DEFAULT_HASHTAGS);
@@ -83,9 +82,10 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess, initialCaption,
       if (detail.platform === "instagram" || detail.platform === "facebook" || detail.platform === "threads") {
         setPlatform(detail.platform);
       }
-      setPublishedResult(
-        detail.label ? `Best-time slot applied: ${detail.label}. Review media + caption, then dispatch.` : "Best-time slot applied. Review media + caption, then dispatch."
-      );
+      setPublishedResult({
+        message: detail.label ? `Best-time slot applied: ${detail.label}. Review media + caption, then dispatch.` : "Best-time slot applied. Review media + caption, then dispatch.",
+        isError: false
+      });
     };
     window.addEventListener("eduverse:besttime-schedule", handler as EventListener);
     return () => window.removeEventListener("eduverse:besttime-schedule", handler as EventListener);
@@ -219,7 +219,7 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess, initialCaption,
   const handlePublish = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!connectedAccounts.length) {
-      setPublishedResult("Connect a Meta account before publishing.");
+      setPublishedResult({ message: "Connect a Meta account before publishing.", isError: true });
       return;
     }
     setPublishing(true);
@@ -244,16 +244,18 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess, initialCaption,
       });
 
       const data = await res.json();
-      if (res.ok) {
-        setPublishedResult(data.status === "SCHEDULED" ? `Post scheduled (${data.postId})` : `Published and confirmed by Meta (${data.postId})`);
+      // Structural classification: every publish/upload response carries a
+      // machine-readable `success` flag — never sniff message text for red/green.
+      if (res.ok && data.success !== false) {
+        setPublishedResult({ message: data.status === "SCHEDULED" ? `Post scheduled (${data.postId})` : `Published and confirmed by Meta (${data.postId})`, isError: false });
         setCelebrateKey((key) => key + 1);
         window.dispatchEvent(new Event("eduverse:analytics-refresh"));
         if (onSuccess) onSuccess();
       } else {
-        setPublishedResult(data.message || data.error || "Failed to publish. Check the post details and try again.");
+        setPublishedResult({ message: data.message || data.error || "Failed to publish. Check the post details and try again.", isError: true });
       }
     } catch {
-      setPublishedResult("Could not reach Meta Graph API. Check your connection and try again.");
+      setPublishedResult({ message: "Could not reach Meta Graph API. Check your connection and try again.", isError: true });
     } finally {
       setPublishing(false);
     }
@@ -313,8 +315,9 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess, initialCaption,
               </div>}
             </fieldset>
 
-            {/* Media Format */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* Media Format — single column below sm: datetime-local's
+                intrinsic ~180–220px width exceeds half of a 360px viewport */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-4">
               <div>
                 <label htmlFor="publisher-format" className="mb-2 block text-xs font-medium text-mutedText">Format</label>
                 <select
@@ -488,15 +491,15 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess, initialCaption,
 
             <div aria-live="polite">
               {publishedResult && (
-                isErrorResult(publishedResult) ? (
+                publishedResult.isError ? (
                   <div role="alert" className="flex items-center gap-2 rounded-xl border border-danger/25 bg-danger/10 p-3 text-xs text-danger">
                     <AlertCircle aria-hidden="true" className="h-4 w-4 shrink-0" />
-                    <span>{publishedResult}</span>
+                    <span>{publishedResult.message}</span>
                   </div>
                 ) : (
                   <div role="status" className="flex items-center gap-2 rounded-xl border border-success/25 bg-success/10 p-3 text-xs text-success">
                     <CheckCircle2 aria-hidden="true" className="h-4 w-4 shrink-0" />
-                    <span>{publishedResult}</span>
+                    <span>{publishedResult.message}</span>
                   </div>
                 )
               )}

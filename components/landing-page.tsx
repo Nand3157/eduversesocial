@@ -171,6 +171,9 @@ export function LandingPage() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(true);
+  // Outage flag for GET /api/reviews — a failed load must not masquerade as
+  // the "no approved notes yet" empty state.
+  const [reviewsError, setReviewsError] = useState(false);
   const [feedbackForm, setFeedbackForm] = useState(EMPTY_FEEDBACK);
   const [feedbackStatus, setFeedbackStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [feedbackMessage, setFeedbackMessage] = useState("");
@@ -200,7 +203,24 @@ export function LandingPage() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => { window.removeEventListener("scroll", onScroll); if (frame) window.cancelAnimationFrame(frame); };
   }, []);
-  useEffect(() => { fetch("/api/reviews", { cache: "no-store" }).then((response) => (response.ok ? response.json() : { reviews: [] })).then((data) => setReviews(data.reviews ?? [])).catch(() => setReviews([])).finally(() => setLoadingReviews(false)); }, []);
+  useEffect(() => {
+    // Non-OK responses (503 outage, 429 rate limit) surface as an error
+    // notice; only a 200 payload can produce the empty state.
+    fetch("/api/reviews", { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`reviews ${response.status}`);
+        return response.json();
+      })
+      .then((data) => {
+        setReviews(data.reviews ?? []);
+        setReviewsError(false);
+      })
+      .catch(() => {
+        setReviews([]);
+        setReviewsError(true);
+      })
+      .finally(() => setLoadingReviews(false));
+  }, []);
 
   // Prevent body scroll when mobile menu open + focus trap
   useEffect(() => {
@@ -332,6 +352,7 @@ export function LandingPage() {
           <div className="lg:hidden">
             <MobileExpandable kicker="EARLY NOTES" title={reviews.length ? `${reviews.length} verified notes` : "Be the first to leave a note"} subtitle="People are still writing the first draft." icon={<Star className="h-4 w-4" />} defaultOpen>
               <div className="space-y-4">
+                {reviewsError && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">Reviews couldn&apos;t load just now — they&apos;ll be back shortly.</p>}
                 {(loadingReviews ? Array.from({ length: 2 }).map((_, i) => <div key={i} className="h-24 animate-pulse rounded-xl bg-[var(--landing-paper-deep)]" />) : reviews.length ? reviews.slice(0,2).map((review) => (
                   <article key={review.id} className="rounded-xl border border-[var(--landing-line)] bg-[var(--landing-paper)] p-4">
                     <div className="flex gap-1">{Array.from({ length: 5 }).map((_, i) => <Star key={i} className={cn("h-3.5 w-3.5", i < review.rating ? "fill-[var(--landing-signal)] text-[var(--landing-signal)]" : "text-[var(--landing-line)]")} />)}</div>
@@ -351,7 +372,7 @@ export function LandingPage() {
 
           {/* Desktop original */}
           <div className="hidden lg:block">
-            <div className="landing-section-heading-row"><div><p className="landing-section-label">EARLY NOTES</p><h2 id="feedback-heading">People are still writing the first draft.</h2></div><span className="landing-count">{reviews.length ? `${reviews.length} VERIFIED NOTES` : "NO APPROVED NOTES YET"}</span></div><div className={cn("landing-feedback-grid", !loadingReviews && !reviews.length && "landing-feedback-empty")}>{(loadingReviews || reviews.length > 0) && <div className="landing-reviews">{(loadingReviews ? Array.from({ length: 3 }).map((_, index) => <div key={index} className="landing-review landing-review-skeleton" />) : reviews.slice(0, 3).map((review) => <article key={review.id} className="landing-review"><div className="landing-stars">{Array.from({ length: 5 }).map((_, index) => <Star key={index} className={cn("h-3.5 w-3.5", index < review.rating ? "fill-[var(--landing-signal)] text-[var(--landing-signal)]" : "text-[var(--landing-line]")} />)}</div><blockquote>“{review.content}”</blockquote><footer><span>{review.name.split(" ").map((part) => part[0]).join("").slice(0, 2)}</span><div><strong>{review.name}</strong><small>{review.role ?? "Creator"}</small></div></footer></article>))}</div>}<form onSubmit={submitFeedback} className="landing-feedback-form landing-glass-island"><p className="landing-section-label">SHARE YOUR EXPERIENCE</p><h3>Give feedback.</h3><p>Tell us what helped or what needs work. Submissions are moderated before they appear publicly.</p><div className="landing-form-grid"><label>Name<input required maxLength={80} autoComplete="name" value={feedbackForm.name} onChange={(event) => setFeedbackForm((current) => ({ ...current, name: event.target.value }))} /></label><label>Role <span>(optional)</span><input maxLength={120} autoComplete="organization-title" value={feedbackForm.role} onChange={(event) => setFeedbackForm((current) => ({ ...current, role: event.target.value }))} /></label></div><label className="mt-3 block">Feedback<textarea required maxLength={2000} rows={4} value={feedbackForm.content} onChange={(event) => setFeedbackForm((current) => ({ ...current, content: event.target.value }))} placeholder="What helped? What needs work?" /></label><fieldset><legend>Rating</legend><div className="landing-rating-group">{[1,2,3,4,5].map((value) => <label key={value}><input type="radio" name="rating" value={value} checked={feedbackForm.rating===value} onChange={() => setFeedbackForm((c)=>({ ...c, rating: value }))} /><span>{value}</span></label>)}</div></fieldset><Button type="submit" disabled={feedbackStatus==="submitting"} className="mt-4 w-full rounded-full bg-[var(--landing-signal)] text-[var(--landing-action-ink)] hover:bg-[var(--landing-signal-dark)]">{feedbackStatus==="submitting" ? "Sending…" : "Submit for moderation"}</Button>{feedbackMessage && <p className={cn("mt-3 rounded-xl px-3 py-2 text-sm", feedbackStatus==="error" ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700")}>{feedbackMessage}</p>}</form></div>
+            <div className="landing-section-heading-row"><div><p className="landing-section-label">EARLY NOTES</p><h2 id="feedback-heading">People are still writing the first draft.</h2></div><span className="landing-count">{reviews.length ? `${reviews.length} VERIFIED NOTES` : reviewsError ? "NOTES TEMPORARILY UNAVAILABLE" : "NO APPROVED NOTES YET"}</span></div>{reviewsError && <p role="alert" className="mb-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">Reviews couldn&apos;t load just now — they&apos;ll be back shortly. Your feedback form still works.</p>}<div className={cn("landing-feedback-grid", !loadingReviews && !reviews.length && !reviewsError && "landing-feedback-empty")}>{(loadingReviews || reviews.length > 0) && <div className="landing-reviews">{(loadingReviews ? Array.from({ length: 3 }).map((_, index) => <div key={index} className="landing-review landing-review-skeleton" />) : reviews.slice(0, 3).map((review) => <article key={review.id} className="landing-review"><div className="landing-stars">{Array.from({ length: 5 }).map((_, index) => <Star key={index} className={cn("h-3.5 w-3.5", index < review.rating ? "fill-[var(--landing-signal)] text-[var(--landing-signal)]" : "text-[var(--landing-line]")} />)}</div><blockquote>“{review.content}”</blockquote><footer><span>{review.name.split(" ").map((part) => part[0]).join("").slice(0, 2)}</span><div><strong>{review.name}</strong><small>{review.role ?? "Creator"}</small></div></footer></article>))}</div>}<form onSubmit={submitFeedback} className="landing-feedback-form landing-glass-island"><p className="landing-section-label">SHARE YOUR EXPERIENCE</p><h3>Give feedback.</h3><p>Tell us what helped or what needs work. Submissions are moderated before they appear publicly.</p><div className="landing-form-grid"><label>Name<input required maxLength={80} autoComplete="name" value={feedbackForm.name} onChange={(event) => setFeedbackForm((current) => ({ ...current, name: event.target.value }))} /></label><label>Role <span>(optional)</span><input maxLength={120} autoComplete="organization-title" value={feedbackForm.role} onChange={(event) => setFeedbackForm((current) => ({ ...current, role: event.target.value }))} /></label></div><label className="mt-3 block">Feedback<textarea required maxLength={2000} rows={4} value={feedbackForm.content} onChange={(event) => setFeedbackForm((current) => ({ ...current, content: event.target.value }))} placeholder="What helped? What needs work?" /></label><fieldset><legend>Rating</legend><div className="landing-rating-group">{[1,2,3,4,5].map((value) => <label key={value}><input type="radio" name="rating" value={value} checked={feedbackForm.rating===value} onChange={() => setFeedbackForm((c)=>({ ...c, rating: value }))} /><span>{value}</span></label>)}</div></fieldset><Button type="submit" disabled={feedbackStatus==="submitting"} className="mt-4 w-full rounded-full bg-[var(--landing-signal)] text-[var(--landing-action-ink)] hover:bg-[var(--landing-signal-dark)]">{feedbackStatus==="submitting" ? "Sending…" : "Submit for moderation"}</Button>{feedbackMessage && <p className={cn("mt-3 rounded-xl px-3 py-2 text-sm", feedbackStatus==="error" ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700")}>{feedbackMessage}</p>}</form></div>
           </div>
         </div></section>
 

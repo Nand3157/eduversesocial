@@ -32,6 +32,7 @@ import { useDashboardStore } from "@/lib/stores/dashboard-store";
 import { MetaConnectModal } from "@/components/meta/meta-connect-modal";
 import { MetaPublisherModal } from "@/components/meta/meta-publisher-modal";
 import { AnalyticsProvider } from "@/components/dashboard/analytics-context";
+import { AnalyticsErrorBanner } from "@/components/dashboard/analytics-error-banner";
 import { GlassHeader } from "@/components/layout/glass-header";
 import { DashboardMobileDock } from "@/components/ui/mobile-bottom-nav";
 import type { AnalyticsSnapshot } from "@/lib/meta-analytics";
@@ -227,7 +228,8 @@ export function AppShell({ children, email, profile, initialAnalytics }: { child
             </div>
           </GlassHeader>
 
-          <main id="main-content" className="p-4 pb-24 sm:p-6 sm:pb-6 lg:p-8 lg:pb-8">
+          <main id="main-content" className="p-4 pb-[calc(80px_+_env(safe-area-inset-bottom))] sm:p-6 sm:pb-[calc(80px_+_env(safe-area-inset-bottom))] lg:p-8 lg:pb-8">
+            <AnalyticsErrorBanner />
             <motion.div key={pathname} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}>
               {children}
             </motion.div>

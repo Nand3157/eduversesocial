@@ -16,7 +16,9 @@ const reviewSchema = z.object({
 
 /**
  * GET — public: returns approved reviews for the landing page. Never requires
- * auth; falls back to an empty list when Supabase is not configured.
+ * auth. Outages (Supabase not configured, in-band query errors) return RFC
+ * 9457 problem responses (503) so callers can distinguish "temporarily
+ * unavailable" from a genuinely empty approved-reviews list.
  */
 export async function GET(request: Request) {
   const limit = 60;
@@ -25,14 +27,31 @@ export async function GET(request: Request) {
 
   try {
     const supabase = await createClient();
-    if (!supabase) return withRateLimitHeaders(NextResponse.json({ reviews: [] }), limit, rate);
-    const { data } = await supabase
+    if (!supabase) {
+      // Config-missing is an outage for this endpoint, not an empty workspace.
+      return withRateLimitHeaders(
+        problemResponse(503, "REVIEWS_UNAVAILABLE", "Reviews are temporarily unavailable.", "Retry shortly.", request),
+        limit,
+        rate
+      );
+    }
+    const { data, error } = await supabase
       .from("reviews")
       .select("id,name,role,rating,content,created_at")
       .eq("status", "approved")
       .order("created_at", { ascending: false })
       .limit(24);
-    return withRateLimitHeaders(NextResponse.json({ reviews: data ?? [] }), limit, rate);
+    // In-band query failures arrive as `error`, not exceptions — without this
+    // check an outage rendered as `{ reviews: [] }` with HTTP 200.
+    if (error) {
+      logger.error("review_query_failed", { reason: error.message });
+      return withRateLimitHeaders(
+        problemResponse(503, "REVIEWS_UNAVAILABLE", "Approved reviews are temporarily unavailable.", "Retry shortly or continue without review data.", request),
+        limit,
+        rate
+      );
+    }
+    return withRateLimitHeaders(NextResponse.json({ success: true, reviews: data ?? [] }), limit, rate);
   } catch (error) {
     logger.error("review_list_failed", { reason: error instanceof Error ? error.message : "unknown" });
     return withRateLimitHeaders(problemResponse(503, "REVIEWS_UNAVAILABLE", "Approved reviews are temporarily unavailable.", "Retry shortly or continue without review data.", request), limit, rate);

@@ -20,7 +20,8 @@ export default function DemoPage() {
         <div className="mx-auto flex h-[68px] max-w-6xl items-center justify-between px-5 sm:px-8">
           <Link href="/" className="inline-flex items-center gap-2.5">
             <Image src="/icon.svg" alt="EduVerse" width={32} height={32} className="h-8 w-8 rounded-[9px] shadow-sm object-cover" />
-            <span className="font-display text-lg font-semibold tracking-tight text-ink">
+            {/* Icon-only wordmark below sm: the full row (~450px) clips ≤400px */}
+            <span className="hidden font-display text-lg font-semibold tracking-tight text-ink sm:inline">
               Edu<em className="font-normal text-primary">Verse</em>
             </span>
             <span className="ml-2 hidden items-center gap-1.5 rounded-full border border-warning/20 bg-warning/10 px-2.5 py-1 text-[11px] font-semibold text-warning sm:inline-flex">
@@ -33,8 +34,9 @@ export default function DemoPage() {
             </Link>
             <ThemeToggle />
             <Button asChild size="sm" variant="secondary">
-              <Link href="/">
-                <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Back to site
+              <Link href="/" aria-label="Back to site" title="Back to site">
+                <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+                <span className="hidden sm:inline">Back to site</span>
               </Link>
             </Button>
             <Button asChild size="sm" className="bg-primary text-ink hover:bg-primary-strong">
@@ -44,7 +46,7 @@ export default function DemoPage() {
         </div>
       </GlassHeader>
 
-      <main id="main-content" className="mx-auto max-w-6xl px-4 py-6 pb-28 sm:px-8 sm:py-10 sm:pb-10 md:pb-10">
+      <main id="main-content" className="mx-auto max-w-6xl px-4 py-6 pb-28 sm:px-8 sm:pt-10 md:pb-10">
         <div className="mb-6 flex flex-wrap items-center gap-2 text-xs text-mutedText">
           <Link href="/" className="hover:text-ink">
             Home
@@ -57,7 +59,7 @@ export default function DemoPage() {
         <DemoDashboard />
       </main>
 
-      <footer className="bg-transparent px-4 py-6 pb-28 sm:px-8 sm:py-8 md:pb-8">
+      <footer className="bg-transparent px-4 py-6 pb-28 sm:px-8 sm:pt-8 md:pb-8">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 text-xs text-mutedText sm:flex-row">
           <p>Demo uses synthetic data inspired by real Meta Graph API shapes. Connect your accounts for live numbers.</p>
           <div className="flex gap-4">

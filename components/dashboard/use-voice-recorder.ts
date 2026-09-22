@@ -6,7 +6,13 @@ export type VoiceRecorderState = "idle" | "requesting" | "recording" | "processi
 
 export type VoiceRecorder = {
   state: VoiceRecorderState;
-  level: number; // 0..1 input amplitude for the live meter
+  /**
+   * Subscribe to the live input level (0..1). Called from the recorder's rAF
+   * loop OUTSIDE React render — listeners must write straight to the DOM
+   * (never setState) or the whole chat tree re-reconciles every frame.
+   * Returns an unsubscribe function.
+   */
+  onLevel: (listener: (level: number) => void) => () => void;
   seconds: number;
   start: () => Promise<void>;
   stop: () => void;
@@ -20,8 +26,22 @@ type AudioContextCtor = new (contextOptions?: AudioContextOptions) => AudioConte
 
 export function useVoiceRecorder(onClip: (audioDataUrl: string) => void): VoiceRecorder {
   const [state, setState] = useState<VoiceRecorderState>("idle");
-  const [level, setLevel] = useState(0);
   const [seconds, setSeconds] = useState(0);
+
+  // Latest amplitude lives in a ref, not state: the meter reads it 60×/sec
+  // and must not re-render ChatInterface (and every message) per frame.
+  const levelRef = useRef(0);
+  const levelListenersRef = useRef<Set<(level: number) => void>>(new Set());
+  const emitLevel = useCallback((value: number) => {
+    levelRef.current = value;
+    for (const listener of levelListenersRef.current) listener(value);
+  }, []);
+  const onLevel = useCallback((listener: (level: number) => void) => {
+    levelListenersRef.current.add(listener);
+    return () => {
+      levelListenersRef.current.delete(listener);
+    };
+  }, []);
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -54,11 +74,17 @@ export function useVoiceRecorder(onClip: (audioDataUrl: string) => void): VoiceR
     streamRef.current = null;
     recorderRef.current = null;
     chunksRef.current = [];
-    setLevel(0);
-  }, []);
+    emitLevel(0);
+  }, [emitLevel]);
 
   useEffect(() => {
-    return () => cleanup();
+    // The set itself is stable (never reassigned); copy it so the cleanup
+    // doesn't read a ref value at unmount time.
+    const listeners = levelListenersRef.current;
+    return () => {
+      cleanup();
+      listeners.clear();
+    };
   }, [cleanup]);
 
   const tick = useCallback(() => {
@@ -131,7 +157,7 @@ export function useVoiceRecorder(onClip: (audioDataUrl: string) => void): VoiceR
               const centered = (buffer[i] - 128) / 128;
               sum += centered * centered;
             }
-            setLevel(Math.min(1, Math.sqrt(sum / buffer.length) * 3));
+            emitLevel(Math.min(1, Math.sqrt(sum / buffer.length) * 3));
             rafRef.current = requestAnimationFrame(meter);
           };
           rafRef.current = requestAnimationFrame(meter);
@@ -148,7 +174,7 @@ export function useVoiceRecorder(onClip: (audioDataUrl: string) => void): VoiceR
       const denied = error instanceof DOMException && (error.name === "NotAllowedError" || error.name === "SecurityError");
       setState(denied ? "denied" : "error");
     }
-  }, [cleanup, state, tick]);
+  }, [cleanup, emitLevel, state, tick]);
 
   const stop = useCallback(() => {
     if (recorderRef.current?.state === "recording") {
@@ -170,8 +196,8 @@ export function useVoiceRecorder(onClip: (audioDataUrl: string) => void): VoiceR
   const reset = useCallback(() => {
     setState("idle");
     setSeconds(0);
-    setLevel(0);
-  }, []);
+    emitLevel(0);
+  }, [emitLevel]);
 
-  return { state, level, seconds, start, stop, cancel, reset };
+  return { state, onLevel, seconds, start, stop, cancel, reset };
 }

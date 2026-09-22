@@ -1,37 +1,39 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useId, useMemo } from "react";
 import { cn } from "@/lib/utils";
 
 type Meteor = { top: number; left: number; delay: number; duration: number };
 
+/** Deterministic hash so every mount produces the same sky. Replaces the old
+ * setState-in-effect randomization: no hydration mismatch, no effect-time
+ * state, and the field no longer reshuffles on every remount. */
+function mhash(seed: string, salt: number): number {
+  let h = 2166136261 ^ salt;
+  for (let i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return ((h >>> 0) % 10000) / 10000;
+}
+
 export function Meteors({ number = 18, className }: { number?: number; className?: string }) {
-  const [meteors, setMeteors] = useState<Meteor[] | null>(null);
+  const seed = useId();
 
-  useEffect(() => {
-    setMeteors(
-      Array.from({ length: number }).map(() => ({
-        top: Math.random() * 100,
-        left: Math.random() * 100,
-        delay: Math.random() * 6,
-        duration: 5 + Math.random() * 4,
-      }))
-    );
-  }, [number]);
-
-  // SSR: render deterministic placeholders to avoid hydration mismatch; client replaces after mount
-  const list =
-    meteors ??
-    Array.from({ length: number }).map((_, i) => ({
-      top: ((i * 37) % 100),
-      left: ((i * 57) % 100),
-      delay: (i * 0.42) % 6,
-      duration: 6,
-    }));
+  const meteors = useMemo<Meteor[]>(
+    () =>
+      Array.from({ length: number }, (_, i) => ({
+        top: mhash(seed, i * 4) * 100,
+        left: mhash(seed, i * 4 + 1) * 100,
+        delay: mhash(seed, i * 4 + 2) * 6,
+        duration: 5 + mhash(seed, i * 4 + 3) * 4,
+      })),
+    [number, seed]
+  );
 
   return (
     <div className={cn("pointer-events-none absolute inset-0 overflow-hidden", className)} aria-hidden suppressHydrationWarning>
-      {list.map((m, i) => (
+      {meteors.map((m, i) => (
         <span
           key={i}
           className="absolute h-0.5 w-24 rotate-[35deg] animate-[meteor_6s_linear_infinite] bg-gradient-to-r from-[var(--accent)] to-transparent"

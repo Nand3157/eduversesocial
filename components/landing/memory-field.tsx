@@ -21,14 +21,16 @@ export function MemoryField({ className }: { className?: string }) {
     if (!canvas) return;
     if (typeof window === "undefined") return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setFallback(true);
+      // Defer one microtask: still swaps to the static fallback right after
+      // mount, without a synchronous setState inside the effect body.
+      queueMicrotask(() => setFallback(true));
       return;
     }
 
     const gl = (canvas.getContext("webgl2", { alpha: true, antialias: true }) as WebGL2RenderingContext | null)
       || (canvas.getContext("webgl", { alpha: true, antialias: true }) as WebGLRenderingContext | null);
     if (!gl) { setFallback(true); return; }
-    const isWebGL2 = (gl as any).createVertexArray !== undefined;
+    const isWebGL2 = "createVertexArray" in gl;
 
     const vert = isWebGL2
       ? `#version 300 es
@@ -118,7 +120,8 @@ export function MemoryField({ className }: { className?: string }) {
     const pos=gl.getAttribLocation(prog,"position"); gl.enableVertexAttribArray(pos); gl.vertexAttribPointer(pos,2,gl.FLOAT,false,0,0);
     const uR=gl.getUniformLocation(prog,"iResolution"), uT=gl.getUniformLocation(prog,"iTime"), uM=gl.getUniformLocation(prog,"iMouse"), uS=gl.getUniformLocation(prog,"iScroll"), uC=gl.getUniformLocation(prog,"iClick");
 
-    let w=0,h=0, dpr=Math.min(window.devicePixelRatio||1,2);
+    let w=0,h=0;
+    const dpr=Math.min(window.devicePixelRatio||1,2);
     const resize=()=>{ const r=canvas.getBoundingClientRect(); w=Math.max(1,Math.floor(r.width*dpr)); h=Math.max(1,Math.floor(r.height*dpr)); canvas.width=w; canvas.height=h; gl.viewport(0,0,w,h); };
     resize(); const ro=new ResizeObserver(resize); ro.observe(canvas);
 
@@ -133,7 +136,7 @@ export function MemoryField({ className }: { className?: string }) {
     const onVis=()=>{ visible=document.visibilityState==="visible"; if(visible&&inView) loop(); };
     document.addEventListener("visibilitychange", onVis);
 
-    let start=performance.now();
+    const start=performance.now();
     const tick=()=>{
       if(!visible||!inView){ rafRef.current=0; return; }
       const t=(performance.now()-start)/1000;

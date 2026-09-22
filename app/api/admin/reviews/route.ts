@@ -139,19 +139,27 @@ export async function PATCH(request: Request) {
   const { id, action } = parsed.data;
 
   if (action === "delete") {
-    const { error } = await service.from("reviews").delete().eq("id", id);
+    const { count, error } = await service.from("reviews").delete({ count: "exact" }).eq("id", id);
     if (error) {
       logger.error("admin_review_delete_failed", { reason: error.message, id });
-      return NextResponse.json({ error: "Could not delete the review." }, { status: 500 });
+      return NextResponse.json({ error: "Could not delete the review." }, { status: 503 });
     }
+    // Deleting an unknown/stale id affects 0 rows — report that as 404 rather
+    // than a success confirmation for a row that no longer existed.
+    if (!count) return NextResponse.json({ error: "Review not found. It may already be deleted." }, { status: 404 });
     return NextResponse.json({ success: true, id, status: "deleted" });
   }
 
   const nextStatus = action === "approve" ? "approved" : action === "reject" ? "rejected" : "pending";
   const { data, error } = await service.from("reviews").update({ status: nextStatus }).eq("id", id).select("id,status").single();
+  // PostgREST `.single()` reports a missing row as a client error — a stale or
+  // wrong id is 404, not a server fault.
+  if (error?.code === "PGRST116") {
+    return NextResponse.json({ error: "Review not found. It may already be moderated or deleted." }, { status: 404 });
+  }
   if (error || !data) {
     logger.error("admin_review_update_failed", { reason: error?.message, id, action });
-    return NextResponse.json({ error: "Could not update the review. Check the id." }, { status: 500 });
+    return NextResponse.json({ error: "Could not update the review." }, { status: 503 });
   }
   return NextResponse.json({ success: true, review: data });
 }

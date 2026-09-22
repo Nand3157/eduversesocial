@@ -27,15 +27,20 @@ export function AnalyticsProvider({ children, initialData }: { children: React.R
     let cancelled = false;
     queueMicrotask(() => { if (!cancelled) { setLoading(true); setError(false); } });
     // The server caches snapshots per day; manual refreshes bypass the cache.
-    // The route always answers 200 with a snapshot (failures are success:false
-    // snapshots), so non-OK responses (e.g. 429) become a null payload.
+    // The route reports failures with non-OK statuses (429/403/503) and
+    // `success: false` bodies — both must surface as `error` (with a retry),
+    // never as a silent null payload indistinguishable from an empty workspace.
     fetch(refreshKey > 0 ? "/api/meta/analytics?refresh=1" : "/api/meta/analytics", { cache: "no-store" })
-      .then(async (response) => (response.ok ? response.json() : null))
+      .then(async (response) => {
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || payload?.success === false) throw new Error("analytics-load-failed");
+        return payload;
+      })
       .then((payload) => {
         if (!cancelled) setData(payload);
       })
       .catch(() => {
-        // Distinguish transport failure from "Meta not connected" so the UI can
+        // Distinguish load failure from "Meta not connected" so the UI can
         // offer a retry instead of connect-Meta guidance.
         if (!cancelled) {
           setData(null);

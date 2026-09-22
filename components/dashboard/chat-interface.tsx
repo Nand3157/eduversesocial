@@ -1,7 +1,7 @@
 "use client";
 
 import React, { FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
-import { Bot, ImageIcon, Mic, Send, Sparkles, Cpu, Globe, Loader2, Square, X } from "lucide-react";
+import { Bot, ChevronDown, CloudOff, ImageIcon, Mic, Send, Sparkles, Cpu, Globe, Loader2, Square, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -164,6 +164,79 @@ const FormattedMarkdown = React.memo(function FormattedMarkdown({ content }: { c
   return <div className="space-y-0.5">{elements}</div>;
 });
 
+/**
+ * Live input meter. It is deliberately the ONLY thing that reacts to the
+ * recorder's per-frame amplitude: the level arrives via a listener bus and is
+ * written straight to the DOM (style transforms), so no React state updates —
+ * and no re-reconciliation of the message tree — happen while recording.
+ */
+const LevelMeter = React.memo(function LevelMeter({
+  onLevel
+}: {
+  onLevel: (listener: (level: number) => void) => () => void;
+}) {
+  const haloRef = useRef<HTMLSpanElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    return onLevel((level) => {
+      if (haloRef.current) haloRef.current.style.transform = `scale(${1 + level})`;
+      if (trackRef.current) trackRef.current.style.width = `${Math.round(level * 100)}%`;
+    });
+  }, [onLevel]);
+
+  return (
+    <>
+      <span className="relative grid h-8 w-8 shrink-0 place-items-center">
+        <span ref={haloRef} className="absolute inset-0 rounded-full bg-danger/20" aria-hidden="true" />
+        <span className="relative h-2.5 w-2.5 rounded-full bg-danger" />
+      </span>
+      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-borderSoft">
+        <div ref={trackRef} className="h-full rounded-full bg-primary transition-[width] duration-100" />
+      </div>
+    </>
+  );
+});
+
+// Shared by the desktop aside and the mobile switcher so both stay in sync.
+function ConversationItems({
+  activeId,
+  conversations,
+  loading,
+  onSelect
+}: {
+  activeId?: string;
+  conversations: Conversation[];
+  loading: boolean;
+  onSelect: (id: string) => void;
+}) {
+  if (loading) return <p className="mt-2 text-xs leading-5 text-mutedText">Loading…</p>;
+  if (conversations.length === 0) {
+    return <p className="mt-2 text-xs leading-5 text-mutedText">Your latest conversation is restored automatically.</p>;
+  }
+  return (
+    <ul className="mt-2 space-y-1">
+      {conversations.map((conversation) => {
+        const active = conversation.id === activeId;
+        return (
+          <li key={conversation.id}>
+            <button
+              onClick={() => onSelect(conversation.id)}
+              aria-current={active ? "true" : undefined}
+              className={`w-full touch-manipulation rounded-lg px-2.5 py-2 text-left text-xs transition focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none ${
+                active ? "bg-ink text-background" : "text-mutedText hover:bg-card hover:text-ink"
+              }`}
+            >
+              <span className="block truncate font-medium">{conversation.title || "New conversation"}</span>
+              <span className={`mt-0.5 block text-[10px] ${active ? "text-background/60" : "text-faintText"}`}>{timeAgo(conversation.updated_at)}</span>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 export function ChatInterface() {
   const reduceMotion = useReducedMotion();
   const { data: analytics } = useAnalytics();
@@ -178,6 +251,11 @@ export function ChatInterface() {
   const [imageError, setImageError] = useState<string | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loadingConversation, setLoadingConversation] = useState(false);
+  // Mobile-only disclosure for the conversation list (the desktop aside is lg+).
+  const [conversationsOpen, setConversationsOpen] = useState(false);
+  // Server reports "saving is down" via X-Chat-Persistence: unavailable —
+  // surfaced as a non-blocking notice instead of being silently dropped.
+  const [persistenceWarning, setPersistenceWarning] = useState(false);
   const [showSources, setShowSources] = useState<Record<number, boolean>>({});
 
   // Voice input (Gemini 3.5 Transcribe). The chosen code is only a hint — the
@@ -217,9 +295,11 @@ export function ChatInterface() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
-  // Set when the user opens a different conversation while a response is still
-  // streaming, so the stream can never clobber the newly opened messages.
-  const switchedAwayRef = useRef(false);
+  // Bumped whenever the visible conversation changes (switch or new). A send
+  // captures the value when it starts and may only write while it still matches,
+  // so a superseded stream can never clobber the newly opened messages — while
+  // replies and errors for the *current* view always render.
+  const viewGenerationRef = useRef(0);
   // Streaming state: the answer accumulates in a ref and renders on a timer so
   // a burst of network chunks does not re-parse the whole markdown answer on
   // every chunk (O(n^2) work for long replies).
@@ -251,7 +331,7 @@ export function ChatInterface() {
   const openConversation = async (id: string) => {
     if (loadingConversation || id === conversationId) return;
     setLoadingConversation(true);
-    switchedAwayRef.current = true;
+    viewGenerationRef.current += 1;
     try {
       const response = await fetch(`/api/chat?conversationId=${encodeURIComponent(id)}`, { cache: "no-store" });
       const data = await response.json();
@@ -260,12 +340,23 @@ export function ChatInterface() {
         setMessages(data.messages as Message[]);
         setInput("");
         setImagePreview(null);
+        setPersistenceWarning(false);
       }
     } catch {
       // Keep the current conversation on failure.
     } finally {
       setLoadingConversation(false);
     }
+  };
+
+  const startNewConversation = () => {
+    viewGenerationRef.current += 1;
+    setConversationId(undefined);
+    setMessages([welcome]);
+    setInput("");
+    setImagePreview(null);
+    setConversationsOpen(false);
+    setPersistenceWarning(false);
   };
 
   useEffect(() => {
@@ -356,6 +447,8 @@ export function ChatInterface() {
     setInput("");
     setImagePreview(null);
     setThinking(true);
+    // Any conversation switch from here on invalidates this stream's writes.
+    const generation = viewGenerationRef.current;
 
     try {
       const response = await fetch("/api/chat", {
@@ -374,6 +467,9 @@ export function ChatInterface() {
       if (providerHeader === "gemini" || modelHeader) setActiveProvider(modelHeader ?? "Gemini");
 
       setConversationId(response.headers.get("X-Conversation-ID") ?? conversationId);
+      // Persistence failures are visible: the server kept answering the AI
+      // stream but could not save the turn (workspace/DB unavailable).
+      setPersistenceWarning(response.headers.get("X-Chat-Persistence") === "unavailable");
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
@@ -382,7 +478,7 @@ export function ChatInterface() {
         // If the user opened a different conversation while streaming, drop the
         // render into the old one (the server still persists the answer to the
         // original conversation).
-        if (switchedAwayRef.current) return;
+        if (viewGenerationRef.current !== generation) return;
         setMessages([
           ...nextMessages,
           { role: "assistant", content: answerRef.current, provider: providerHeader ?? "ai" }
@@ -411,7 +507,7 @@ export function ChatInterface() {
       if (!answerRef.current) throw new Error("The AI engine returned an empty reply. Rephrase your question and try again.");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to generate a response.";
-      if (!switchedAwayRef.current) {
+      if (viewGenerationRef.current === generation) {
         setMessages([
           ...nextMessages,
           { role: "assistant", content: `I couldn't complete that request. ${message}` }
@@ -425,17 +521,46 @@ export function ChatInterface() {
   }
 
   return (
-    <div className="grid min-h-[calc(100vh-150px)] overflow-hidden rounded-2xl border border-borderSoft bg-card shadow-sm lg:grid-cols-[240px_1fr]">
+    <div className="grid h-[calc(100dvh_-_160px_-_env(safe-area-inset-bottom))] min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-2xl border border-borderSoft bg-card shadow-sm sm:h-[calc(100dvh_-_168px_-_env(safe-area-inset-bottom))] lg:h-[calc(100dvh-150px)] lg:grid-cols-[240px_1fr] lg:grid-rows-[minmax(0,1fr)]">
+      {/* Compact conversation switcher for phones/tablets — the aside below is lg+ only */}
+      <div className="max-h-[55dvh] overflow-y-auto border-b border-borderSoft bg-surface p-3 lg:hidden">
+        <div className="flex items-center gap-2">
+          <Button className="bg-ink text-background hover:bg-ink/90" onClick={startNewConversation} size="sm">
+            <Sparkles aria-hidden="true" className="h-4 w-4" />
+            New conversation
+          </Button>
+          <Button
+            aria-controls="mobile-conversation-list"
+            aria-expanded={conversationsOpen}
+            className="flex-1 justify-between"
+            onClick={() => setConversationsOpen((open) => !open)}
+            size="sm"
+            variant="secondary"
+          >
+            <span>Saved conversations ({conversations.length})</span>
+            <ChevronDown aria-hidden="true" className={`h-3.5 w-3.5 transition-transform ${conversationsOpen ? "rotate-180" : ""}`} />
+          </Button>
+        </div>
+        {conversationsOpen && (
+          <div className="mt-3 max-h-[55vh] overflow-y-auto rounded-xl border border-borderSoft bg-card p-2" id="mobile-conversation-list">
+            <ConversationItems
+              activeId={conversationId}
+              conversations={conversations}
+              loading={loadingConversation}
+              onSelect={(id) => {
+                setConversationsOpen(false);
+                void openConversation(id);
+              }}
+            />
+          </div>
+        )}
+      </div>
+
       {/* Sidebar - ice to match Atlas, with separation */}
-      <aside className="hidden border-r border-borderSoft bg-surface p-4 lg:block">
+      <aside className="hidden overflow-y-auto border-r border-borderSoft bg-surface p-4 lg:block">
         <Button
           className="w-full bg-ink text-background hover:bg-ink/90"
-          onClick={() => {
-            setConversationId(undefined);
-            setMessages([welcome]);
-            setInput("");
-            setImagePreview(null);
-          }}
+          onClick={startNewConversation}
           size="sm"
         >
           <Sparkles aria-hidden="true" className="h-4 w-4" />
@@ -445,33 +570,7 @@ export function ChatInterface() {
         <p className="mt-7 text-xs font-semibold uppercase tracking-wider text-mutedText">
           Saved conversations
         </p>
-        {loadingConversation ? (
-          <p className="mt-2 text-xs leading-5 text-mutedText">Loading…</p>
-        ) : conversations.length === 0 ? (
-          <p className="mt-2 text-xs leading-5 text-mutedText">
-            Your latest conversation is restored automatically.
-          </p>
-        ) : (
-          <ul className="mt-2 space-y-1">
-            {conversations.map((conversation) => {
-              const active = conversation.id === conversationId;
-              return (
-                <li key={conversation.id}>
-                  <button
-                    onClick={() => openConversation(conversation.id)}
-                    aria-current={active ? "true" : undefined}
-                    className={`w-full touch-manipulation rounded-lg px-2.5 py-2 text-left text-xs transition focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none ${
-                      active ? "bg-ink text-background" : "text-mutedText hover:bg-card hover:text-ink"
-                    }`}
-                  >
-                    <span className="block truncate font-medium">{conversation.title || "New conversation"}</span>
-                    <span className={`mt-0.5 block text-[10px] ${active ? "text-background/60" : "text-faintText"}`}>{timeAgo(conversation.updated_at)}</span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+        <ConversationItems activeId={conversationId} conversations={conversations} loading={loadingConversation} onSelect={(id) => void openConversation(id)} />
 
         <div className="mt-6 rounded-xl border border-borderSoft bg-card p-3">
           <div className="flex items-center gap-2 text-xs font-medium text-primary">
@@ -499,9 +598,9 @@ export function ChatInterface() {
       </aside>
 
       {/* Chat panel */}
-      <section className="flex min-h-[600px] flex-col">
+      <section className="flex min-h-0 flex-col overflow-hidden">
         {/* Header */}
-        <div className="border-b border-borderSoft p-5">
+        <div className="shrink-0 border-b border-borderSoft p-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <span aria-hidden="true" className="grid h-9 w-9 place-items-center rounded-full bg-primary text-background">
@@ -519,7 +618,7 @@ export function ChatInterface() {
         </div>
 
         {/* Messages */}
-        <div ref={scrollContainerRef} role="log" aria-live="polite" aria-label="Conversation messages" className="flex-1 space-y-5 overflow-y-auto overscroll-contain p-5">
+        <div ref={scrollContainerRef} role="log" aria-live="polite" aria-label="Conversation messages" className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain p-5">
           <AnimatePresence initial={false}>
             {messages.map((message, index) => (
               <motion.div
@@ -587,7 +686,13 @@ export function ChatInterface() {
         </div>
 
         {/* Input area */}
-        <div className="border-t border-borderSoft p-4">
+        <div className="shrink-0 border-t border-borderSoft p-4">
+          {persistenceWarning && (
+            <p role="status" className="mb-3 flex items-center gap-1.5 rounded-xl border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning">
+              <CloudOff aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
+              Saving is temporarily unavailable — replies still work, but this conversation won&apos;t appear in your history.
+            </p>
+          )}
           <div className="mb-3 flex flex-wrap gap-2">
             {prompts.map((prompt) => (
               <motion.button
@@ -635,13 +740,7 @@ export function ChatInterface() {
 
           {recorder.state === "recording" && (
             <div className="mb-2 flex items-center gap-3 rounded-2xl border border-primary/40 bg-accent-soft px-3 py-2" role="status">
-              <span className="relative grid h-8 w-8 shrink-0 place-items-center">
-                <span className="absolute inset-0 rounded-full bg-danger/20" style={{ transform: `scale(${1 + recorder.level})` }} aria-hidden="true" />
-                <span className="relative h-2.5 w-2.5 rounded-full bg-danger" />
-              </span>
-              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-borderSoft">
-                <div className="h-full rounded-full bg-primary transition-[width] duration-100" style={{ width: `${Math.round(recorder.level * 100)}%` }} />
-              </div>
+              <LevelMeter onLevel={recorder.onLevel} />
               <span className="shrink-0 text-xs font-medium tabular-nums text-mutedText">
                 {Math.floor(recorder.seconds / 60)}:{String(recorder.seconds % 60).padStart(2, "0")} · max 1:00
               </span>

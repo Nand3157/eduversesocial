@@ -18,6 +18,21 @@ const statusVariant: Record<string, "primary" | "success" | "warning" | "default
 
 type CsvRow = { platform: string; content: string; date: string };
 
+// The CSV draft cache is a single localStorage key that each import overwrites
+// (the importer persists at most MAX_CACHED_ROWS rows). The read site applies
+// the same cap and a shape check, so repeated imports can never grow the cache
+// beyond one bounded payload or hydrate malformed data.
+const CSV_CACHE_KEY = "eduverse:csv-import";
+const MAX_CACHED_ROWS = 50;
+
+function readCachedRows(payload: unknown): CsvRow[] {
+  const rows = (payload as { rows?: unknown })?.rows;
+  if (!Array.isArray(rows)) return [];
+  return rows
+    .filter((row): row is CsvRow => Boolean(row) && typeof (row as CsvRow).content === "string" && typeof (row as CsvRow).platform === "string")
+    .slice(0, MAX_CACHED_ROWS);
+}
+
 export function PostTable({ csvRows }: { csvRows?: CsvRow[] }) {
   const { data, loading } = useAnalytics();
   const [query, setQuery] = useState("");
@@ -34,16 +49,23 @@ export function PostTable({ csvRows }: { csvRows?: CsvRow[] }) {
   useEffect(() => {
     queueMicrotask(() => {
       try {
-        const raw = localStorage.getItem("eduverse:csv-import");
+        const raw = localStorage.getItem(CSV_CACHE_KEY);
+        // Scoped read: an active `csvRows` selection always wins — the persisted
+        // cache is only consulted when nothing is selected, and only well-formed
+        // rows within the cap are accepted.
         if (raw && !csvRows) {
-          const parsed = JSON.parse(raw) as { rows: CsvRow[] };
-          if (parsed?.rows?.length) setLocalCsvRows(parsed.rows);
+          const parsed = JSON.parse(raw) as unknown;
+          const rows = readCachedRows(parsed);
+          if (rows.length) setLocalCsvRows(rows);
         }
       } catch {}
     });
     const handler = (e: Event) => {
+      // An active selection beats late cache events (a newer selection must
+      // never be overwritten by rows from an older import).
+      if (csvRows) return;
       const detail = (e as CustomEvent<CsvRow[]>).detail;
-      if (Array.isArray(detail)) setLocalCsvRows(detail);
+      if (Array.isArray(detail)) setLocalCsvRows(detail.slice(0, MAX_CACHED_ROWS));
     };
     window.addEventListener("eduverse:csv-imported", handler as EventListener);
     return () => window.removeEventListener("eduverse:csv-imported", handler as EventListener);
@@ -75,8 +97,13 @@ export function PostTable({ csvRows }: { csvRows?: CsvRow[] }) {
       .sort((a, b) => (sort === "post" ? a.post.localeCompare(b.post) : likes(b.likes) - likes(a.likes)));
   }, [data, query, sort, localCsvRows]);
 
-  const items = filtered.slice((page - 1) * 3, page * 3);
   const totalPages = Math.max(1, Math.ceil(filtered.length / 3));
+  // Render-derived clamp (not an effect): when the list shrinks (clear/filter/
+  // data change) the displayed page folds back into [1, totalPages], so the
+  // table can never sit on an empty page while the live region claims
+  // "Page 3 of 1". Every pager control moves from this clamped value.
+  const currentPage = Math.min(page, totalPages);
+  const items = filtered.slice((currentPage - 1) * 3, currentPage * 3);
 
   return (
     <div>
@@ -120,7 +147,7 @@ export function PostTable({ csvRows }: { csvRows?: CsvRow[] }) {
                 return;
               }
               setLocalCsvRows([]);
-              try { localStorage.removeItem("eduverse:csv-import"); } catch {}
+              try { localStorage.removeItem(CSV_CACHE_KEY); } catch {}
               setConfirmClear(false);
             }}
             onBlur={() => setConfirmClear(false)}
@@ -201,15 +228,30 @@ export function PostTable({ csvRows }: { csvRows?: CsvRow[] }) {
         </div>
       </>}
 
-      <div className="mt-4 flex items-center justify-between text-sm tabular-nums text-mutedText">
+      <div
+        aria-label="Pagination"
+        className="mt-4 flex items-center justify-between rounded-xl text-sm tabular-nums text-mutedText focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+        onKeyDown={(event) => {
+          if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+          event.preventDefault();
+          // Exactly one page per press, clamped to the same [1, totalPages]
+          // bounds the Previous/Next buttons use.
+          setPage((current) => {
+            const clamped = Math.min(current, totalPages);
+            return event.key === "ArrowRight" ? Math.min(totalPages, clamped + 1) : Math.max(1, clamped - 1);
+          });
+        }}
+        role="group"
+        tabIndex={0}
+      >
         <span aria-live="polite">
-          {filtered.length} {filtered.length === 1 ? "post" : "posts"} · Page {page} of {totalPages}
+          {filtered.length} {filtered.length === 1 ? "post" : "posts"} · Page {currentPage} of {totalPages}
         </span>
         <div className="flex gap-2">
           <Button
             aria-label="Previous page"
-            disabled={page === 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            onClick={() => setPage((p) => Math.max(1, Math.min(p, totalPages) - 1))}
             size="icon"
             variant="secondary"
           >
@@ -217,8 +259,8 @@ export function PostTable({ csvRows }: { csvRows?: CsvRow[] }) {
           </Button>
           <Button
             aria-label="Next page"
-            disabled={page === totalPages}
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            onClick={() => setPage((p) => Math.min(totalPages, Math.min(p, totalPages) + 1))}
             size="icon"
             variant="secondary"
           >

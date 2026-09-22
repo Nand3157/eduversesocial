@@ -3,7 +3,11 @@ const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()" },
+  // camera/microphone must allow (self): an empty allowlist `=()` denies the
+  // feature to THIS document too, so getUserMedia fails with NotAllowedError
+  // ("blocked") even after the user grants permission in the browser UI.
+  // Cross-origin frames embedding our pages stay blocked.
+  { key: "Permissions-Policy", value: "camera=(self), microphone=(self), geolocation=(), payment=(), usb=()" },
   // Isolate this origin from other windows/top-level documents: same-origin
   // window references stay, cross-origin ones are opened in their own context.
   { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
