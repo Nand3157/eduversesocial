@@ -430,7 +430,8 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); box-sha
 .landing-nav-link { color: var(--landing-muted); transition: color 160ms ease, background-color 160ms ease; }
 .landing-nav-link:hover { color: var(--landing-ink); background: var(--landing-paper-deep); }
 .landing-menu-button { display: grid; min-height: 44px; min-width: 44px; place-items: center; border: 1px solid var(--landing-line); border-radius: 999px; color: var(--landing-ink); background: transparent; }
-.landing-mobile-menu { border-top: 1px solid var(--landing-line); background: var(--landing-paper); }
+/* Base styling for the floating menu panel lives with its positioning
+   rules further down ("Floating panel anchored under the glass header"). */
 .landing-hero { border-bottom: 1px solid var(--landing-line); }
 .landing-hero-grid { display: grid; min-height: 680px; align-items: center; gap: clamp(2.5rem, 6vw, 7rem); grid-template-columns: minmax(0, .84fr) minmax(0, 1.16fr); padding-block: clamp(3rem, 8vw, 7rem); }
 .landing-overline, .landing-section-label, .landing-rail-label { margin: 0; color: var(--landing-signal); font-family: var(--font-mono), ui-monospace, monospace; font-size: .67rem; font-weight: 700; letter-spacing: .14em; line-height: 1.45; }
@@ -554,11 +555,25 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); box-sha
   background: var(--landing-island-strong);
   box-shadow: 0 20px 46px -28px rgba(33, 39, 45, .38), inset 0 1px 0 color-mix(in srgb, white 62%, transparent);
 }
-.landing-header-open { border-radius: 1.25rem; }
-.landing-header .landing-wrap { width: min(calc(100% - 2rem), 80rem); }
-.landing-mobile-menu { background: var(--landing-island-strong); /* No backdrop-filter here: the menu already sits inside the
-     backdrop-filtered header, and a nested filter makes Chromium blur
-     the panel's own content. The 92% opaque bg does the work. */ }
+/* Floating panel anchored under the glass header island. It must never be a
+   DOM child of the header: Chromium blurs the entire paint (text included) of
+   a composited child of a backdrop-filtered ancestor. Offsets track the
+   island's own geometry per breakpoint (top edge + 6px breathing room). */
+.landing-mobile-menu {
+  position: fixed;
+  inset-inline: 1rem;
+  top: 86px;
+  max-height: calc(100vh - 108px);
+  overflow-y: auto;
+  z-index: 30;
+  border: 1px solid color-mix(in srgb, var(--landing-line) 72%, transparent);
+  border-radius: 1.25rem;
+  background: var(--landing-island-strong);
+  box-shadow: 0 24px 48px -20px rgba(33, 39, 45, .4);
+}
+@media (max-width: 640px) {
+  .landing-mobile-menu { inset-inline: 0.5rem; top: 74px; max-height: calc(100vh - 96px); }
+}
 
 .signal-board-dashboard { display: grid; grid-template-columns: minmax(10.5rem, .7fr) minmax(0, 1.3fr); gap: .75rem; padding: 0 1.3rem 1.3rem; }
 .signal-board-metrics { display: grid; gap: .5rem; }
@@ -607,14 +622,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); box-sha
 }
 
 /* Keep the blur declarations isolated for browsers that drop them from a grouped rule. */
-.landing-header { --landing-header-blur: 18px; backdrop-filter: blur(var(--landing-header-blur)) !important; }
-/* While the menu is open, collapse the island blur to an imperceptible
-   epsilon instead of none: the pipeline rewrites blur(0px) to an invalid
-   blur() and drops backdrop-filter: none outright. With the menu's own
-   backdrop-filters already removed, this kills the second nested filter
-   in Chromium's blurred-child-content artifact. The menu's background is
-   92% opaque, so the lost frosted effect is not missed. */
-.landing-header:has(.landing-mobile-menu) { background: var(--landing-island-strong); --landing-header-blur: 0.2px; }
+.landing-header { backdrop-filter: blur(18px) !important; }
 .landing-feedback-form { backdrop-filter: blur(20px) !important; }
 .landing-demo-strip { backdrop-filter: blur(20px) !important; }
 
@@ -631,7 +639,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); box-sha
   transform: translateX(var(--landing-glass-shift, -40%));
   transition: transform 520ms cubic-bezier(.16, 1, .3, 1), opacity 320ms ease;
 }
-.landing-header > .landing-wrap, .landing-header > .landing-mobile-menu { position: relative; z-index: 1; }
+.landing-header > .landing-wrap { position: relative; z-index: 1; }
 .landing-hero-grid { min-height: clamp(560px, calc(100svh - 112px), 640px); gap: clamp(2rem, 4.5vw, 4.5rem); padding-block: clamp(2.5rem, 6vw, 5rem); }
 .landing-hero h1 { max-width: 11ch; margin-top: 1.05rem; font-size: clamp(2.7rem, 4.35vw, 4.5rem); }
 .landing-hero-copy { max-width: 46ch; margin-top: 1.35rem; }

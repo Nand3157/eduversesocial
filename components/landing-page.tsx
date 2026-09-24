@@ -246,31 +246,35 @@ export function LandingPage() {
 
   return (
     <div ref={landingShellRef} id="top" className="landing-shell min-h-screen pb-[96px] lg:pb-0">
-      <header ref={landingHeaderRef} className={cn("landing-header sticky top-0 z-40", scrolled && "landing-header-scrolled", mobileOpen && "landing-header-open")}>
+      <header ref={landingHeaderRef} className={cn("landing-header sticky top-0 z-40", scrolled && "landing-header-scrolled")}>
         <div className="landing-wrap flex h-[64px] items-center justify-between"><Wordmark /><nav aria-label="Primary navigation" className="hidden items-center gap-1 lg:flex">{navItems.map((id) => <button key={id} onClick={() => scrollTo(id)} className="landing-nav-link min-h-11 rounded-full px-3.5 text-[13px] font-medium">{navLabel(id)}</button>)}</nav><div className="flex items-center gap-2"><ThemeToggle /><Button asChild variant="ghost" size="sm" className="hidden rounded-full text-[var(--landing-muted)] sm:inline-flex"><Link href="/login">Sign in</Link></Button><Button asChild size="sm" className="hidden rounded-full bg-[var(--landing-signal)] px-5 text-white hover:bg-[var(--landing-signal-dark)] sm:inline-flex"><Link href="/signup">Start free <ArrowRight className="h-3.5 w-3.5" /></Link></Button><button type="button" aria-label={mobileOpen ? "Close menu" : "Open menu"} aria-expanded={mobileOpen} onClick={() => setMobileOpen((open) => !open)} className="landing-menu-button lg:hidden">{mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button></div></div>
-        <AnimatePresence>
-          {mobileOpen && (
-            <>
-              <motion.button aria-label="Close menu backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setMobileOpen(false)} className="fixed inset-0 top-[64px] z-30 bg-[var(--landing-ink)]/20 backdrop-blur-sm lg:hidden" />
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }} className="landing-mobile-menu relative z-40 overflow-hidden border-t border-[var(--landing-line)] bg-[var(--landing-island-strong)]/95 lg:hidden">
-                <div className="landing-wrap grid gap-1.5 py-4">
-                  {navItems.map((id) => (
-                    <button key={id} onClick={() => scrollTo(id)} className="flex min-h-[52px] items-center justify-between rounded-2xl border border-[var(--landing-line)] bg-[var(--landing-paper)] px-4 text-left text-[15px] font-medium text-[var(--landing-ink)] active:bg-[var(--landing-paper-deep)]">
-                      <span>{navLabel(id)}</span><ArrowRight className="h-4 w-4 text-[var(--landing-muted)]" />
-                    </button>
-                  ))}
-                  <div className="mt-2 grid gap-2">
-                    <Button asChild className="h-12 rounded-full bg-[var(--landing-signal)] text-[15px] font-semibold text-[var(--landing-action-ink)] hover:bg-[var(--landing-signal-dark)]"><Link href="/signup" onClick={() => setMobileOpen(false)}>Start free — no credit card <ArrowRight className="h-4 w-4" /></Link></Button>
-                    <Button asChild variant="secondary" className="h-12 rounded-full border-[var(--landing-line)] bg-transparent text-[var(--landing-ink)]"><Link href="/demo" onClick={() => setMobileOpen(false)}><Eye className="h-4 w-4" /> Explore live demo</Link></Button>
-                    <Button asChild variant="ghost" className="h-11 rounded-full"><Link href="/login" onClick={() => setMobileOpen(false)}>Sign in</Link></Button>
-                  </div>
-                  <p className="pt-2 text-center mono text-[10px] tracking-[0.08em] text-[var(--landing-muted)]">Trusted by educators · Meta Graph OAuth · Encrypted & revocable</p>
-                </div>
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
       </header>
+
+      {/* Lives OUTSIDE the backdrop-filtered header on purpose: Chromium
+          blurs the whole paint of a composited child of a filtered element
+          (menu text included), so the panel must have no filtered ancestor. */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <>
+            <motion.button aria-label="Close menu backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setMobileOpen(false)} className="fixed inset-0 top-[64px] z-30 bg-[var(--landing-ink)]/20 backdrop-blur-sm lg:hidden" />
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }} className="landing-mobile-menu lg:hidden">
+              <div className="landing-wrap grid gap-1.5 py-4">
+                {navItems.map((id) => (
+                  <button key={id} onClick={() => scrollTo(id)} className="flex min-h-[52px] items-center justify-between rounded-2xl border border-[var(--landing-line)] bg-[var(--landing-paper)] px-4 text-left text-[15px] font-medium text-[var(--landing-ink)] active:bg-[var(--landing-paper-deep)]">
+                    <span>{navLabel(id)}</span><ArrowRight className="h-4 w-4 text-[var(--landing-muted)]" />
+                  </button>
+                ))}
+                <div className="mt-2 grid gap-2">
+                  <Button asChild className="h-12 rounded-full bg-[var(--landing-signal)] text-[15px] font-semibold text-[var(--landing-action-ink)] hover:bg-[var(--landing-signal-dark)]"><Link href="/signup" onClick={() => setMobileOpen(false)}>Start free — no credit card <ArrowRight className="h-4 w-4" /></Link></Button>
+                  <Button asChild variant="secondary" className="h-12 rounded-full border-[var(--landing-line)] bg-transparent text-[var(--landing-ink)]"><Link href="/demo" onClick={() => setMobileOpen(false)}><Eye className="h-4 w-4" /> Explore live demo</Link></Button>
+                  <Button asChild variant="ghost" className="h-11 rounded-full"><Link href="/login" onClick={() => setMobileOpen(false)}>Sign in</Link></Button>
+                </div>
+                <p className="pt-2 text-center mono text-[10px] tracking-[0.08em] text-[var(--landing-muted)]">Trusted by educators · Meta Graph OAuth · Encrypted & revocable</p>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       <main id="main-content">
         <section className="landing-hero" aria-labelledby="hero-heading"><div className="landing-wrap landing-hero-grid"><motion.div initial={reduceMotion ? undefined : { opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}><p className="landing-overline"><i aria-hidden="true" /> SOCIAL INTELLIGENCE FOR PEOPLE WHO TEACH</p><h1 id="hero-heading">Your audience leaves signals.<br /><em>Keep the pattern.</em></h1><p className="landing-hero-copy">EduVerse turns real Instagram, Facebook, and Threads engagement into a memory you can act on — what worked, why it worked, and what to post next.</p><p className="landing-hero-activation">Free to start · no card · connect Meta when you&apos;re ready for live data.</p><div className="landing-actions"><Button asChild className="h-12 rounded-full bg-[var(--landing-signal)] px-6 text-white shadow-[0_10px_24px_rgba(182,83,39,0.2)] hover:bg-[var(--landing-signal-dark)]"><Link href="/signup">Start free <ArrowRight className="h-4 w-4" /></Link></Button><Link href="/demo" className="landing-text-link"><Eye className="h-4 w-4" /> Preview the demo</Link></div><div className="landing-proof-row"><span><Check aria-hidden="true" /> No credit card</span><span><LockKeyhole aria-hidden="true" /> Encrypted &amp; revocable</span></div></motion.div><motion.div initial={reduceMotion ? undefined : { opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.65, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}><SignalBoard /></motion.div></div></section>
