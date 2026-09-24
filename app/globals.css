@@ -558,12 +558,14 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); box-sha
 /* Floating panel anchored under the glass header island. It must never be a
    DOM child of the header: Chromium blurs the entire paint (text included) of
    a composited child of a backdrop-filtered ancestor. Offsets track the
-   island's own geometry per breakpoint (top edge + 6px breathing room). */
+   island's own geometry per breakpoint (top edge + 6px breathing room), and
+   max-height reserves the ~122px fixed bottom dock so the menu never slides
+   behind it on short viewports. */
 .landing-mobile-menu {
   position: fixed;
   inset-inline: 1rem;
   top: 86px;
-  max-height: calc(100vh - 108px);
+  max-height: calc(100vh - 216px);
   overflow-y: auto;
   z-index: 30;
   border: 1px solid color-mix(in srgb, var(--landing-line) 72%, transparent);
@@ -572,7 +574,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); box-sha
   box-shadow: 0 24px 48px -20px rgba(33, 39, 45, .4);
 }
 @media (max-width: 640px) {
-  .landing-mobile-menu { inset-inline: 0.5rem; top: 74px; max-height: calc(100vh - 96px); }
+  .landing-mobile-menu { inset-inline: 0.5rem; top: 74px; max-height: calc(100vh - 204px); }
 }
 
 .signal-board-dashboard { display: grid; grid-template-columns: minmax(10.5rem, .7fr) minmax(0, 1.3fr); gap: .75rem; padding: 0 1.3rem 1.3rem; }
