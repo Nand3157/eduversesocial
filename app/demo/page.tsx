@@ -18,7 +18,9 @@ export default function DemoPage() {
     <div className="dashboard-canvas min-h-screen">
       <GlassHeader>
         <div className="mx-auto flex h-[68px] max-w-6xl items-center justify-between px-5 sm:px-8">
-          <Link href="/" className="inline-flex items-center gap-2.5">
+          {/* Negative margin + padding: keeps the 32px glyph but widens the
+              tap target to 48px (32px glyph is under the 44px minimum). */}
+          <Link href="/" className="-m-2 inline-flex items-center gap-2.5 p-2">
             <Image src="/icon.svg" alt="EduVerse" width={32} height={32} className="h-8 w-8 rounded-[9px] shadow-sm object-cover" />
             {/* Icon-only wordmark below sm: the full row (~450px) clips ≤400px */}
             <span className="hidden font-display text-lg font-semibold tracking-tight text-ink sm:inline">
@@ -29,7 +31,7 @@ export default function DemoPage() {
             </span>
           </Link>
           <div className="flex items-center gap-2">
-            <Link href="/privacy" className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium text-mutedText hover:text-ink">
+            <Link href="/privacy" className="hidden min-h-[44px] items-center gap-1.5 text-xs font-medium text-mutedText hover:text-ink sm:inline-flex">
               <ShieldCheck className="h-3.5 w-3.5 text-success" /> Privacy & Data Security
             </Link>
             <ThemeToggle />
@@ -48,7 +50,7 @@ export default function DemoPage() {
 
       <main id="main-content" className="mx-auto max-w-6xl px-4 py-6 pb-28 sm:px-8 sm:pt-10 md:pb-10">
         <div className="mb-6 flex flex-wrap items-center gap-2 text-xs text-mutedText">
-          <Link href="/" className="hover:text-ink">
+          <Link href="/" className="inline-flex min-h-[44px] items-center hover:text-ink">
             Home
           </Link>
           <span className="text-faintText">/</span>
@@ -63,10 +65,10 @@ export default function DemoPage() {
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 text-xs text-mutedText sm:flex-row">
           <p>Demo uses synthetic data inspired by real Meta Graph API shapes. Connect your accounts for live numbers.</p>
           <div className="flex gap-4">
-            <Link href="/privacy" className="font-medium text-primary hover:underline">
+            <Link href="/privacy" className="inline-flex min-h-[44px] items-center font-medium text-primary hover:underline">
               Privacy Policy
             </Link>
-            <Link href="/signup" className="font-medium text-primary hover:underline">
+            <Link href="/signup" className="inline-flex min-h-[44px] items-center font-medium text-primary hover:underline">
               Create account
             </Link>
           </div>

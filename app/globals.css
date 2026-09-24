@@ -645,6 +645,9 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); box-sha
 @media (max-width: 640px) {
   .landing-hero-grid { padding-block: 2.6rem 3.5rem; }
   .landing-hero h1 { font-size: clamp(2.55rem, 12vw, 3.5rem); }
+  /* The closing display heading has no max-width, so its desktop clamp
+     (min 3.3rem) overflows a 320px viewport by ~8px. */
+  .landing-closing h2 { font-size: clamp(2.6rem, 12vw, 4rem); }
   .landing-header .landing-wrap { height: 60px; }
   .landing-section-intro h2, .landing-section-heading-row h2 { font-size: clamp(2rem, 10vw, 2.8rem); }
   .landing-demo-strip { padding: 1.25rem; }
