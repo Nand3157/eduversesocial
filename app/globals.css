@@ -648,7 +648,10 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); box-sha
   /* The closing display heading has no max-width, so its desktop clamp
      (min 3.3rem) overflows a 320px viewport by ~8px. */
   .landing-closing h2 { font-size: clamp(2.6rem, 12vw, 4rem); }
-  .landing-header .landing-wrap { height: 60px; }
+  /* Direct-child selector: a plain descendant selector also matched the
+     .landing-wrap inside .landing-mobile-menu, pinning the menu body to
+     60px where the header's overflow:hidden clipped the rest of it. */
+  .landing-header > .landing-wrap { height: 60px; }
   .landing-section-intro h2, .landing-section-heading-row h2 { font-size: clamp(2rem, 10vw, 2.8rem); }
   .landing-demo-strip { padding: 1.25rem; }
 }
