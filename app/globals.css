@@ -556,7 +556,9 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); box-sha
 }
 .landing-header-open { border-radius: 1.25rem; }
 .landing-header .landing-wrap { width: min(calc(100% - 2rem), 80rem); }
-.landing-mobile-menu { background: var(--landing-island-strong); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+.landing-mobile-menu { background: var(--landing-island-strong); /* No backdrop-filter here: the menu already sits inside the
+     backdrop-filtered header, and a nested filter makes Chromium blur
+     the panel's own content. The 92% opaque bg does the work. */ }
 
 .signal-board-dashboard { display: grid; grid-template-columns: minmax(10.5rem, .7fr) minmax(0, 1.3fr); gap: .75rem; padding: 0 1.3rem 1.3rem; }
 .signal-board-metrics { display: grid; gap: .5rem; }
@@ -605,7 +607,14 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); box-sha
 }
 
 /* Keep the blur declarations isolated for browsers that drop them from a grouped rule. */
-.landing-header { backdrop-filter: blur(18px) !important; }
+.landing-header { --landing-header-blur: 18px; backdrop-filter: blur(var(--landing-header-blur)) !important; }
+/* While the menu is open, collapse the island blur to an imperceptible
+   epsilon instead of none: the pipeline rewrites blur(0px) to an invalid
+   blur() and drops backdrop-filter: none outright. With the menu's own
+   backdrop-filters already removed, this kills the second nested filter
+   in Chromium's blurred-child-content artifact. The menu's background is
+   92% opaque, so the lost frosted effect is not missed. */
+.landing-header:has(.landing-mobile-menu) { background: var(--landing-island-strong); --landing-header-blur: 0.2px; }
 .landing-feedback-form { backdrop-filter: blur(20px) !important; }
 .landing-demo-strip { backdrop-filter: blur(20px) !important; }
 

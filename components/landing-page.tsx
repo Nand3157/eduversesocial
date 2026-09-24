@@ -252,7 +252,7 @@ export function LandingPage() {
           {mobileOpen && (
             <>
               <motion.button aria-label="Close menu backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setMobileOpen(false)} className="fixed inset-0 top-[64px] z-30 bg-[var(--landing-ink)]/20 backdrop-blur-sm lg:hidden" />
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }} className="landing-mobile-menu relative z-40 overflow-hidden border-t border-[var(--landing-line)] bg-[var(--landing-island-strong)]/95 backdrop-blur-xl lg:hidden">
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }} className="landing-mobile-menu relative z-40 overflow-hidden border-t border-[var(--landing-line)] bg-[var(--landing-island-strong)]/95 lg:hidden">
                 <div className="landing-wrap grid gap-1.5 py-4">
                   {navItems.map((id) => (
                     <button key={id} onClick={() => scrollTo(id)} className="flex min-h-[52px] items-center justify-between rounded-2xl border border-[var(--landing-line)] bg-[var(--landing-paper)] px-4 text-left text-[15px] font-medium text-[var(--landing-ink)] active:bg-[var(--landing-paper-deep)]">
