@@ -2,7 +2,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
-import { normalizeAudioMimeType, transcribeAudio, TranscribeConfigError, VOICE_LANGUAGES } from "@/lib/ai/voice-input";
+import { AudioDecodeError, decodeToMonoPcm16Base64, normalizeAudioMimeType, transcribeAudio, TranscribeConfigError, VOICE_LANGUAGES } from "@/lib/ai/voice-input";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,7 +15,8 @@ const MAX_AUDIO_BASE64_LENGTH = 6_000_000;
 
 const requestSchema = z.object({
   audio: z.string().startsWith("data:audio/").max(MAX_AUDIO_BASE64_LENGTH),
-  // BCP-47 hint, or "auto" to let the model detect the language.
+  // Kept for UI compatibility; the model currently auto-detects (see
+  // lib/ai/voice-input.ts for why hints cannot be sent).
   languageCode: z.string().trim().max(35).optional()
 });
 
@@ -53,12 +54,18 @@ export async function POST(request: Request) {
   if (!base64) return Response.json({ error: "The recording is empty." }, { status: 400 });
 
   const mimeType = normalizeAudioMimeType(rawMime);
+  // Copy out of the Node Buffer pool into a standalone ArrayBuffer —
+  // decodeAudioData detaches its input, which must own its bytes.
+  const bytes = Buffer.from(base64, "base64");
+  const arrayBuffer = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(arrayBuffer).set(bytes);
+
   try {
-    const { text } = await transcribeAudio({
-      audioBase64: base64,
-      mimeType,
-      languageCode: parsed.data.languageCode
-    });
+    // The API only accepts inline audio as raw 16-bit PCM (audio/l16) with an
+    // explicit sample rate — container bytes (webm/mp3/wav) are rejected — so
+    // decode here and send PCM.
+    const { data, sampleRate } = await decodeToMonoPcm16Base64({ arrayBuffer, containerMime: mimeType });
+    const { text } = await transcribeAudio({ audioBase64: data, sampleRate });
     if (!text) {
       return Response.json({ error: "No speech was detected in the recording. Try again a little closer to the mic." }, { status: 422 });
     }
@@ -66,6 +73,9 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof TranscribeConfigError) {
       return Response.json({ error: error.message }, { status: 503 });
+    }
+    if (error instanceof AudioDecodeError) {
+      return Response.json({ error: "Could not read the recording. Try recording again." }, { status: 422 });
     }
     logger.error("voice_transcribe_failed", {
       userId: user.id,

@@ -1,13 +1,14 @@
 "use client";
 
 import React, { FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
-import { Bot, ChevronDown, CloudOff, ImageIcon, Mic, Send, Sparkles, Cpu, Globe, Loader2, Square, X } from "lucide-react";
+import { Bot, ChevronDown, CloudOff, ImageIcon, Mic, Send, Sparkles, Cpu, Globe, Loader2, Square, Volume2, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SPRING_SOFT } from "@/components/motion-variants";
 import { useAnalytics } from "@/components/dashboard/analytics-context";
 import { useVoiceRecorder } from "@/components/dashboard/use-voice-recorder";
+import { useTts } from "@/components/dashboard/use-tts";
 import { VOICE_LANGUAGES } from "@/lib/ai/voice-input";
 
 type Message = {
@@ -292,6 +293,10 @@ export function ChatInterface() {
 
   const recorder = useVoiceRecorder(transcribeClip);
 
+  // Read-aloud playback for assistant replies (Gemini 3.8 Flash-Lite TTS via
+  // /api/ai/tts). One clip at a time; switching conversations stops playback.
+  const tts = useTts();
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -336,6 +341,7 @@ export function ChatInterface() {
       const response = await fetch(`/api/chat?conversationId=${encodeURIComponent(id)}`, { cache: "no-store" });
       const data = await response.json();
       if (response.ok && data?.messages) {
+        tts.stop();
         setConversationId(id);
         setMessages(data.messages as Message[]);
         setInput("");
@@ -351,6 +357,7 @@ export function ChatInterface() {
 
   const startNewConversation = () => {
     viewGenerationRef.current += 1;
+    tts.stop();
     setConversationId(undefined);
     setMessages([welcome]);
     setInput("");
@@ -565,11 +572,9 @@ export function ChatInterface() {
         >
           <Sparkles aria-hidden="true" className="h-4 w-4" />
           New conversation
-        </Button>
-
-        <p className="mt-7 text-xs font-semibold uppercase tracking-wider text-mutedText">
-          Saved conversations
-        </p>
+        </Button>          <p className="mt-7 text-xs font-semibold uppercase tracking-wider text-mutedText">
+            Saved conversations
+          </p>
         <ConversationItems activeId={conversationId} conversations={conversations} loading={loadingConversation} onSelect={(id) => void openConversation(id)} />
 
         <div className="mt-6 rounded-xl border border-borderSoft bg-card p-3">
@@ -592,6 +597,9 @@ export function ChatInterface() {
             <li>Attach an image for visual analysis</li>
             <li>
               <strong className="text-ink">Mic</strong> — dictate in any language; speech is transcribed with Gemini 3.5 Transcribe and lands in the message box for review before sending
+            </li>
+            <li>
+              <strong className="text-ink">Listen</strong> — hear any reply read aloud with Gemini 3.8 Flash-Lite TTS
             </li>
           </ul>
         </div>
@@ -653,6 +661,26 @@ export function ChatInterface() {
                   ) : (
                     <>
                       <FormattedMarkdown content={message.content} />
+                      {message.content && (
+                        <div className="mt-3 flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => tts.toggle(index, message.content)}
+                            disabled={tts.unsupported || (tts.loadingIndex !== null && tts.loadingIndex !== index) || Boolean(tts.playingIndex !== null && tts.playingIndex !== index)}
+                            aria-label={tts.playingIndex === index ? "Stop reading aloud" : "Read this reply aloud"}
+                            title={tts.playingIndex === index ? "Stop" : "Read aloud"}
+                            className="inline-flex min-h-[32px] touch-manipulation items-center gap-1.5 rounded-full border border-borderSoft px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-mutedText transition hover:border-primary hover:text-primary focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {tts.loadingIndex === index ? (
+                              <Loader2 aria-hidden="true" className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Volume2 aria-hidden="true" className="h-3 w-3" />
+                            )}
+                            {tts.playingIndex === index ? "Stop" : "Listen"}
+                          </button>
+                          {tts.errorIndex === index && <span className="text-[10px] text-danger">Could not play this reply.</span>}
+                        </div>
+                      )}
                       {/* Citations / provenance — grounded in live analytics, never invented */}
                       {message.content && (
                         <div className="mt-3 border-t border-borderSoft pt-2">
@@ -853,7 +881,7 @@ export function ChatInterface() {
             <span>Voice transcription powered by Gemini 3.5 Transcribe</span>
           </div>
           <p className="mt-1 text-center text-[10px] text-faintText">
-            Enter to send · Shift+Enter for new line · Image and voice input supported
+            Enter to send · Shift+Enter for new line · Image, voice and read-aloud supported
           </p>
         </div>
       </section>
