@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createHash } from "node:crypto";
 import type { MetaAccount } from "@/lib/meta-api";
 import { graphRequest, ThreadsService } from "@/lib/meta-api";
+import { MetaError } from "@/lib/meta-errors";
 import { createClient } from "@/lib/supabase/server";
 import { decrypt } from "@/lib/crypto";
 import { mapLimit } from "@/lib/async";
@@ -56,6 +57,7 @@ type StoredAccount = {
   parent_account_id: string | null;
   encrypted_token: string | null;
   scopes: string[];
+  status: "active" | "expired" | "permission_required" | "disconnected";
   created_at: string;
 };
 
@@ -157,7 +159,7 @@ function accountFromStored(row: StoredAccount): MetaAccount[] {
     handle: row.platform === "instagram" && row.username ? `@${row.username}` : row.display_name ?? row.id,
     avatarUrl: row.avatar_url ?? undefined,
     connectedAt: row.created_at ?? new Date().toISOString(),
-    status: "active"
+    status: row.status === "expired" || row.status === "permission_required" || row.status === "disconnected" ? row.status : "active"
   }];
 }
 
@@ -386,6 +388,16 @@ async function saveWorkspaceMemory(
   }
 }
 
+async function markPermissionRequired(supabase: SupabaseClient | null, workspaceId: string | undefined, account: StoredAccount) {
+  account.status = "permission_required";
+  if (!supabase || !workspaceId) return;
+  const { error } = await supabase.from("social_accounts")
+    .update({ status: "permission_required" })
+    .eq("id", account.id)
+    .eq("workspace_id", workspaceId);
+  if (error) logger.warn("meta_account_permission_status_failed", { accountId: account.id, reason: error.message });
+}
+
 function withStoredMemory(snapshot: AnalyticsSnapshot, rows: StoredMemory[]): AnalyticsSnapshot {
   return { ...snapshot, memoryItems: rows.map((row) => row.content) };
 }
@@ -402,9 +414,9 @@ export async function fetchMetaAnalytics(token?: string, bypassCache = false): P
       if (member) {
         const { data: rows } = await supabase
           .from("social_accounts")
-          .select("id,external_id,display_name,username,avatar_url,platform,parent_account_id,encrypted_token,scopes,created_at")
+          .select("id,external_id,display_name,username,avatar_url,platform,parent_account_id,encrypted_token,scopes,status,created_at")
           .eq("workspace_id", member.workspace_id)
-          .eq("status", "active");
+          .neq("status", "disconnected");
         stored = (rows ?? []) as StoredAccount[];
       }
     }
@@ -415,7 +427,7 @@ export async function fetchMetaAnalytics(token?: string, bypassCache = false): P
   // that user-scoped endpoint cannot be called with a page access token.
   const tokens = new Map<string, string>();
   for (const row of stored) {
-    if (!row.encrypted_token) continue;
+    if (row.status !== "active" || !row.encrypted_token) continue;
     try {
       tokens.set(row.id, decrypt(row.encrypted_token));
     } catch {
@@ -427,7 +439,14 @@ export async function fetchMetaAnalytics(token?: string, bypassCache = false): P
   }
   const savedMemory = supabase && member ? await readWorkspaceMemory(supabase, member.workspace_id) : [];
   if (!isTokenConfigured(token) && tokens.size === 0) {
-    return withStoredMemory(emptyAnalytics("Connect Meta to load live analytics."), savedMemory);
+    const missingPageAccess = stored.some((row) => row.status === "permission_required");
+    const missingOrExpiredToken = stored.some((row) => row.status === "expired");
+    const message = missingPageAccess
+      ? "Meta denied access to this Page. Check the Graph API error, the tester's Page MODERATE task, the pages_read_engagement grant, and the tester's app role, then reconnect."
+      : missingOrExpiredToken
+        ? "The saved Meta access token has expired. Reconnect the affected account."
+        : "Connect Meta to load live analytics.";
+    return withStoredMemory({ ...emptyAnalytics(message), accounts: stored.flatMap(accountFromStored) }, savedMemory);
   }
 
   const cacheAccountId = supabase && member ? await firstActiveAccountId(supabase, member.workspace_id) : null;
@@ -439,7 +458,7 @@ export async function fetchMetaAnalytics(token?: string, bypassCache = false): P
   try {
     const accounts = stored.flatMap(accountFromStored);
     const errors: string[] = [];
-    if (stored.some((row) => row.platform === "facebook" && !row.scopes?.includes("pages_read_engagement"))) {
+    if (stored.some((row) => row.platform === "facebook" && row.status === "active" && !row.scopes?.includes("pages_read_engagement"))) {
       errors.push("This Meta connection has no recorded pages_read_engagement grant. Reconnect Meta and approve Page read access.");
     }
 
@@ -456,7 +475,11 @@ export async function fetchMetaAnalytics(token?: string, bypassCache = false): P
       const instagramChildren = stored.filter((child) => child.platform === "instagram" && child.parent_account_id === row.id && child.external_id);
       const [pageInsights, pagePosts, pageFans, childResults] = await Promise.all([
         graphData<InsightRow[]>(pageToken, `${row.external_id!}/insights?metric=page_views_total,page_post_engagements&period=day&date_preset=last_28d`).catch((error) => { errors.push(`Facebook Page insights: ${error instanceof Error ? error.message : "unavailable."}`); return []; }),
-        graphData<GraphPost[]>(pageToken, `${row.external_id!}/posts?fields=id,message,created_time,permalink_url,shares,likes.summary(true).limit(0),comments.summary(true).limit(0)&limit=25`).catch((error) => { errors.push(`Facebook Page posts: ${error instanceof Error ? error.message : "unavailable."}`); return []; }),
+        graphData<GraphPost[]>(pageToken, `${row.external_id!}/posts?fields=id,message,created_time,permalink_url,shares,likes.summary(true).limit(0),comments.summary(true).limit(0)&limit=25`).catch(async (error) => {
+          errors.push(`Facebook Page posts: ${error instanceof Error ? error.message : "unavailable."}`);
+          if (error instanceof MetaError && error.code === "META_PERMISSION_ERROR") await markPermissionRequired(supabase, member?.workspace_id, row);
+          return [];
+        }),
         // Profile fields (fan_count, followers_count) return a flat object,
         // not a {data: [...]} envelope — graphData unwraps the envelope, so
         // these must go through graphRequest directly.
@@ -465,7 +488,11 @@ export async function fetchMetaAnalytics(token?: string, bypassCache = false): P
           const childToken = tokens.get(child.id) ?? pageToken;
           const [insights, media, profile] = await Promise.all([
             graphData<InsightRow[]>(childToken, `${child.external_id!}/insights?metric=reach,accounts_engaged,total_interactions&period=day&date_preset=last_28d`).catch((error) => { errors.push(error instanceof Error ? error.message : "Instagram insights unavailable."); return []; }),
-            graphData<GraphPost[]>(childToken, `${child.external_id!}/media?fields=id,caption,media_type,timestamp,permalink,like_count,comments_count&limit=25`).catch((error) => { errors.push(error instanceof Error ? error.message : "Instagram media unavailable."); return []; }),
+            graphData<GraphPost[]>(childToken, `${child.external_id!}/media?fields=id,caption,media_type,timestamp,permalink,like_count,comments_count&limit=25`).catch(async (error) => {
+              errors.push(`Instagram media for ${child.username ? `@${child.username}` : child.display_name ?? child.external_id}: ${error instanceof Error ? error.message : "unavailable."}`);
+              if (error instanceof MetaError && error.code === "META_PERMISSION_ERROR") await markPermissionRequired(supabase, member?.workspace_id, child);
+              return [];
+            }),
             graphRequest<{ followers_count?: number }>("facebook", `${child.external_id!}?fields=followers_count`, childToken).catch((): { followers_count?: number } => ({})),
           ]);
           return { insights, media, followers: profile.followers_count, account: child };
@@ -608,7 +635,7 @@ const followers = [
     const snapshot: AnalyticsSnapshot = {
       success: true,
       live: true,
-      accounts: [...accounts, ...(threads?.accounts ?? [])],
+      accounts: [...stored.flatMap(accountFromStored), ...(threads?.accounts ?? [])],
       metrics,
       engagementData: toEngagementTimeline(daily),
       platformBreakdown: platformTotal ? platformTotals.map((item) => ({ name: item.name, value: Math.round((item.value / platformTotal) * 100) })).filter((item) => item.value > 0) : [],
@@ -636,7 +663,7 @@ const followers = [
         ] as [string, string, string]] : []),
         ...bestTimeRecs
       ],
-      ...(errors.length ? { error: errors[0] } : {})
+      ...(errors.length ? { error: [...new Set(errors)].slice(0, 3).join(" · ") } : {})
     };
 
     if (supabase && member) {

@@ -22,7 +22,15 @@ export interface MetaPostPayload {
   hashtags?: string[];
   targetAccountId?: string;
 }
-type GraphError = { error?: { message?: string; code?: number; error_subcode?: number; is_transient?: boolean } };
+type GraphError = { error?: { message?: string; code?: number; error_subcode?: number; is_transient?: boolean; fbtrace_id?: string } };
+
+function graphErrorMessage(response: Response, error?: GraphError["error"]) {
+  const code = error?.code === undefined ? `HTTP ${response.status}` : `Graph API #${error.code}${error.error_subcode ? `/${error.error_subcode}` : ""}`;
+  const detail = error?.message?.trim().slice(0, 360);
+  const trace = error?.fbtrace_id?.slice(0, 48);
+  const message = detail ? `${code}: ${detail}` : `${code}: Meta rejected the request.`;
+  return trace ? `${message} (trace ${trace})` : message;
+}
 
 /** Wrapper around Facebook / Threads Graph API requests with consistent error normalization. */
 export async function graphRequest<T>(base: "facebook" | "threads", path: string, token: string, init: RequestInit = {}): Promise<T> {
@@ -35,14 +43,16 @@ export async function graphRequest<T>(base: "facebook" | "threads", path: string
   const body = (await response.json().catch(() => ({}))) as T & GraphError;
   if (!response.ok || body.error) {
     const code = body.error?.code;
-    if (response.status === 401 || code === 190) throw new MetaError("META_AUTH_ERROR", "Meta token expired or invalid.");
-    if (response.status === 403 || code === 10 || code === 200) throw new MetaError("META_PERMISSION_ERROR", "Required Meta permission is missing or the account is not authorized for this action.");
+    const message = graphErrorMessage(response, body.error);
+    const diagnostic = { graphCode: code, graphSubcode: body.error?.error_subcode, traceId: body.error?.fbtrace_id };
+    if (response.status === 401 || code === 190) throw new MetaError("META_AUTH_ERROR", `Meta token expired or invalid. ${message}`, undefined, diagnostic.graphCode, diagnostic.graphSubcode, diagnostic.traceId);
+    if (response.status === 403 || code === 10 || code === 200) throw new MetaError("META_PERMISSION_ERROR", `Meta denied this request. ${message}`, undefined, diagnostic.graphCode, diagnostic.graphSubcode, diagnostic.traceId);
     if (response.status === 429 || code === 4 || code === 17 || code === 32) {
       const retryAfter = Number(response.headers.get("retry-after") || 60);
-      throw new MetaError("META_RATE_LIMIT", "Meta rate limit reached. Retry later.", Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : 60);
+      throw new MetaError("META_RATE_LIMIT", `Meta rate limit reached. ${message}`, Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : 60, diagnostic.graphCode, diagnostic.graphSubcode, diagnostic.traceId);
     }
-    if (code === 100 && /media|container|url/i.test(body.error?.message || "")) throw new MetaError("META_INVALID_MEDIA", body.error?.message || "Meta rejected the media payload.");
-    throw new MetaError("META_API_ERROR", body.error?.message || "Meta request failed.");
+    if (code === 100 && /media|container|url/i.test(body.error?.message || "")) throw new MetaError("META_INVALID_MEDIA", message, undefined, diagnostic.graphCode, diagnostic.graphSubcode, diagnostic.traceId);
+    throw new MetaError("META_API_ERROR", message, undefined, diagnostic.graphCode, diagnostic.graphSubcode, diagnostic.traceId);
   }
   return body as T;
 }
@@ -67,9 +77,9 @@ export class MetaFacebookService {
   constructor(private token: string) {}
 
   pages() {
-    return graphRequest<{ data: Array<{ id: string; name: string; access_token: string; instagram_business_account?: { id: string; username?: string; name?: string; profile_picture_url?: string; followers_count?: number } }> }>(
+    return graphRequest<{ data: Array<{ id: string; name: string; access_token: string; tasks?: string[]; instagram_business_account?: { id: string; username?: string; name?: string; profile_picture_url?: string; followers_count?: number } }> }>(
       "facebook",
-      "me/accounts?fields=id,name,access_token,instagram_business_account{id,username,name,profile_picture_url,followers_count}",
+      "me/accounts?fields=id,name,access_token,tasks,instagram_business_account{id,username,name,profile_picture_url,followers_count}",
       this.token,
       { method: "GET" }
     );

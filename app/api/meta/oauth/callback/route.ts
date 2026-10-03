@@ -33,6 +33,7 @@ export async function GET(request: Request) {
     const { data: member } = await supabase.from("workspace_members").select("workspace_id").eq("user_id", user.id).limit(1).maybeSingle(); if (!member) return fail("workspace_missing");
     const facebook = new MetaFacebookService(userToken);
     const pages = await facebook.pages();
+    if (!pages.data?.length) return fail("no_pages");
     // Persist what Meta actually granted. Merely requesting a permission does
     // not mean the account authorized it, and a successful Page connection can
     // still lack read access to its posts and insights.
@@ -42,11 +43,21 @@ export async function GET(request: Request) {
     // Page tokens from a long-lived user token are long-lived for 30 days, so
     // token_expires_at is left null. Re-auth is needed only every ~30d or on
     // password/deauth.
+    let permissionRequired = false;
+    const hasPageReadGrant = grantedScopes.includes("pages_read_engagement");
     for (const page of pages.data || []) {
-      const { data: pageRow } = await supabase.from("social_accounts").upsert({ workspace_id: member.workspace_id, platform: "facebook", handle: page.name, external_id: page.id, display_name: page.name, encrypted_token: encrypt(page.access_token), token_expires_at: null, scopes: grantedScopes, status: "active" }, { onConflict: "workspace_id,platform,external_id" }).select("id").single();
-      if (page.instagram_business_account && pageRow) await supabase.from("social_accounts").upsert({ workspace_id: member.workspace_id, platform: "instagram", handle: page.instagram_business_account.username || page.instagram_business_account.id, external_id: page.instagram_business_account.id, display_name: page.instagram_business_account.name || page.instagram_business_account.username || page.name, username: page.instagram_business_account.username, avatar_url: page.instagram_business_account.profile_picture_url, parent_account_id: pageRow.id, encrypted_token: encrypt(page.access_token), token_expires_at: null, scopes: grantedScopes, status: "active" }, { onConflict: "workspace_id,platform,external_id" });
+      const pageTasks = new Set(page.tasks ?? []);
+      const hasModerationTask = ["MODERATE", "PROFILE_PLUS_MODERATE", "PROFILE_PLUS_FULL_CONTROL"].some((task) => pageTasks.has(task));
+      const accessStatus = !hasPageReadGrant || (page.tasks !== undefined && !hasModerationTask) ? "permission_required" : "active";
+      permissionRequired ||= accessStatus === "permission_required";
+      const { data: pageRow, error: pageSaveError } = await supabase.from("social_accounts").upsert({ workspace_id: member.workspace_id, platform: "facebook", handle: page.name, external_id: page.id, display_name: page.name, encrypted_token: encrypt(page.access_token), token_expires_at: null, scopes: grantedScopes, status: accessStatus }, { onConflict: "workspace_id,platform,external_id" }).select("id").single();
+      if (pageSaveError || !pageRow) throw pageSaveError ?? new Error("Meta Page account could not be saved.");
+      if (page.instagram_business_account) {
+        const { error: instagramSaveError } = await supabase.from("social_accounts").upsert({ workspace_id: member.workspace_id, platform: "instagram", handle: page.instagram_business_account.username || page.instagram_business_account.id, external_id: page.instagram_business_account.id, display_name: page.instagram_business_account.name || page.instagram_business_account.username || page.name, username: page.instagram_business_account.username, avatar_url: page.instagram_business_account.profile_picture_url, parent_account_id: pageRow.id, encrypted_token: encrypt(page.access_token), token_expires_at: null, scopes: grantedScopes, status: accessStatus }, { onConflict: "workspace_id,platform,external_id" });
+        if (instagramSaveError) throw instagramSaveError;
+      }
     }
-    const response = NextResponse.redirect(new URL("/dashboard/settings?meta=connected", request.url)); response.cookies.delete("meta_oauth_state"); return response;
+    const response = NextResponse.redirect(new URL(`/dashboard/settings?meta=${permissionRequired ? "permission_required" : "connected"}`, request.url)); response.cookies.delete("meta_oauth_state"); return response;
   } catch (error) {
     logger.error("meta_oauth_callback_failed", { reason: error instanceof Error ? error.message : "unknown" });
     return fail("connection_failed");

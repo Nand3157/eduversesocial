@@ -11,7 +11,7 @@ export function AnalyticsErrorBanner() {
   const { data, error, loading, refresh } = useAnalytics();
   const message = data?.error ?? (error ? "Analytics failed to load. Retry the request." : null);
   if (!message || loading) return null;
-  const needsReconnect = /permission|authorized|scope|reconnect/i.test(message);
+  const needsReconnect = /permission|authorized|scope|reconnect|denied|Graph API #(?:10|200|190)/i.test(message);
   return (
     <div
       role="alert"

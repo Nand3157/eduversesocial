@@ -170,6 +170,8 @@ export default function SettingsPage() {
     const outcomes: Array<[string | null, Record<string, string>]> = [
       [searchParams.get("meta"), {
         connected: "Meta accounts connected.",
+        permission_required: "Meta connected, but this tester needs the Page MODERATE task and pages_read_engagement access before analytics can load.",
+        no_pages: "Meta authorized the app, but returned no Pages for this tester. Give the tester a role on the Page, then reconnect.",
         denied: "Meta connection cancelled.",
         state_invalid: "Meta connection failed: security state mismatch. Try again.",
         code_invalid: "Meta connection failed: the code could not be exchanged.",
