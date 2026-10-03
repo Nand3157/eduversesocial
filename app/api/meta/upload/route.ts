@@ -90,7 +90,10 @@ export async function POST(request: Request) {
 
   // Bucket is private (public=false) — issue a long-lived signed URL so Meta
   // can fetch the media via URL token, without exposing the bucket publicly.
-  const { data: signed } = await supabase.storage.from("post-media").createSignedUrl(path, 60 * 60 * 24 * 365);
-  const url = signed?.signedUrl ?? supabase.storage.from("post-media").getPublicUrl(path).data.publicUrl;
-  return NextResponse.json({ success: true, url });
+  const { data: signed, error: signedError } = await supabase.storage.from("post-media").createSignedUrl(path, 60 * 60 * 24 * 365);
+  if (signedError || !signed?.signedUrl) {
+    await supabase.storage.from("post-media").remove([path]);
+    return NextResponse.json({ success: false, message: "Could not create a secure media link." }, { status: 500 });
+  }
+  return NextResponse.json({ success: true, url: signed.signedUrl });
 }

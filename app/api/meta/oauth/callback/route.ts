@@ -31,13 +31,20 @@ export async function GET(request: Request) {
     }
     const supabase = await createClient(); const { data: { user } } = supabase ? await supabase.auth.getUser() : { data: { user: null } }; if (!supabase || !user) return fail("not_authenticated");
     const { data: member } = await supabase.from("workspace_members").select("workspace_id").eq("user_id", user.id).limit(1).maybeSingle(); if (!member) return fail("workspace_missing");
-    const pages = await new MetaFacebookService(userToken).pages();
+    const facebook = new MetaFacebookService(userToken);
+    const pages = await facebook.pages();
+    // Persist what Meta actually granted. Merely requesting a permission does
+    // not mean the account authorized it, and a successful Page connection can
+    // still lack read access to its posts and insights.
+    const grantedScopes = await facebook.permissions()
+      .then(({ data }) => (data ?? []).filter((permission) => permission.status === "granted").map((permission) => permission.permission))
+      .catch(() => [] as string[]);
     // Page tokens from a long-lived user token are long-lived for 30 days, so
     // token_expires_at is left null. Re-auth is needed only every ~30d or on
     // password/deauth.
     for (const page of pages.data || []) {
-      const { data: pageRow } = await supabase.from("social_accounts").upsert({ workspace_id: member.workspace_id, platform: "facebook", handle: page.name, external_id: page.id, display_name: page.name, encrypted_token: encrypt(page.access_token), token_expires_at: null, scopes: [], status: "active" }, { onConflict: "workspace_id,platform,external_id" }).select("id").single();
-      if (page.instagram_business_account && pageRow) await supabase.from("social_accounts").upsert({ workspace_id: member.workspace_id, platform: "instagram", handle: page.instagram_business_account.username || page.instagram_business_account.id, external_id: page.instagram_business_account.id, display_name: page.instagram_business_account.name || page.instagram_business_account.username || page.name, username: page.instagram_business_account.username, avatar_url: page.instagram_business_account.profile_picture_url, parent_account_id: pageRow.id, encrypted_token: encrypt(page.access_token), token_expires_at: null, scopes: [], status: "active" }, { onConflict: "workspace_id,platform,external_id" });
+      const { data: pageRow } = await supabase.from("social_accounts").upsert({ workspace_id: member.workspace_id, platform: "facebook", handle: page.name, external_id: page.id, display_name: page.name, encrypted_token: encrypt(page.access_token), token_expires_at: null, scopes: grantedScopes, status: "active" }, { onConflict: "workspace_id,platform,external_id" }).select("id").single();
+      if (page.instagram_business_account && pageRow) await supabase.from("social_accounts").upsert({ workspace_id: member.workspace_id, platform: "instagram", handle: page.instagram_business_account.username || page.instagram_business_account.id, external_id: page.instagram_business_account.id, display_name: page.instagram_business_account.name || page.instagram_business_account.username || page.name, username: page.instagram_business_account.username, avatar_url: page.instagram_business_account.profile_picture_url, parent_account_id: pageRow.id, encrypted_token: encrypt(page.access_token), token_expires_at: null, scopes: grantedScopes, status: "active" }, { onConflict: "workspace_id,platform,external_id" });
     }
     const response = NextResponse.redirect(new URL("/dashboard/settings?meta=connected", request.url)); response.cookies.delete("meta_oauth_state"); return response;
   } catch (error) {

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { createHash } from "node:crypto";
 import type { MetaAccount } from "@/lib/meta-api";
 import { graphRequest, ThreadsService } from "@/lib/meta-api";
 import { createClient } from "@/lib/supabase/server";
@@ -54,6 +55,7 @@ type StoredAccount = {
   platform: string;
   parent_account_id: string | null;
   encrypted_token: string | null;
+  scopes: string[];
   created_at: string;
 };
 
@@ -315,6 +317,79 @@ async function writeAnalyticsCache(supabase: SupabaseClient, accountId: string |
   );
 }
 
+type StoredMemory = { category: string; content: string; updated_at: string };
+
+function stableMemoryId(workspaceId: string, category: string) {
+  const hex = createHash("sha256").update(`${workspaceId}:${category}`).digest("hex").slice(0, 32).split("");
+  hex[12] = "5";
+  hex[16] = ((parseInt(hex[16]!, 16) & 0x3) | 0x8).toString(16);
+  const value = hex.join("");
+  return `${value.slice(0, 8)}-${value.slice(8, 12)}-${value.slice(12, 16)}-${value.slice(16, 20)}-${value.slice(20)}`;
+}
+
+async function readWorkspaceMemory(supabase: SupabaseClient, workspaceId: string): Promise<StoredMemory[]> {
+  const { data, error } = await supabase
+    .from("memory")
+    .select("category,content,updated_at")
+    .eq("workspace_id", workspaceId)
+    .order("updated_at", { ascending: false })
+    .limit(50);
+  if (error) {
+    logger.warn("analytics_memory_read_failed", { reason: error.message });
+    return [];
+  }
+  return (data ?? []) as StoredMemory[];
+}
+
+async function saveWorkspaceMemory(
+  supabase: SupabaseClient,
+  workspaceId: string,
+  signals: Array<{ category: string; content: string; confidence: number; source: Record<string, unknown> }>
+) {
+  if (!signals.length) return;
+  const { data: previous, error: readError } = await supabase
+    .from("memory")
+    .select("category,content")
+    .eq("workspace_id", workspaceId)
+    .in("category", signals.map((signal) => signal.category));
+  if (readError) logger.warn("analytics_memory_compare_failed", { reason: readError.message });
+  const oldContent = new Map((previous ?? []).map((row) => [row.category as string, row.content as string]));
+  const changed = signals.filter((signal) => oldContent.get(signal.category) !== signal.content);
+  const observedAt = new Date().toISOString();
+  const { error } = await supabase.from("memory").upsert(
+    signals.map((signal) => ({
+      id: stableMemoryId(workspaceId, signal.category),
+      workspace_id: workspaceId,
+      category: signal.category,
+      content: signal.content,
+      confidence: signal.confidence,
+      source: { ...signal.source, observed_at: observedAt },
+      updated_at: observedAt
+    })),
+    { onConflict: "id" }
+  );
+  if (error) logger.warn("analytics_memory_write_failed", { reason: error.message });
+  if (!error && changed.length) {
+    const { error: notificationError } = await supabase.from("notifications").upsert(
+      changed.map((signal) => ({
+        id: stableMemoryId(workspaceId, `notification:${signal.category}:${signal.content}`),
+        workspace_id: workspaceId,
+        type: "analytics_signal",
+        title: "Audience signal updated",
+        body: signal.content,
+        read_at: null,
+        updated_at: observedAt
+      })),
+      { onConflict: "id", ignoreDuplicates: true }
+    );
+    if (notificationError) logger.warn("analytics_notification_write_failed", { reason: notificationError.message });
+  }
+}
+
+function withStoredMemory(snapshot: AnalyticsSnapshot, rows: StoredMemory[]): AnalyticsSnapshot {
+  return { ...snapshot, memoryItems: rows.map((row) => row.content) };
+}
+
 export async function fetchMetaAnalytics(token?: string, bypassCache = false): Promise<AnalyticsSnapshot> {
   const supabase = await createClient();
   let member: { workspace_id: string } | null = null;
@@ -327,7 +402,7 @@ export async function fetchMetaAnalytics(token?: string, bypassCache = false): P
       if (member) {
         const { data: rows } = await supabase
           .from("social_accounts")
-          .select("id,external_id,display_name,username,avatar_url,platform,parent_account_id,encrypted_token,created_at")
+          .select("id,external_id,display_name,username,avatar_url,platform,parent_account_id,encrypted_token,scopes,created_at")
           .eq("workspace_id", member.workspace_id)
           .eq("status", "active");
         stored = (rows ?? []) as StoredAccount[];
@@ -350,17 +425,23 @@ export async function fetchMetaAnalytics(token?: string, bypassCache = false): P
       logger.warn("analytics_token_decrypt_skipped", { accountId: row.id, platform: row.platform });
     }
   }
-  if (!isTokenConfigured(token) && tokens.size === 0) return emptyAnalytics("Connect Meta to load live analytics.");
+  const savedMemory = supabase && member ? await readWorkspaceMemory(supabase, member.workspace_id) : [];
+  if (!isTokenConfigured(token) && tokens.size === 0) {
+    return withStoredMemory(emptyAnalytics("Connect Meta to load live analytics."), savedMemory);
+  }
 
   const cacheAccountId = supabase && member ? await firstActiveAccountId(supabase, member.workspace_id) : null;
   if (!bypassCache) {
     const cached = await readAnalyticsCache(supabase!, cacheAccountId);
-    if (cached) return { ...cached, cached: true };
+    if (cached) return withStoredMemory({ ...cached, cached: true }, savedMemory);
   }
 
   try {
     const accounts = stored.flatMap(accountFromStored);
     const errors: string[] = [];
+    if (stored.some((row) => row.platform === "facebook" && !row.scopes?.includes("pages_read_engagement"))) {
+      errors.push("This Meta connection has no recorded pages_read_engagement grant. Reconnect Meta and approve Page read access.");
+    }
 
     let threads: ThreadsInsightsResult | null = null;
     if (supabase && member) {
@@ -374,8 +455,8 @@ export async function fetchMetaAnalytics(token?: string, bypassCache = false): P
       const pageToken = tokens.get(row.id)!;
       const instagramChildren = stored.filter((child) => child.platform === "instagram" && child.parent_account_id === row.id && child.external_id);
       const [pageInsights, pagePosts, pageFans, childResults] = await Promise.all([
-        graphData<InsightRow[]>(pageToken, `${row.external_id!}/insights?metric=page_views_total,page_post_engagements&period=day&date_preset=last_28d`).catch((error) => { errors.push(error instanceof Error ? error.message : "Page insights unavailable."); return []; }),
-        graphData<GraphPost[]>(pageToken, `${row.external_id!}/posts?fields=id,message,created_time,permalink_url,shares,likes.summary(true).limit(0),comments.summary(true).limit(0)&limit=25`).catch((error) => { errors.push(error instanceof Error ? error.message : "Page posts unavailable."); return []; }),
+        graphData<InsightRow[]>(pageToken, `${row.external_id!}/insights?metric=page_views_total,page_post_engagements&period=day&date_preset=last_28d`).catch((error) => { errors.push(`Facebook Page insights: ${error instanceof Error ? error.message : "unavailable."}`); return []; }),
+        graphData<GraphPost[]>(pageToken, `${row.external_id!}/posts?fields=id,message,created_time,permalink_url,shares,likes.summary(true).limit(0),comments.summary(true).limit(0)&limit=25`).catch((error) => { errors.push(`Facebook Page posts: ${error instanceof Error ? error.message : "unavailable."}`); return []; }),
         // Profile fields (fan_count, followers_count) return a flat object,
         // not a {data: [...]} envelope — graphData unwraps the envelope, so
         // these must go through graphRequest directly.
@@ -558,10 +639,35 @@ const followers = [
       ...(errors.length ? { error: errors[0] } : {})
     };
 
+    if (supabase && member) {
+      const source = { account_ids: stored.map((row) => row.id), sample_size: posts.length };
+      await saveWorkspaceMemory(supabase, member.workspace_id, [
+        ...(posts.length ? [{
+          category: "content_activity",
+          content: `${posts.length} recent post${posts.length === 1 ? "" : "s"} returned across ${accounts.length} connected account${accounts.length === 1 ? "" : "s"}.`,
+          confidence: 1,
+          source
+        }] : []),
+        ...(topPost ? [{
+          category: "top_post_engagement",
+          content: `Top recent post: ${topPost.likes} likes, ${topPost.comments} comments, and ${topPost.shares} shares (${topPost.accountLabel ?? topPost.platform}).`,
+          confidence: 0.8,
+          source: { ...source, platform: topPost.platform, account: topPost.accountLabel, post_date: topPost.date }
+        }] : []),
+        ...(bestTimes.windows[0] ? [{
+          category: "best_posting_window",
+          content: `Best observed posting window: ${bestTimes.windows[0].label} UTC, based on ${bestTimes.sampleSize} timed posts (${bestTimes.confidence} confidence).`,
+          confidence: bestTimes.confidence === "high" ? 0.9 : bestTimes.confidence === "medium" ? 0.7 : 0.4,
+          source: { ...source, timezone: "UTC", post_count: bestTimes.sampleSize }
+        }] : [])
+      ]);
+      snapshot.memoryItems = (await readWorkspaceMemory(supabase, member.workspace_id)).map((row) => row.content);
+    }
+
     if (supabase) await writeAnalyticsCache(supabase, cacheAccountId, snapshot);
     return snapshot;
   } catch (error) {
     logger.error("meta_analytics_failed", { reason: error instanceof Error ? error.message : "unknown" });
-    return emptyAnalytics(error instanceof Error ? error.message : "Unable to load Meta analytics.");
+    return withStoredMemory(emptyAnalytics(error instanceof Error ? error.message : "Unable to load Meta analytics."), savedMemory);
   }
 }

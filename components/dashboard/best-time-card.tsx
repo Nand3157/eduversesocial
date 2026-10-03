@@ -9,6 +9,8 @@ import { useAnalytics } from "@/components/dashboard/analytics-context";
 import { computeBestTimes, resolveTimezone, type TimedPost } from "@/lib/best-time";
 import { MetaPublisherModal } from "@/components/meta/meta-publisher-modal";
 import type { AnalyticsSnapshot } from "@/lib/meta-analytics";
+import { useDashboardStore } from "@/lib/stores/dashboard-store";
+import { accountStorageKey } from "@/lib/account-storage";
 
 const TZ_STORAGE_KEY = "eduverse:besttime-tz";
 const PLATFORM_STORAGE_KEY = "eduverse:besttime-platform";
@@ -89,39 +91,44 @@ function toPlatformParam(value: string): string | undefined {
 
 export function BestTimeCard() {
   const { data, loading } = useAnalytics();
+  const userEmail = useDashboardStore((state) => state.userEmail);
+  const timezoneStorageKey = accountStorageKey(TZ_STORAGE_KEY, userEmail);
+  const platformStorageKey = accountStorageKey(PLATFORM_STORAGE_KEY, userEmail);
+  const contentStorageKey = accountStorageKey(CONTENT_STORAGE_KEY, userEmail);
   const [timezone, setTimezone] = useState("UTC");
   const [platform, setPlatform] = useState("all");
   const [contentType, setContentType] = useState("all");
-  const [hydrated, setHydrated] = useState(false);
+  const [preferencesLoadedFor, setPreferencesLoadedFor] = useState("");
   const [publisherOpen, setPublisherOpen] = useState(false);
   const [publisherScheduleIso, setPublisherScheduleIso] = useState<string | undefined>(undefined);
 
   // Hydrate persisted prefs after mount to avoid SSR/client mismatch.
   useEffect(() => {
+    setPreferencesLoadedFor("");
     queueMicrotask(() => {
       try {
         const browserTz = browserTimezone();
-        const storedTz = localStorage.getItem(TZ_STORAGE_KEY);
+        const storedTz = localStorage.getItem(timezoneStorageKey);
         setTimezone(resolveTimezone(storedTz || browserTz));
-        const storedPlatform = localStorage.getItem(PLATFORM_STORAGE_KEY);
+        const storedPlatform = localStorage.getItem(platformStorageKey);
         if (storedPlatform) setPlatform(storedPlatform);
-        const storedContent = localStorage.getItem(CONTENT_STORAGE_KEY);
+        const storedContent = localStorage.getItem(contentStorageKey);
         if (storedContent) setContentType(storedContent);
       } catch {
         setTimezone(browserTimezone());
       }
-      setHydrated(true);
+      setPreferencesLoadedFor(timezoneStorageKey);
     });
-  }, []);
+  }, [timezoneStorageKey, platformStorageKey, contentStorageKey]);
 
   useEffect(() => {
-    if (!hydrated) return;
+    if (preferencesLoadedFor !== timezoneStorageKey) return;
     try {
-      localStorage.setItem(TZ_STORAGE_KEY, timezone);
-      localStorage.setItem(PLATFORM_STORAGE_KEY, platform);
-      localStorage.setItem(CONTENT_STORAGE_KEY, contentType);
+      localStorage.setItem(timezoneStorageKey, timezone);
+      localStorage.setItem(platformStorageKey, platform);
+      localStorage.setItem(contentStorageKey, contentType);
     } catch {}
-  }, [timezone, platform, contentType, hydrated]);
+  }, [timezone, platform, contentType, preferencesLoadedFor, timezoneStorageKey, platformStorageKey, contentStorageKey]);
 
   const timezoneOptions = useMemo(() => {
     const browserTz = (() => {

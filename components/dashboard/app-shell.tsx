@@ -63,6 +63,12 @@ export function AppShell({ children, email, profile, initialAnalytics }: { child
   const mobileNavCloseRef = useRef<HTMLButtonElement>(null);
   const mounted = useSyncExternalStore(subscribeNothing, getMounted, getServerMounted);
 
+  useEffect(() => {
+    const openMetaConnect = () => setConnectModalOpen(true);
+    window.addEventListener("eduverse:open-meta-connect", openMetaConnect);
+    return () => window.removeEventListener("eduverse:open-meta-connect", openMetaConnect);
+  }, []);
+
   const navigation = [...baseNavigation.slice(0, 6), reviewNavEntry, ...baseNavigation.slice(6)] as const;
 
   useEffect(() => {

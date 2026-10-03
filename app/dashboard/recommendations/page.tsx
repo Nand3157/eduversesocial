@@ -13,13 +13,18 @@ import { Modal, ModalContent, ModalTitle, ModalDescription } from "@/components/
 import { MetaPublisherModal } from "@/components/meta/meta-publisher-modal";
 import { BestTimeCard } from "@/components/dashboard/lazy-charts";
 import { fadeUp, staggerContainer, staggerItem } from "@/components/motion-variants";
+import { useDashboardStore } from "@/lib/stores/dashboard-store";
+import { accountStorageKey } from "@/lib/account-storage";
 
 type Rec = [string, string, string];
 
 export default function RecommendationsPage() {
   const { data, loading } = useAnalytics();
+  const userEmail = useDashboardStore((state) => state.userEmail);
+  const dismissedStorageKey = accountStorageKey("eduverse:dismissed-recs", userEmail);
   const allRecs = (data?.recommendations ?? []) as Rec[];
   const [dismissed, setDismissed] = useState<string[]>([]);
+  const [dismissedLoadedFor, setDismissedLoadedFor] = useState("");
   const [publisherOpen, setPublisherOpen] = useState(false);
   const [publisherCaption, setPublisherCaption] = useState("");
   const [whyRec, setWhyRec] = useState<Rec | null>(null);
@@ -29,19 +34,25 @@ export default function RecommendationsPage() {
   // initializer would desync server HTML from the first client render.
   useEffect(() => {
     let cancelled = false;
+    setDismissed([]);
+    setDismissedLoadedFor("");
     queueMicrotask(() => {
       if (cancelled) return;
+      let next: string[] = [];
       try {
-        const raw = localStorage.getItem("eduverse:dismissed-recs");
-        if (raw) setDismissed(JSON.parse(raw) as string[]);
+        const raw = localStorage.getItem(dismissedStorageKey);
+        const parsed: unknown = raw ? JSON.parse(raw) : [];
+        if (Array.isArray(parsed) && parsed.every((item) => typeof item === "string")) next = parsed;
       } catch {}
+      setDismissed(next);
+      setDismissedLoadedFor(dismissedStorageKey);
     });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [dismissedStorageKey]);
 
-  useEffect(() => { try { localStorage.setItem("eduverse:dismissed-recs", JSON.stringify(dismissed)); } catch {} }, [dismissed]);
+  useEffect(() => { if (dismissedLoadedFor === dismissedStorageKey) try { localStorage.setItem(dismissedStorageKey, JSON.stringify(dismissed)); } catch {} }, [dismissed, dismissedLoadedFor, dismissedStorageKey]);
 
   const recommendations = allRecs.filter(([t]) => !dismissed.includes(t));
   const dismissedCount = allRecs.length - recommendations.length;

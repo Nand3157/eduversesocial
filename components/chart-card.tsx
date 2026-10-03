@@ -1,7 +1,7 @@
 "use client";
 
 import { Activity } from "lucide-react";
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Line, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useReducedMotion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAnalytics } from "@/components/dashboard/analytics-context";
@@ -35,14 +35,14 @@ export function PostingFrequencyCard() {
   const { data, loading } = useAnalytics();
   const reduceMotion = useReducedMotion();
   const chartData = data?.postingData ?? [];
-  return <Card><CardHeader><CardTitle>Posting frequency</CardTitle><CardDescription>Published posts returned by Meta.</CardDescription></CardHeader><CardContent>{loading || chartData.length === 0 ? <ChartState loading={loading} /> : <div role="img" aria-label={`Bar chart of posting frequency across ${chartData.length} periods.`} className="h-[220px]"><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData}><CartesianGrid stroke="var(--line)" strokeOpacity={0.5} vertical={false} /><XAxis dataKey="label" axisLine={false} tickLine={false} tick={axisTick} /><YAxis hide /><Tooltip contentStyle={tooltipStyle} cursor={{ fill: "var(--accent-soft)" }} /><Bar animationDuration={800} isAnimationActive={!reduceMotion} dataKey="value" fill="var(--accent)" radius={[6, 6, 2, 2]} /></BarChart></ResponsiveContainer></div>}</CardContent></Card>;
+  return <Card><CardHeader><CardTitle>Published posts</CardTitle><CardDescription>Recent posts returned by Meta, split by platform.</CardDescription></CardHeader><CardContent>{loading || chartData.length === 0 ? <ChartState loading={loading} /> : <div role="img" aria-label={`Bar chart of recent posts across ${chartData.length} platforms.`} className="h-[220px]"><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData}><CartesianGrid stroke="var(--line)" strokeOpacity={0.5} vertical={false} /><XAxis dataKey="label" axisLine={false} tickLine={false} tick={axisTick} /><YAxis hide /><Tooltip contentStyle={tooltipStyle} cursor={{ fill: "var(--accent-soft)" }} /><Bar animationDuration={800} isAnimationActive={!reduceMotion} dataKey="value" fill="var(--accent)" radius={[6, 6, 2, 2]} /></BarChart></ResponsiveContainer></div>}</CardContent></Card>;
 }
 
 export function AudienceGrowthCard() {
   const { data, loading } = useAnalytics();
   const reduceMotion = useReducedMotion();
   const chartData = data?.growthData ?? [];
-  return <Card><CardHeader><CardTitle>Audience size</CardTitle><CardDescription>Follower counts returned by linked Instagram accounts.</CardDescription></CardHeader><CardContent>{loading || chartData.length === 0 ? <ChartState loading={loading} message="Meta did not return follower counts for the linked accounts." /> : <div role="img" aria-label={`Line chart of audience size over ${chartData.length} periods.`} className="h-[220px]"><ResponsiveContainer width="100%" height="100%"><LineChart data={chartData}><CartesianGrid stroke="var(--line)" strokeOpacity={0.5} vertical={false} /><XAxis dataKey="label" axisLine={false} tickLine={false} tick={axisTick} /><YAxis hide /><Tooltip contentStyle={tooltipStyle} cursor={{ stroke: "var(--line)" }} /><Line animationDuration={900} isAnimationActive={!reduceMotion} dataKey="followers" dot={{ r: 4, fill: "var(--ok)", strokeWidth: 0 }} stroke="var(--ok)" strokeWidth={2.5} type="monotone" /></LineChart></ResponsiveContainer></div>}</CardContent></Card>;
+  return <Card><CardHeader><CardTitle>Audience size</CardTitle><CardDescription>Latest follower counts returned per connected account.</CardDescription></CardHeader><CardContent>{loading || chartData.length === 0 ? <ChartState loading={loading} message="Meta did not return follower counts for the connected accounts." /> : <div role="img" aria-label={`Bar chart comparing audience size across ${chartData.length} connected accounts.`} className="h-[220px]"><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData}><CartesianGrid stroke="var(--line)" strokeOpacity={0.5} vertical={false} /><XAxis dataKey="label" axisLine={false} tickLine={false} tick={axisTick} /><YAxis hide /><Tooltip contentStyle={tooltipStyle} cursor={{ fill: "var(--accent-soft)" }} /><Bar animationDuration={900} isAnimationActive={!reduceMotion} dataKey="followers" fill="var(--ok)" radius={[6, 6, 2, 2]} /></BarChart></ResponsiveContainer></div>}</CardContent></Card>;
 }
 
 export function SentimentTrendCard() {

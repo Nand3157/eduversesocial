@@ -3,12 +3,10 @@ import { NotificationList, type NotificationRow } from "@/components/dashboard/n
 import { createClient } from "@/lib/supabase/server";
 
 /**
- * Notifications — reads the real `public.notifications` table (RLS-isolated
- * per workspace). No producers write rows yet, so the honest empty state is
- * the normal first-run experience; this page previously rendered a hardcoded
- * fake item list instead of touching the table. Server-rendered like the
- * rest of the dashboard. Row timestamps are computed per row in
- * notification-list.tsx, never hardcoded.
+ * Notifications read real `public.notifications` rows. Analytics writes a
+ * workspace-scoped notification when a saved signal changes; this page stays
+ * empty until the connected accounts return usable data. Timestamps come from
+ * each database row.
  */
 export default async function NotificationsPage() {
   let notifications: NotificationRow[] = [];

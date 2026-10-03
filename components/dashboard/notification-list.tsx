@@ -1,6 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useState } from "react";
+import { Check } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { staggerContainer, staggerItemFast } from "@/components/motion-variants";
 
@@ -26,6 +28,29 @@ function timeAgo(iso: string): string {
 }
 
 export function NotificationList({ notifications, error }: { notifications: NotificationRow[]; error: boolean }) {
+  const [rows, setRows] = useState(notifications);
+  const [updating, setUpdating] = useState<string | null>(null);
+  const [updateError, setUpdateError] = useState<string | null>(null);
+
+  async function markRead(id: string) {
+    if (updating) return;
+    setUpdating(id);
+    setUpdateError(null);
+    try {
+      const response = await fetch("/api/notifications", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ id })
+      });
+      if (!response.ok) throw new Error("Could not mark this notification as read.");
+      setRows((current) => current.map((row) => row.id === id ? { ...row, read_at: new Date().toISOString() } : row));
+    } catch (cause) {
+      setUpdateError(cause instanceof Error ? cause.message : "Could not update notification.");
+    } finally {
+      setUpdating(null);
+    }
+  }
+
   if (error) {
     return (
       <div role="alert" className="rounded-xl border border-danger/30 bg-danger/10 p-4 text-sm text-danger">
@@ -33,7 +58,7 @@ export function NotificationList({ notifications, error }: { notifications: Noti
       </div>
     );
   }
-  if (notifications.length === 0) {
+  if (rows.length === 0) {
     return (
       <div role="status" className="rounded-xl border border-dashed border-borderSoft bg-surface/50 p-8 text-center text-sm leading-relaxed text-mutedText">
         No notifications yet. When something important changes — engagement shifts, completed work, new audience signals —
@@ -42,8 +67,10 @@ export function NotificationList({ notifications, error }: { notifications: Noti
     );
   }
   return (
+    <>
+    {updateError && <p role="alert" className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-xs text-danger">{updateError}</p>}
     <motion.div className="space-y-3" variants={staggerContainer} initial="hidden" animate="show">
-      {notifications.map((notification) => (
+      {rows.map((notification) => (
         <motion.div key={notification.id} variants={staggerItemFast} whileHover={{ y: -2 }}>
           <Card className="transition-shadow duration-300 hover:shadow-glass">
             <CardContent className="flex gap-4 p-5">
@@ -56,10 +83,12 @@ export function NotificationList({ notifications, error }: { notifications: Noti
                   {!notification.read_at && <span className="sr-only"> — unread</span>}
                 </p>
               </div>
+              {!notification.read_at && <button type="button" onClick={() => void markRead(notification.id)} disabled={updating !== null} className="ml-auto inline-flex min-h-[40px] shrink-0 items-center gap-1 rounded-full border border-borderSoft px-3 text-xs font-medium text-mutedText hover:border-primary/40 hover:text-ink focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none disabled:opacity-50"><Check aria-hidden="true" className="h-3.5 w-3.5" />{updating === notification.id ? "Saving…" : "Mark read"}</button>}
             </CardContent>
           </Card>
         </motion.div>
       ))}
     </motion.div>
+    </>
   );
 }

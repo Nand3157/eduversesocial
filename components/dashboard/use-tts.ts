@@ -44,6 +44,14 @@ export function useTts(): UseTts {
   const objectUrlRef = useRef<string | null>(null);
   const playingForRef = useRef<number | null>(null);
   const deviceVoiceRef = useRef(false);
+  // Monotonic token identifying the current playback attempt. Bumped by every
+  // toggle and by stop(), so a fetch or play() that resolves late can tell it
+  // has been superseded instead of hijacking whatever is playing now.
+  const requestRef = useRef(0);
+  // True between "handed the element a blob URL" and "play() settled". An
+  // element error in that window is recoverable — the device-voice fallback is
+  // about to take over — so it must not also raise "Could not play this reply".
+  const recoverableRef = useRef(false);
 
   useEffect(() => {
     const clearPlaybackState = () => {
@@ -54,10 +62,9 @@ export function useTts(): UseTts {
     };
     const onEnded = () => clearPlaybackState();
     const onError = () => {
-      if (playingForRef.current !== null) {
-        setErrorIndex(playingForRef.current);
-        clearPlaybackState();
-      }
+      if (playingForRef.current === null) return;
+      if (!recoverableRef.current) setErrorIndex(playingForRef.current);
+      clearPlaybackState();
     };
     if (unsupported) return;
     const element = window.Audio ? new Audio() : null;
@@ -86,6 +93,8 @@ export function useTts(): UseTts {
   }, [unsupported]);
 
   const stop = useCallback(() => {
+    requestRef.current += 1;
+    recoverableRef.current = false;
     const element = audioRef.current;
     if (element) {
       element.pause();
@@ -153,6 +162,7 @@ export function useTts(): UseTts {
         playDeviceVoice(index, text);
         return;
       }
+      const request = ++requestRef.current;
       setLoadingIndex(index);
       void (async () => {
         try {
@@ -165,16 +175,27 @@ export function useTts(): UseTts {
             throw new Error("Server synthesis unavailable.");
           }
           const blob = await response.blob();
+          if (requestRef.current !== request) return;
           const url = URL.createObjectURL(blob);
           objectUrlRef.current = url;
           element.src = url;
           playingForRef.current = index;
           deviceVoiceRef.current = false;
+          // The element may still refuse this blob (blocked by policy,
+          // unsupported codec); until play() settles that is recoverable, so an
+          // error event must not also surface a playback failure.
+          recoverableRef.current = true;
           await element.play();
+          recoverableRef.current = false;
+          if (requestRef.current !== request) return;
           setLoadingIndex(null);
           setPlayingIndex(index);
         } catch {
+          recoverableRef.current = false;
           setLoadingIndex(null);
+          // Stopped or superseded while the request was in flight — the user
+          // asked for silence, not for the device voice.
+          if (requestRef.current !== request) return;
           playDeviceVoice(index, text);
         }
       })();

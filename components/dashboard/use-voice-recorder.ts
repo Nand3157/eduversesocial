@@ -24,7 +24,10 @@ const MAX_SECONDS = 60;
 
 type AudioContextCtor = new (contextOptions?: AudioContextOptions) => AudioContext;
 
-export function useVoiceRecorder(onClip: (audioDataUrl: string) => void): VoiceRecorder {
+// The raw recorded blob is handed over undecoded: the container format
+// (webm/opus, mp4/aac, ogg) is only meaningful to a decoder, and the browser
+// is the only runtime that has one — see lib/audio/pcm-clip.ts.
+export function useVoiceRecorder(onClip: (clip: Blob) => void): VoiceRecorder {
   const [state, setState] = useState<VoiceRecorderState>("idle");
   const [seconds, setSeconds] = useState(0);
 
@@ -130,9 +133,7 @@ export function useVoiceRecorder(onClip: (audioDataUrl: string) => void): VoiceR
         setState("idle");
         setSeconds(0);
         if (wasCancelled || blob.size === 0) return;
-        const reader = new FileReader();
-        reader.onload = () => onClipRef.current(reader.result as string);
-        reader.readAsDataURL(blob);
+        onClipRef.current(blob);
       };
 
       recorder.start();

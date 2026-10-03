@@ -2,19 +2,23 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
-import { AudioDecodeError, decodeToMonoPcm16Base64, normalizeAudioMimeType, transcribeAudio, TranscribeConfigError, VOICE_LANGUAGES } from "@/lib/ai/voice-input";
+import { TranscribeConfigError, transcribeAudio, VOICE_LANGUAGES } from "@/lib/ai/voice-input";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Audio arrives as a base64 data URL from MediaRecorder. 6 MB of base64 is
-// roughly 4.5 MB of audio — far more than a voice message needs (the model
-// supports up to 1 hour), but small enough that a malicious client cannot
-// burn unbounded bandwidth or provider spend.
-const MAX_AUDIO_BASE64_LENGTH = 6_000_000;
+// Audio arrives as raw 16-bit LE mono PCM, base64-encoded and already decoded
+// by the browser (lib/audio/pcm-clip.ts). 60 s at the client's 16 kHz is
+// ~1.9 MB of PCM → ~2.6 MB of base64; the cap leaves headroom while still
+// stopping a malicious client from burning unbounded bandwidth or provider
+// spend.
+const MAX_AUDIO_BASE64_LENGTH = 3_000_000;
+const MIN_SAMPLE_RATE = 8_000;
+const MAX_SAMPLE_RATE = 96_000;
 
 const requestSchema = z.object({
-  audio: z.string().startsWith("data:audio/").max(MAX_AUDIO_BASE64_LENGTH),
+  audio: z.string().regex(/^[A-Za-z0-9+/]+={0,2}$/).max(MAX_AUDIO_BASE64_LENGTH),
+  sampleRate: z.number().int().min(MIN_SAMPLE_RATE).max(MAX_SAMPLE_RATE),
   // Kept for UI compatibility; the model currently auto-detects (see
   // lib/ai/voice-input.ts for why hints cannot be sent).
   languageCode: z.string().trim().max(35).optional()
@@ -48,24 +52,13 @@ export async function POST(request: Request) {
   const parsed = requestSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return Response.json({ error: "Invalid transcription request." }, { status: 400 });
 
-  const match = parsed.data.audio.match(/^data:(audio\/[^;]+);base64,([\s\S]+)$/);
-  if (!match) return Response.json({ error: "Unsupported audio payload." }, { status: 400 });
-  const [, rawMime, base64] = match;
-  if (!base64) return Response.json({ error: "The recording is empty." }, { status: 400 });
-
-  const mimeType = normalizeAudioMimeType(rawMime);
-  // Copy out of the Node Buffer pool into a standalone ArrayBuffer —
-  // decodeAudioData detaches its input, which must own its bytes.
-  const bytes = Buffer.from(base64, "base64");
-  const arrayBuffer = new ArrayBuffer(bytes.byteLength);
-  new Uint8Array(arrayBuffer).set(bytes);
+  const { audio, sampleRate } = parsed.data;
 
   try {
     // The API only accepts inline audio as raw 16-bit PCM (audio/l16) with an
     // explicit sample rate — container bytes (webm/mp3/wav) are rejected — so
-    // decode here and send PCM.
-    const { data, sampleRate } = await decodeToMonoPcm16Base64({ arrayBuffer, containerMime: mimeType });
-    const { text } = await transcribeAudio({ audioBase64: data, sampleRate });
+    // the browser decodes to PCM before it is sent (lib/audio/pcm-clip.ts).
+    const { text } = await transcribeAudio({ audioBase64: audio, sampleRate });
     if (!text) {
       return Response.json({ error: "No speech was detected in the recording. Try again a little closer to the mic." }, { status: 422 });
     }
@@ -73,9 +66,6 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof TranscribeConfigError) {
       return Response.json({ error: error.message }, { status: 503 });
-    }
-    if (error instanceof AudioDecodeError) {
-      return Response.json({ error: "Could not read the recording. Try recording again." }, { status: 422 });
     }
     logger.error("voice_transcribe_failed", {
       userId: user.id,

@@ -19,6 +19,10 @@ const messageSchema = z.object({
 const requestSchema = z.object({ conversationId: z.string().uuid().optional(), messages: z.array(messageSchema).min(1).max(20) });
 type ChatMessage = z.infer<typeof messageSchema>;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash";
+// chat_messages.content_check caps a row at 20 000 characters. maxOutputTokens
+// is 4096, which is ~16k characters of prose, so replies are clamped rather
+// than risking a constraint violation that would drop the answer from history.
+const MAX_PERSISTED_CHARACTERS = 20_000;
 
 type Provider = "gemini";
 
@@ -91,6 +95,7 @@ async function getLiveWorkspaceContext(userId?: string) {
         accounts: analytics.accounts.map((account) => ({ name: account.name, platform: account.platform, handle: account.handle, followers: account.followers })),
         metrics: analytics.metrics,
         recentPosts: analytics.recentPosts,
+        memory: analytics.memoryItems,
         bestTimes: analytics.bestTimes
           ? {
               timezone: analytics.bestTimes.timezone,
@@ -136,7 +141,8 @@ export async function GET(request: Request) {
     if (!user) return Response.json({ error: "Unauthorized." }, { status: 401 });
     const workspaceId = await getWorkspaceId(supabase, user.id);
     if (!workspaceId) return Response.json({ conversations: [], messages: [] });
-    const { data: conversations } = await supabase.from("chat_conversations").select("id,title,updated_at").eq("workspace_id", workspaceId).order("updated_at", { ascending: false }).limit(20);
+    const { data: conversations, error: conversationsError } = await supabase.from("chat_conversations").select("id,title,updated_at").eq("workspace_id", workspaceId).order("updated_at", { ascending: false }).limit(20);
+    if (conversationsError) throw conversationsError;
     if (!conversations?.length) return Response.json({ conversations: [], messages: [] }, { headers: { "Cache-Control": "no-store" } });
 
     const url = new URL(request.url);
@@ -149,11 +155,12 @@ export async function GET(request: Request) {
     const conversationId = url.searchParams.get("conversationId");
     const target = conversationId ? conversations.find((conversation) => conversation.id === conversationId) : conversations[0];
     if (!target) return Response.json({ error: "Conversation not found." }, { status: 404 });
-    const { data: messages } = await supabase.from("chat_messages").select("role,content,image").eq("conversation_id", target.id).order("created_at", { ascending: true }).limit(50);
+    const { data: messages, error: messagesError } = await supabase.from("chat_messages").select("role,content,image").eq("conversation_id", target.id).order("created_at", { ascending: true }).limit(50);
+    if (messagesError) throw messagesError;
     return Response.json({ conversations, conversationId: target.id, messages: messages ?? [] }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     logger.error("chat_history_load_failed", { reason: error instanceof Error ? error.message : "unknown" });
-    return Response.json({ conversations: [], messages: [] });
+    return Response.json({ error: "Chat history is temporarily unavailable." }, { status: 503, headers: { "Cache-Control": "no-store" } });
   }
 }
 
@@ -179,7 +186,8 @@ export async function POST(request: Request) {
     if (!workspaceId) persistenceUnavailable = true;
     else try {
       conversationId = await getOrCreateConversation(supabase, workspaceId, user.id, parsed.data.conversationId, latest.content);
-      await supabase.from("chat_messages").insert({ conversation_id: conversationId, role: "user", content: latest.content, image: latest.image ?? null });
+      const { error: messageError } = await supabase.from("chat_messages").insert({ conversation_id: conversationId, role: "user", content: latest.content, image: latest.image ?? null });
+      if (messageError) throw messageError;
     } catch (error) {
       logger.warn("chat_persistence_unavailable", { userId: user.id, reason: error instanceof Error ? error.message : "unknown" });
       conversationId = undefined;
@@ -199,8 +207,10 @@ export async function POST(request: Request) {
         controller.enqueue(encoder.encode(safeAnswer));
         if (conversationId) {
           try {
-            await supabase.from("chat_messages").insert({ conversation_id: conversationId, role: "assistant", content: safeAnswer });
-            await supabase.from("chat_conversations").update({ updated_at: new Date().toISOString() }).eq("id", conversationId);
+            const { error: messageError } = await supabase.from("chat_messages").insert({ conversation_id: conversationId, role: "assistant", content: safeAnswer });
+            if (messageError) throw messageError;
+            const { error: conversationError } = await supabase.from("chat_conversations").update({ updated_at: new Date().toISOString() }).eq("id", conversationId);
+            if (conversationError) throw conversationError;
           } catch (e) {
             logger.warn("chat_safe_answer_persist_failed", { conversationId, reason: e instanceof Error ? e.message : "unknown" });
           }
@@ -245,8 +255,10 @@ export async function POST(request: Request) {
         }
         if (conversationId && answer.trim()) {
           try {
-            await supabase.from("chat_messages").insert({ conversation_id: conversationId, role: "assistant", content: answer.trim() });
-            await supabase.from("chat_conversations").update({ updated_at: new Date().toISOString() }).eq("id", conversationId);
+            const { error: messageError } = await supabase.from("chat_messages").insert({ conversation_id: conversationId, role: "assistant", content: answer.trim().slice(0, MAX_PERSISTED_CHARACTERS) });
+            if (messageError) throw messageError;
+            const { error: conversationError } = await supabase.from("chat_conversations").update({ updated_at: new Date().toISOString() }).eq("id", conversationId);
+            if (conversationError) throw conversationError;
           } catch (error) {
             logger.warn("chat_answer_persist_failed", { conversationId, reason: error instanceof Error ? error.message : "unknown" });
           }

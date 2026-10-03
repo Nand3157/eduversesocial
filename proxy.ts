@@ -9,7 +9,7 @@ import { VARY_VALUE, isMarkdownNegotiable, wantsMarkdown } from "@/lib/agentic/m
  * older browsers fall back to it. Dev skips CSP entirely (Turbopack needs
  * 'unsafe-eval', matching the previous config where CSP was prod-only).
  */
-function contentSecurityPolicy(nonce: string) {
+export function contentSecurityPolicy(nonce: string) {
   return [
     "default-src 'self'",
     "base-uri 'self'",
@@ -19,6 +19,11 @@ function contentSecurityPolicy(nonce: string) {
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-inline'`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https://graph.facebook.com https://graph.threads.net https://*.fbcdn.net https://*.cdninstagram.com https://lookaside.fbsbx.com",
+    // Read-aloud replies are synthesised to a WAV and played from a blob: URL
+    // created with URL.createObjectURL. Without an explicit media-src this
+    // falls back to default-src 'self', which does not cover blob:, so every
+    // clip is blocked and the Listen button reports a playback error.
+    "media-src 'self' blob:",
     "font-src 'self' data:",
     "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://graph.facebook.com https://graph.threads.net https://threads.net",
     "upgrade-insecure-requests"
@@ -62,21 +67,24 @@ export async function proxy(request: NextRequest) {
     requestHeaders.set("Content-Security-Policy", csp);
   }
 
-  const { response, user } = await updateSession(request, requestHeaders);
-  if (request.nextUrl.pathname.startsWith("/dashboard") && !user) {
+  const pathname = request.nextUrl.pathname;
+  const isDashboardRoute = pathname === "/dashboard" || pathname.startsWith("/dashboard/");
+  // Keep the global proxy for CSP and markdown negotiation, but avoid touching
+  // Supabase on public pages. Auth actions and API handlers manage their own
+  // cookies and authorization checks.
+  const { response, user } = isDashboardRoute
+    ? await updateSession(request, requestHeaders)
+    : { response: NextResponse.next({ request: { headers: requestHeaders ?? request.headers } }), user: null };
+
+  if (isDashboardRoute && !user) {
     const loginUrl = new URL("/login", request.url);
     // Preserve the full path AND query string (e.g. ?meta=connected toast
     // params) so the user returns exactly where they were after signing in.
     loginUrl.searchParams.set("next", request.nextUrl.pathname + request.nextUrl.search);
     return mergeVary(NextResponse.redirect(loginUrl));
   }
-  // Email verification gate: signed-in but unverified users must verify
-  // before accessing the app. Supabase may issue a session before
-  // confirmation depending on project settings; the app enforces it here.
-  if (request.nextUrl.pathname.startsWith("/dashboard") && user && !user.email_confirmed_at) {
-    const verifyUrl = new URL("/verify-email", request.url);
-    return mergeVary(NextResponse.redirect(verifyUrl));
-  }
+  // The dashboard server layout checks the current user and email verification
+  // before rendering protected content.
   if (csp) response.headers.set("Content-Security-Policy", csp);
   return mergeVary(response);
 }

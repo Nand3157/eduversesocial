@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, Check, Cloud, Code2, Copy, Download, ExternalLink, Palette, Send, Zap } from "lucide-react";
 import { useAnalytics } from "@/components/dashboard/analytics-context";
@@ -8,31 +8,28 @@ import { ExportActions } from "@/components/dashboard/export-actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { downloadContentCsv, downloadSnapshotCsv } from "@/lib/report-export";
-
-const subscribeToStorage = (callback: () => void) => {
-  if (typeof window === "undefined") return () => undefined;
-  window.addEventListener("storage", callback);
-  return () => window.removeEventListener("storage", callback);
-};
-
-const getStoredZapierUrl = () => {
-  try { return localStorage.getItem("eduverse:zapier-webhook-url") || ""; } catch { return ""; }
-};
-
-const getServerZapierUrl = () => "";
+import { useDashboardStore } from "@/lib/stores/dashboard-store";
+import { accountStorageKey } from "@/lib/account-storage";
 
 export function IntegrationCenter() {
   const { data } = useAnalytics();
+  const userEmail = useDashboardStore((state) => state.userEmail);
+  const zapierStorageKey = accountStorageKey("eduverse:zapier-webhook-url", userEmail);
   const apiUrl = "/api/v1";
-  const storedZapierUrl = useSyncExternalStore(subscribeToStorage, getStoredZapierUrl, getServerZapierUrl);
-  const [zapierDraft, setZapierDraft] = useState<string | null>(null);
-  const zapierUrl = zapierDraft ?? storedZapierUrl;
+  const [zapierUrl, setZapierUrl] = useState("");
   const [zapierMessage, setZapierMessage] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
+  useEffect(() => {
+    setZapierUrl("");
+    queueMicrotask(() => {
+      try { setZapierUrl(localStorage.getItem(zapierStorageKey) || ""); } catch {}
+    });
+  }, [zapierStorageKey]);
+
   const saveZapierUrl = (value: string) => {
-    setZapierDraft(value);
-    try { localStorage.setItem("eduverse:zapier-webhook-url", value); } catch {}
+    setZapierUrl(value);
+    try { localStorage.setItem(zapierStorageKey, value); } catch {}
   };
 
   const sendToZapier = async () => {

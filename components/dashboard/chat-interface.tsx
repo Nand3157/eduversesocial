@@ -1,7 +1,7 @@
 "use client";
 
 import React, { FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
-import { Bot, ChevronDown, CloudOff, ImageIcon, Mic, Send, Sparkles, Cpu, Globe, Loader2, Square, Volume2, X } from "lucide-react";
+import { Bot, ChevronDown, CloudOff, ImageIcon, Mic, Send, Sparkles, Cpu, Globe, Loader2, Square, Volume2, VolumeX, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,9 @@ import { useAnalytics } from "@/components/dashboard/analytics-context";
 import { useVoiceRecorder } from "@/components/dashboard/use-voice-recorder";
 import { useTts } from "@/components/dashboard/use-tts";
 import { VOICE_LANGUAGES } from "@/lib/ai/voice-input";
+import { decodeClipToPcm } from "@/lib/audio/pcm-clip";
+import { useDashboardStore } from "@/lib/stores/dashboard-store";
+import { accountStorageKey } from "@/lib/account-storage";
 
 type Message = {
   role: "assistant" | "user";
@@ -19,6 +22,13 @@ type Message = {
 };
 
 type Conversation = { id: string; title: string; updated_at: string };
+
+// Identity of the latest assistant message for voice-mode bookkeeping: index
+// plus cheap content fingerprint, so a re-render of the same reply never
+// re-triggers speech while a genuinely new reply always does.
+function voiceSignature(index: number, content: string) {
+  return `${index}:${content.length}:${content.slice(-40)}`;
+}
 
 function timeAgo(iso: string) {
   const minutes = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
@@ -241,6 +251,8 @@ function ConversationItems({
 export function ChatInterface() {
   const reduceMotion = useReducedMotion();
   const { data: analytics } = useAnalytics();
+  const userEmail = useDashboardStore((state) => state.userEmail);
+  const voiceModeStorageKey = accountStorageKey("eduverse:voice-mode", userEmail);
   const [messages, setMessages] = useState<Message[]>([welcome]);
   const [conversationId, setConversationId] = useState<string>();
   const [input, setInput] = useState("");
@@ -265,14 +277,18 @@ export function ChatInterface() {
   const [transcribing, setTranscribing] = useState(false);
   const [voiceError, setVoiceError] = useState<string | null>(null);
 
-  const transcribeClip = async (audioDataUrl: string) => {
+  const transcribeClip = async (clip: Blob) => {
     setTranscribing(true);
     setVoiceError(null);
     try {
+      // Decoded here, not on the server: Node has no Web Audio API, so a
+      // webm/opus or mp4/aac recording could never be turned into the PCM the
+      // transcription endpoint requires.
+      const pcm = await decodeClipToPcm(clip);
       const response = await fetch("/api/ai/transcribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ audio: audioDataUrl, languageCode })
+        body: JSON.stringify({ audio: pcm.base64, sampleRate: pcm.sampleRate, languageCode })
       });
       const payload = await response.json().catch(() => null);
       if (!response.ok) {
@@ -296,6 +312,53 @@ export function ChatInterface() {
   // Read-aloud playback for assistant replies (Gemini 3.8 Flash-Lite TTS via
   // /api/ai/tts). One clip at a time; switching conversations stops playback.
   const tts = useTts();
+  const { toggle: ttsToggle } = tts;
+
+  // Voice mode: every new assistant reply is read aloud as it finishes —
+  // dictate with the mic, send, and just listen. Persists across visits.
+  const [voiceMode, setVoiceMode] = useState(false);
+  useEffect(() => {
+    try { setVoiceMode(window.localStorage.getItem(voiceModeStorageKey) === "1"); }
+    catch { setVoiceMode(false); }
+  }, [voiceModeStorageKey]);
+  // Signature of the last assistant message voice mode has handled (or the
+  // baseline captured when the mode was enabled, so existing history is
+  // never read aloud retroactively).
+  const voiceSpokenRef = useRef("");
+
+  const toggleVoiceMode = () => {
+    const next = !voiceMode;
+    setVoiceMode(next);
+    try {
+      window.localStorage.setItem(voiceModeStorageKey, next ? "1" : "0");
+    } catch {
+      // Storage can be unavailable (private mode); the toggle still works
+      // for this session.
+    }
+    if (next) {
+      const last = messages.at(-1);
+      voiceSpokenRef.current = last?.role === "assistant" ? voiceSignature(messages.length - 1, last.content) : "";
+    } else {
+      tts.stop();
+    }
+  };
+
+  // Auto-read fires only on a thinking → done transition, so restored
+  // history and stream render ticks never trigger speech.
+  const prevThinkingRef = useRef(false);
+  useEffect(() => {
+    const wasThinking = prevThinkingRef.current;
+    prevThinkingRef.current = thinking;
+    // Fire only when a reply generated in this session just finished; on
+    // mount (wasThinking=false) restored history must stay silent.
+    if (!voiceMode || !wasThinking || thinking) return;
+    const last = messages.at(-1);
+    if (!last || last.role !== "assistant" || !last.content) return;
+    const signature = voiceSignature(messages.length - 1, last.content);
+    if (voiceSpokenRef.current === signature) return;
+    voiceSpokenRef.current = signature;
+    ttsToggle(messages.length - 1, last.content);
+  }, [voiceMode, thinking, messages, ttsToggle]);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -601,6 +664,9 @@ export function ChatInterface() {
             <li>
               <strong className="text-ink">Listen</strong> — hear any reply read aloud with Gemini 3.8 Flash-Lite TTS
             </li>
+            <li>
+              <strong className="text-ink">Voice mode</strong> — new replies are read aloud automatically; combine with the mic for a hands-free loop
+            </li>
           </ul>
         </div>
       </aside>
@@ -619,9 +685,25 @@ export function ChatInterface() {
                 <p className="text-xs text-success">{activeProvider} · memory-aware</p>
               </div>
             </div>
-            <Badge variant="primary" className="hidden sm:inline-flex">
-              {activeProvider}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={toggleVoiceMode}
+                aria-pressed={voiceMode}
+                aria-label={voiceMode ? "Turn voice mode off" : "Turn voice mode on — replies are read aloud automatically"}
+                title={voiceMode ? "Voice mode is on — replies play automatically" : "Voice mode off"}
+                className={`grid h-9 w-9 shrink-0 touch-manipulation place-items-center rounded-full border transition focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none ${
+                  voiceMode
+                    ? "border-transparent bg-primary text-background hover:bg-primary/90"
+                    : "border-borderSoft text-mutedText hover:border-primary hover:text-primary"
+                }`}
+              >
+                {voiceMode ? <Volume2 aria-hidden="true" className="h-4 w-4" /> : <VolumeX aria-hidden="true" className="h-4 w-4" />}
+              </button>
+              <Badge variant="primary" className="hidden sm:inline-flex">
+                {activeProvider}
+              </Badge>
+            </div>
           </div>
         </div>
 

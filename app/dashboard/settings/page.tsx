@@ -23,6 +23,7 @@ import { MetaConnectModal } from "@/components/meta/meta-connect-modal";
 import type { MetaAccount } from "@/lib/meta-api";
 
 import { useDashboardStore } from "@/lib/stores/dashboard-store";
+import { accountStorageKey } from "@/lib/account-storage";
 
 const SETTINGS_INPUT =
   "mt-1.5 h-10 w-full rounded-xl border border-borderSoft bg-surface px-3 text-sm outline-none transition focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 dark:border-borderSoft dark:bg-surface/[0.04]";
@@ -32,6 +33,9 @@ const SETTINGS_TEXTAREA =
 export default function SettingsPage() {
   const router = useRouter();
   const { userName, userRole, userEmail, userBio, setProfile } = useDashboardStore();
+  const teamStorageKey = accountStorageKey("eduverse:team-members", userEmail);
+  const notificationStorageKey = accountStorageKey("eduverse:notification-preferences", userEmail);
+  const csvStorageKey = accountStorageKey("eduverse:csv-import", userEmail);
 
   // Local modal form state
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -80,11 +84,30 @@ export default function SettingsPage() {
     aiDigest: true,
     milestones: false
   });
+  const [notificationsLoadedFor, setNotificationsLoadedFor] = useState("");
+
+  useEffect(() => {
+    setNotificationsLoadedFor("");
+    queueMicrotask(() => {
+      let saved = { weeklyReports: true, audienceSpikes: true, aiDigest: true, milestones: false };
+      try {
+        const parsed: unknown = JSON.parse(localStorage.getItem(notificationStorageKey) ?? "null");
+        if (parsed && typeof parsed === "object") saved = { ...saved, ...parsed as Partial<typeof saved> };
+      } catch {}
+      setNotifications(saved);
+      setNotificationsLoadedFor(notificationStorageKey);
+    });
+  }, [notificationStorageKey]);
+
+  useEffect(() => {
+    if (notificationsLoadedFor !== notificationStorageKey) return;
+    try { localStorage.setItem(notificationStorageKey, JSON.stringify(notifications)); } catch {}
+  }, [notifications, notificationsLoadedFor, notificationStorageKey]);
 
     // Access state
   const [isAccessOpen, setIsAccessOpen] = useState(false);
   const [teamMembers, setTeamMembers] = useState<Array<{ name: string; email: string; role: string }>>([{ name: userName, email: userEmail, role: "Owner" }]);
-  const [membersHydrated, setMembersHydrated] = useState(false);
+  const [membersLoadedFor, setMembersLoadedFor] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("Member");
   const [inviteError, setInviteError] = useState("");
@@ -94,27 +117,29 @@ export default function SettingsPage() {
   // client render agree (avoids a hydration mismatch when rows were persisted).
   useEffect(() => {
     let cancelled = false;
+    setMembersLoadedFor("");
+    setTeamMembers([{ name: userName, email: userEmail, role: "Owner" }]);
     queueMicrotask(() => {
       if (cancelled) return;
       try {
-        const raw = localStorage.getItem("eduverse:team-members");
+        const raw = localStorage.getItem(teamStorageKey);
         if (raw) {
           const parsed = JSON.parse(raw) as Array<{ name: string; email: string; role: string }>;
           if (Array.isArray(parsed) && parsed.length) setTeamMembers(parsed);
         }
       } catch {}
-      setMembersHydrated(true);
+      setMembersLoadedFor(teamStorageKey);
     });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [teamStorageKey]);
 
   // Persist team members whenever they change (only once hydrated)
   useEffect(() => {
-    if (!membersHydrated) return;
-    try { localStorage.setItem("eduverse:team-members", JSON.stringify(teamMembers)); } catch {}
-  }, [teamMembers, membersHydrated]);
+    if (membersLoadedFor !== teamStorageKey) return;
+    try { localStorage.setItem(teamStorageKey, JSON.stringify(teamMembers)); } catch {}
+  }, [teamMembers, membersLoadedFor, teamStorageKey]);
 
   // Keep owner row in sync when profile loads
   const [syncedProfile, setSyncedProfile] = useState({ name: userName, email: userEmail });
@@ -292,8 +317,9 @@ export default function SettingsPage() {
     try {
       // Clear local artifacts first so UI reflects deletion even if server is slow
       try {
-        localStorage.removeItem("eduverse:team-members");
-        localStorage.removeItem("eduverse:csv-import");
+        localStorage.removeItem(teamStorageKey);
+        localStorage.removeItem(notificationStorageKey);
+        localStorage.removeItem(csvStorageKey);
         localStorage.removeItem("eduverse-dashboard-store");
         localStorage.removeItem("theme");
       } catch {}

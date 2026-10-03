@@ -75,6 +75,10 @@ export class MetaFacebookService {
     );
   }
 
+  permissions() {
+    return graphRequest<{ data: Array<{ permission: string; status: string }> }>("facebook", "me/permissions", this.token);
+  }
+
   /**
    * Publishes to a Page. Images use the /photos endpoint (they become Page photo
    * posts); everything else goes through /feed. Meta must return the post id.

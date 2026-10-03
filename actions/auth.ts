@@ -65,7 +65,7 @@ function isCommonPassword(v: string): boolean {
 }
 
 // HaveIBeenPwned k-anonymity check — SHA-1, send 5-char prefix, never full password/hash
-async function isPwnedPassword(password: string): Promise<boolean> {
+async function isPwnedPassword(password: string): Promise<boolean | null> {
   // Skip in test or when explicitly disabled
   if (process.env.DISABLE_PWNED_CHECK === "1") return false;
   try {
@@ -79,14 +79,14 @@ async function isPwnedPassword(password: string): Promise<boolean> {
     });
     if (!res.ok) {
       logger.warn("pwned_check_unavailable", { status: res.status });
-      return false; // fail-open so HIBP downtime doesn't block signup
+      return null;
     }
     const body = await res.text();
     // Body is newline-delimited Suffix:count ; padding lines may be present
     return body.split("\n").some((line) => line.split(":")[0]?.trim().toUpperCase() === suffix);
   } catch (e) {
     logger.warn("pwned_check_failed", { reason: e instanceof Error ? e.message : "unknown" });
-    return false;
+    return null;
   }
 }
 export type AuthResult = { error?: string; message?: string };
@@ -150,7 +150,11 @@ export async function signUp(_: AuthResult, formData: FormData): Promise<AuthRes
     return { error: RATE_LIMITED };
   }
   // Breached-password check (HaveIBeenPwned k-anonymity) — in-code, not just dashboard toggle
-  if (await isPwnedPassword(parsed.data.password)) {
+  const pwnedPassword = await isPwnedPassword(parsed.data.password);
+  if (pwnedPassword === null) {
+    return { error: "Password safety checks are temporarily unavailable. Please try again shortly." };
+  }
+  if (pwnedPassword) {
     return { error: "This password appeared in a data breach — choose a different one. See haveibeenpwned.com/Passwords" };
   }
   const name = nameSchema.safeParse(formData.get("name") ?? undefined);
@@ -194,7 +198,11 @@ export async function updatePassword(_: AuthResult, formData: FormData): Promise
   if (!password.success) return { error: password.error.issues[0]?.message };
   const confirm = String(formData.get("confirmPassword") ?? "");
   if (confirm && confirm !== password.data) return { error: "Passwords do not match" };
-  if (await isPwnedPassword(password.data)) {
+  const pwnedPassword = await isPwnedPassword(password.data);
+  if (pwnedPassword === null) {
+    return { error: "Password safety checks are temporarily unavailable. Please try again shortly." };
+  }
+  if (pwnedPassword) {
     return { error: "This password appeared in a data breach — choose a different one. See haveibeenpwned.com/Passwords" };
   }
   const supabase = await createClient();

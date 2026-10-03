@@ -6,6 +6,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAnalytics } from "@/components/dashboard/analytics-context";
+import { useDashboardStore } from "@/lib/stores/dashboard-store";
+import { accountStorageKey } from "@/lib/account-storage";
 
 const statusVariant: Record<string, "primary" | "success" | "warning" | "default"> = {
   "High intent": "primary",
@@ -35,6 +37,8 @@ function readCachedRows(payload: unknown): CsvRow[] {
 
 export function PostTable({ csvRows }: { csvRows?: CsvRow[] }) {
   const { data, loading } = useAnalytics();
+  const userEmail = useDashboardStore((state) => state.userEmail);
+  const csvCacheKey = accountStorageKey(CSV_CACHE_KEY, userEmail);
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<"post" | "likes">("post");
   const [page, setPage] = useState(1);
@@ -49,7 +53,7 @@ export function PostTable({ csvRows }: { csvRows?: CsvRow[] }) {
   useEffect(() => {
     queueMicrotask(() => {
       try {
-        const raw = localStorage.getItem(CSV_CACHE_KEY);
+        const raw = localStorage.getItem(csvCacheKey);
         // Scoped read: an active `csvRows` selection always wins — the persisted
         // cache is only consulted when nothing is selected, and only well-formed
         // rows within the cap are accepted.
@@ -69,7 +73,7 @@ export function PostTable({ csvRows }: { csvRows?: CsvRow[] }) {
     };
     window.addEventListener("eduverse:csv-imported", handler as EventListener);
     return () => window.removeEventListener("eduverse:csv-imported", handler as EventListener);
-  }, [csvRows]);
+  }, [csvRows, csvCacheKey]);
 
   const filtered = useMemo(() => {
     const recentPosts = data?.recentPosts ?? [];
@@ -147,7 +151,7 @@ export function PostTable({ csvRows }: { csvRows?: CsvRow[] }) {
                 return;
               }
               setLocalCsvRows([]);
-              try { localStorage.removeItem(CSV_CACHE_KEY); } catch {}
+              try { localStorage.removeItem(csvCacheKey); } catch {}
               setConfirmClear(false);
             }}
             onBlur={() => setConfirmClear(false)}
@@ -158,7 +162,15 @@ export function PostTable({ csvRows }: { csvRows?: CsvRow[] }) {
         </div>
       )}
 
-      {loading ? <div role="status" className="rounded-xl border border-dashed border-borderSoft bg-surface/50 p-8 text-center text-xs text-mutedText">Loading live Meta posts…</div> : filtered.length === 0 ? <div className="rounded-xl border border-dashed border-borderSoft bg-surface/50 p-8 text-center text-xs leading-relaxed text-mutedText">No live Meta posts returned yet. Connect a Meta account with post read permissions to populate this library.</div> : <>
+      {loading ? <div role="status" className="rounded-xl border border-dashed border-borderSoft bg-surface/50 p-8 text-center text-xs text-mutedText">Loading live Meta posts…</div> : filtered.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-borderSoft bg-surface/50 p-8 text-center text-xs leading-relaxed text-mutedText">
+          <p>{data?.error ? "Meta could not return posts:" : "No live Meta posts returned yet."}</p>
+          {data?.error && <p role="alert" className="mt-2 text-warning">{data.error}</p>}
+          <button type="button" className="mt-3 font-medium text-primary underline underline-offset-4" onClick={() => window.location.assign(new URL("/api/meta/oauth", window.location.href))}>
+            {data?.accounts?.length ? "Reconnect Meta and approve Page read access" : "Connect Meta"}
+          </button>
+        </div>
+      ) : <>
         {/* Desktop table */}
         <div className="hidden overflow-x-auto md:block">
           <table className="w-full min-w-[800px] border-separate border-spacing-y-2 text-left text-sm">
@@ -182,7 +194,7 @@ export function PostTable({ csvRows }: { csvRows?: CsvRow[] }) {
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
                   >
-                    <td className="sticky left-0 z-10 rounded-l-xl bg-surface px-3 py-3 font-medium text-ink shadow-[2px_0_4px_rgba(0,0,0,0.04)]">{post.platform}</td>
+                    <td className="sticky left-0 z-10 rounded-l-xl bg-surface px-3 py-3 font-medium text-ink shadow-[2px_0_4px_rgba(0,0,0,0.04)]"><span>{post.platform}</span>{"accountLabel" in post && post.accountLabel && <span className="mt-1 block max-w-32 truncate text-[10px] font-normal text-faintText" title={post.accountLabel}>{post.accountLabel}</span>}</td>
                     <td className="max-w-[280px] truncate px-3 py-3 text-ink" title={post.post}>{post.post}</td>
                     <td className="px-3 py-3 tabular-nums">{post.date}</td>
                     <td className="px-3 py-3 tabular-nums">{post.likes}</td>
@@ -214,6 +226,7 @@ export function PostTable({ csvRows }: { csvRows?: CsvRow[] }) {
                   <span className="rounded-full bg-ink px-2.5 py-1 mono text-[10px] font-semibold tracking-[0.08em] text-background">{post.platform}</span>
                   <Badge variant={statusVariant[post.status]} className="text-[11px]">{post.status}</Badge>
                 </div>
+                {"accountLabel" in post && post.accountLabel && <p className="mt-2 truncate text-[11px] text-faintText">{post.accountLabel}</p>}
                 <p className="mt-3 text-sm font-medium leading-6 text-ink line-clamp-2">{post.post}</p>
                 <div className="mt-3 grid grid-cols-4 gap-2">
                   <span className="rounded-xl border border-borderSoft bg-card px-2 py-2.5 text-center"><span className="block mono text-[9px] tracking-[0.08em] text-faintText">LIKES</span><span className="block text-xs font-semibold tabular-nums text-ink">{post.likes}</span></span>

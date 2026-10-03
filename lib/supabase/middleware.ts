@@ -16,6 +16,9 @@ export async function updateSession(request: NextRequest, requestHeaders?: Heade
       })
     }
   });
-  const { data: { user } } = await supabase.auth.getUser();
-  return { response, user };
+  // Verify the signed token here; the dashboard layout loads the user record
+  // where it needs current profile data. This avoids an Auth network lookup in
+  // the request proxy on every protected navigation.
+  const { data } = await supabase.auth.getClaims();
+  return { response, user: data?.claims ?? null };
 }

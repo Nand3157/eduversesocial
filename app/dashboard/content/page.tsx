@@ -8,10 +8,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { MetaPublisherModal } from "@/components/meta/meta-publisher-modal";
 import { Modal, ModalContent, ModalTitle, ModalDescription } from "@/components/ui/modal";
+import { useDashboardStore } from "@/lib/stores/dashboard-store";
+import { accountStorageKey } from "@/lib/account-storage";
 
 type CsvRow = { platform: string; content: string; date: string };
 
 export default function ContentPage() {
+  const userEmail = useDashboardStore((state) => state.userEmail);
+  const csvCacheKey = accountStorageKey("eduverse:csv-import", userEmail);
   const [publisherOpen, setPublisherOpen] = useState(false);
   const [csvPreview, setCsvPreview] = useState<CsvRow[] | null>(null);
   const [csvError, setCsvError] = useState<string | null>(null);
@@ -60,7 +64,7 @@ export default function ContentPage() {
         else setCsvError(null);
         setCsvPreview(rows);
         setIsCsvModalOpen(true);
-        try { localStorage.setItem("eduverse:csv-import", JSON.stringify({ at: new Date().toISOString(), rows })); } catch {}
+        try { localStorage.setItem(csvCacheKey, JSON.stringify({ at: new Date().toISOString(), rows })); } catch {}
         window.dispatchEvent(new CustomEvent("eduverse:csv-imported", { detail: rows }));
       } catch (e) {
         setCsvPreview(null);
