@@ -668,7 +668,7 @@ export function ChatInterface() {
                             onClick={() => tts.toggle(index, message.content)}
                             disabled={tts.unsupported || (tts.loadingIndex !== null && tts.loadingIndex !== index) || Boolean(tts.playingIndex !== null && tts.playingIndex !== index)}
                             aria-label={tts.playingIndex === index ? "Stop reading aloud" : "Read this reply aloud"}
-                            title={tts.playingIndex === index ? "Stop" : "Read aloud"}
+                            title={tts.playingIndex === index ? (tts.usingDeviceVoice ? "Stop (device voice)" : "Stop") : "Read aloud"}
                             className="inline-flex min-h-[32px] touch-manipulation items-center gap-1.5 rounded-full border border-borderSoft px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-mutedText transition hover:border-primary hover:text-primary focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             {tts.loadingIndex === index ? (
@@ -678,6 +678,9 @@ export function ChatInterface() {
                             )}
                             {tts.playingIndex === index ? "Stop" : "Listen"}
                           </button>
+                          {tts.playingIndex === index && tts.usingDeviceVoice && (
+                            <span className="text-[10px] text-mutedText">device voice</span>
+                          )}
                           {tts.errorIndex === index && <span className="text-[10px] text-danger">Could not play this reply.</span>}
                         </div>
                       )}

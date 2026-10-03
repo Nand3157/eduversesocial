@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import { clampSpeechText, stripMarkdownForSpeech } from "@/lib/speech/speech-text";
 
 /**
  * Text-to-speech for reading assistant replies aloud, powered by
@@ -29,40 +30,21 @@ export type TtsVoice = (typeof TTS_VOICES)[number]["name"];
 
 const DEFAULT_VOICE: TtsVoice = "Kore";
 
-/** Read-aloud clips are single replies; 4k characters comfortably covers a long answer. */
-const MAX_TTS_CHARACTERS = 4_000;
+/** Read-aloud clips are single replies; the cap lives in lib/speech/speech-text. */
+export const MAX_TTS_CHARACTERS = 4_000;
 
 export function clampTextForTts(text: string): string {
-  return text.length <= MAX_TTS_CHARACTERS ? text : `${text.slice(0, MAX_TTS_CHARACTERS)}…`;
+  return clampSpeechText(text);
 }
-
 export function isValidTtsVoice(voice: string | undefined): voice is TtsVoice {
   return !!voice && TTS_VOICES.some((option) => option.name === voice);
 }
 
 /**
- * Strip markdown formatting so the model reads content, not syntax: code
- * spans/backtick fences, bold/italics, headings, bullets, links and citation
- * markers are dropped or flattened to plain spoken text.
+ * Markdown stripping lives in lib/speech/speech-text (shared with the client
+ * device-voice fallback).
  */
-export function stripMarkdownForSpeech(text: string): string {
-  return text
-    .replace(/```[\s\S]*?```/g, " (code block) ")
-    .replace(/`([^`]+)`/g, "$1")
-    .replace(/!\[([^\]]*)\]\(([^)]*)\)/g, " (image) ")
-    .replace(/\[([^\]]+)\]\(([^)]*)\)/g, "$1")
-    .replace(/^#{1,6}\s+/gm, "")
-    .replace(/^\s*([-*+]|\d+\.)\s+/gm, "")
-    .replace(/^\s*>\s?/gm, "")
-    .replace(/(\*\*|__)(.*?)\1/g, "$2")
-    .replace(/(\*|_)(.*?)\1/g, "$2")
-    .replace(/^---+$/gm, "")
-    .replace(/\|/g, " ")
-    .replace(/\n{2,}/g, ". ")
-    .replace(/\n/g, " ")
-    .replace(/\s{2,}/g, " ")
-    .trim();
-}
+export { stripMarkdownForSpeech } from "@/lib/speech/speech-text";
 
 export class TtsConfigError extends Error {}
 
@@ -81,7 +63,7 @@ export async function generateSpeech(options: {
     throw new TtsConfigError("Gemini API key is not configured.");
   }
 
-  const spoken = clampTextForTts(stripMarkdownForSpeech(options.text));
+  const spoken = clampSpeechText(stripMarkdownForSpeech(options.text));
   if (!spoken) throw new TtsConfigError("Nothing to speak.");
 
   const client = new GoogleGenAI({ apiKey });
