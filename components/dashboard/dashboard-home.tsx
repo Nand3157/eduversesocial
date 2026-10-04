@@ -53,7 +53,7 @@ function MobileExpandable({
         </span>
         <span className="flex shrink-0 items-center gap-2">
           {count && <span className="hidden sm:inline-flex mono text-[10px] tracking-[0.08em] text-faintText">{count}</span>}
-          <span className={cn("grid h-8 w-8 place-items-center rounded-full border bg-surface text-mutedText transition-all", open ? "rotate-180 border-primary/20 bg-primary text-ink" : "border-borderSoft")}>
+          <span className={cn("grid h-8 w-8 place-items-center rounded-full border bg-surface text-mutedText transition-all", open ? "rotate-180 border-primary/20 bg-primary text-primary-foreground" : "border-borderSoft")}>
             <ChevronDown className="h-4 w-4" />
           </span>
         </span>
@@ -166,7 +166,7 @@ export function DashboardHome() {
           </div>
           <div className="flex items-center gap-1 rounded-full bg-surface-muted p-1">
             {(["terrain","engagement","memory"] as const).map((k) => (
-              <button key={k} onClick={() => setAcetate(k)} aria-pressed={acetate===k} className={`min-h-11 rounded-full px-3 py-1 mono text-[11px] tracking-[0.10em] transition ${acetate===k ? "bg-primary text-ink" : "text-mutedText hover:text-ink"}`}>
+              <button key={k} onClick={() => setAcetate(k)} aria-pressed={acetate===k} className={`min-h-11 rounded-full px-3 py-1 mono text-[11px] tracking-[0.10em] transition ${acetate===k ? "bg-primary text-primary-foreground" : "text-mutedText hover:text-ink"}`}>
                 {k === "terrain" ? "TERRAIN" : k === "engagement" ? "ENGAGEMENT" : "MEMORY"}
               </button>
             ))}

@@ -16,6 +16,7 @@ const config: Config = {
         ink: "rgb(var(--ink-rgb) / <alpha-value>)",
         primary: "rgb(var(--accent-rgb) / <alpha-value>)",
         "primary-strong": "rgb(var(--accent-strong-rgb) / <alpha-value>)",
+        "primary-foreground": "rgb(var(--accent-foreground-rgb) / <alpha-value>)",
         accent: "rgb(var(--accent-rgb) / <alpha-value>)",
         "accent-soft": "var(--accent-soft)",
         success: "rgb(var(--ok-rgb) / <alpha-value>)",

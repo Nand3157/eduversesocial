@@ -41,7 +41,7 @@ export default function DemoPage() {
                 <span className="hidden sm:inline">Back to site</span>
               </Link>
             </Button>
-            <Button asChild size="sm" className="bg-primary text-ink hover:bg-primary-strong">
+            <Button asChild size="sm" className="bg-primary text-primary-foreground hover:bg-primary-strong">
               <Link href="/signup">Start free</Link>
             </Button>
           </div>

@@ -61,7 +61,7 @@ function MobileExpandable({
         </span>
         <span className="flex shrink-0 items-center gap-2">
           {count && <span className="hidden sm:inline-flex mono text-[10px] tracking-[0.08em] text-faintText">{count}</span>}
-          <span className={cn("grid h-8 w-8 place-items-center rounded-full border bg-surface text-mutedText transition-all", open ? "rotate-180 border-primary/20 bg-primary text-ink" : "border-borderSoft")}>
+          <span className={cn("grid h-8 w-8 place-items-center rounded-full border bg-surface text-mutedText transition-all", open ? "rotate-180 border-primary/20 bg-primary text-primary-foreground" : "border-borderSoft")}>
             <ChevronDown className="h-4 w-4" />
           </span>
         </span>
@@ -100,7 +100,7 @@ export function DemoDashboard() {
             <div>
               <p className="flex items-center gap-2 text-sm font-semibold text-ink">
                 Sandbox preview — simulated data
-                <Badge className="border-0 bg-primary text-ink mono text-[10px]">Demo</Badge>
+                <Badge className="border-0 bg-primary text-primary-foreground mono text-[10px]">Demo</Badge>
               </p>
               <p className="mt-1 max-w-xl text-xs leading-relaxed text-mutedText">
                 This is a read-only mock dashboard so you can explore the layout before connecting Meta. Connect your own accounts to replace this with live Graph API data.
@@ -108,7 +108,7 @@ export function DemoDashboard() {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button asChild size="sm" className="rounded-full bg-primary text-ink hover:bg-primary-strong">
+            <Button asChild size="sm" className="rounded-full bg-primary text-primary-foreground hover:bg-primary-strong">
               <Link href="/signup">
                 Create free account <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
               </Link>
@@ -440,7 +440,7 @@ export function DemoDashboard() {
                   <p className="mt-2 text-sm leading-relaxed text-mutedText">{detail}</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Button asChild className="rounded-full bg-primary text-ink hover:bg-primary-strong">
+                  <Button asChild className="rounded-full bg-primary text-primary-foreground hover:bg-primary-strong">
                     <Link href="/signup">
                       <Sparkles aria-hidden="true" className="h-4 w-4" /> Sign up to generate your own
                     </Link>
@@ -488,7 +488,7 @@ export function DemoDashboard() {
                   <h3 className="mt-2 font-heading text-lg font-semibold leading-tight tracking-tight text-ink">{title}</h3>
                   <p className="mt-2 text-sm leading-6 text-mutedText">{detail}</p>
                 </div>
-                <Button asChild className="w-full rounded-full bg-primary text-ink hover:bg-primary-strong">
+                <Button asChild className="w-full rounded-full bg-primary text-primary-foreground hover:bg-primary-strong">
                   <Link href="/signup"><Sparkles aria-hidden="true" className="h-4 w-4" /> Generate your own</Link>
                 </Button>
               </div>
@@ -577,7 +577,7 @@ export function DemoDashboard() {
             ))}
             <div className="rounded-2xl border border-primary/20 bg-accent-soft p-4">
               <p className="text-xs leading-5 text-mutedText">Want this with your real posts? Connect Meta and your <span className="font-semibold text-ink">reach, saves, and windows</span> populate automatically.</p>
-              <Button asChild size="sm" className="mt-3 w-full rounded-full bg-primary text-ink hover:bg-primary-strong"><Link href="/signup">Explore with your data <ArrowRight className="h-3.5 w-3.5" /></Link></Button>
+              <Button asChild size="sm" className="mt-3 w-full rounded-full bg-primary text-primary-foreground hover:bg-primary-strong"><Link href="/signup">Explore with your data <ArrowRight className="h-3.5 w-3.5" /></Link></Button>
             </div>
           </div>
         </MobileExpandable>
@@ -591,7 +591,7 @@ export function DemoDashboard() {
               Liked the preview? <strong className="text-ink">Create a free account</strong> and connect Meta for the live version. No credit card.
             </span>
           </div>
-          <Button asChild className="rounded-full bg-primary text-ink hover:bg-primary-strong">
+          <Button asChild className="rounded-full bg-primary text-primary-foreground hover:bg-primary-strong">
             <Link href="/signup">Start free — no OAuth needed to peek</Link>
           </Button>
         </CardContent>

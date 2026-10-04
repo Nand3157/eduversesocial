@@ -24,7 +24,7 @@ export function LandingMobileDock() {
         <Link href="/demo" className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-borderSoft bg-card px-4 py-3 text-sm font-semibold text-ink shadow-sm">
           <Eye className="h-4 w-4" /> Demo
         </Link>
-        <Link href="/signup" className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-ink shadow-sm">
+        <Link href="/signup" className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-sm">
           Start free <ArrowRight className="h-4 w-4" />
         </Link>
       </div>
@@ -54,7 +54,7 @@ export function DashboardMobileDock() {
               aria-current={active ? "page" : undefined}
               className={cn(
                 "flex min-h-[52px] flex-col items-center justify-center gap-1 rounded-2xl border text-xs font-medium transition-colors",
-                active ? "border-primary/20 bg-primary text-ink shadow-sm" : "border-transparent text-mutedText hover:bg-surface-muted hover:text-ink"
+                active ? "border-primary/20 bg-primary text-primary-foreground shadow-sm" : "border-transparent text-mutedText hover:bg-surface-muted hover:text-ink"
               )}
             >
               <Icon className="h-4 w-4" />
@@ -74,7 +74,7 @@ export function DemoMobileDock() {
         <Link href="/" className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-borderSoft bg-card px-4 py-3 text-sm font-medium text-ink">
           Home
         </Link>
-        <Link href="/signup" className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-ink shadow-sm">
+        <Link href="/signup" className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-sm">
           Start free <ArrowRight className="h-4 w-4" />
         </Link>
       </div>

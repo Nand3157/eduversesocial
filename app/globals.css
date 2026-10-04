@@ -25,12 +25,14 @@
   --line-rgb: 214 223 232;
   --line-ink: #1F2A44;
   --line-ink-rgb: 31 42 68;
-  --accent: #FFB43A;
-  --accent-rgb: 255 180 58;
-  --accent-strong: #E89B1C;
-  --accent-strong-rgb: 232 155 28;
-  --accent-soft: rgba(255, 180, 58, 0.14);
-  --accent-glow: rgba(255, 180, 58, 0.28);
+  --accent: #A84D1D;
+  --accent-rgb: 168 77 29;
+  --accent-strong: #853B17;
+  --accent-strong-rgb: 133 59 23;
+  --accent-foreground: #FFFAF2;
+  --accent-foreground-rgb: 255 250 242;
+  --accent-soft: rgba(168, 77, 29, 0.12);
+  --accent-glow: rgba(168, 77, 29, 0.24);
   --ok: #177A4D;
   --ok-rgb: 23 122 77;
   --warn: #E4532A;
@@ -69,6 +71,8 @@
   --accent-rgb: 216 120 67;
   --accent-strong: #EA9360;
   --accent-strong-rgb: 234 147 96;
+  --accent-foreground: #151816;
+  --accent-foreground-rgb: 21 24 22;
   --accent-soft: rgba(216,120,67,0.16);
   --accent-glow: rgba(216,120,67,0.22);
   --ok: #9BC39C;
@@ -403,10 +407,10 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); box-sha
   --landing-ink: #0B1220;
   --landing-muted: #516174;
   --landing-line: #D6DFE8;
-  --landing-signal: #FFB43A;
-  --landing-signal-dark: #E89B1C;
-  --landing-action-ink: #0B1220;
-  --landing-header-action-ink: #0B1220;
+  --landing-signal: var(--accent);
+  --landing-signal-dark: var(--accent-strong);
+  --landing-action-ink: var(--accent-foreground);
+  --landing-header-action-ink: var(--accent);
   --landing-success: #177A4D;
   background: var(--landing-paper);
   color: var(--landing-ink);
@@ -822,16 +826,16 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scroll-padding-to
 /* Landing interaction pass: clear light contrast, a tactile 3D post stack, and
    one scroll-authored signal → memory → recommendation journey. */
 .landing-shell {
-  --landing-signal: #a84d1d;
-  --landing-signal-dark: #853b17;
-  --landing-action-ink: #fffaf2;
-  --landing-header-action-ink: #713315;
+  --landing-signal: var(--accent);
+  --landing-signal-dark: var(--accent-strong);
+  --landing-action-ink: var(--accent-foreground);
+  --landing-header-action-ink: var(--accent);
 }
 .dark .landing-shell {
   --landing-signal: var(--accent);
   --landing-signal-dark: var(--accent-strong);
-  --landing-action-ink: #151816;
-  --landing-header-action-ink: var(--landing-signal);
+  --landing-action-ink: var(--accent-foreground);
+  --landing-header-action-ink: var(--accent);
 }
 @media (min-width: 901px) {
   .landing-hero-grid { align-items: center; }

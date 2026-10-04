@@ -165,7 +165,7 @@ export function AppShell({ children, email, profile, initialAnalytics }: { child
       <div className="shrink-0 border-t border-borderSoft bg-surface p-3">
         {!collapsed ? (
           <div className="space-y-3">
-            <button onClick={() => setConnectModalOpen(true)} className="flex w-full items-center justify-between rounded-full bg-primary px-3.5 py-2.5 text-sm font-semibold text-ink shadow-sm transition hover:bg-primary-strong">
+            <button onClick={() => setConnectModalOpen(true)} className="flex w-full items-center justify-between rounded-full bg-primary px-3.5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary-strong">
               <span className="flex items-center gap-2"><Sparkles aria-hidden="true" className="h-3.5 w-3.5" /> Meta sync</span>
               <span className="mono rounded-full bg-ink px-2 py-0.5 text-[10px] tracking-[0.12em] text-primary">LIVE</span>
             </button>
@@ -179,7 +179,7 @@ export function AppShell({ children, email, profile, initialAnalytics }: { child
           </div>
         ) : (
           <div className="grid place-items-center gap-2">
-            <button onClick={() => setConnectModalOpen(true)} aria-label="Meta sync" className="grid h-9 w-9 place-items-center rounded-full bg-primary text-ink shadow-sm hover:bg-primary-strong"><Sparkles aria-hidden="true" className="h-4 w-4" /></button>
+            <button onClick={() => setConnectModalOpen(true)} aria-label="Meta sync" className="grid h-9 w-9 place-items-center rounded-full bg-primary text-primary-foreground shadow-sm hover:bg-primary-strong"><Sparkles aria-hidden="true" className="h-4 w-4" /></button>
           </div>
         )}
       </div>
@@ -219,7 +219,7 @@ export function AppShell({ children, email, profile, initialAnalytics }: { child
             </div>
 
             <div className="ml-auto flex items-center gap-2">
-              <button onClick={() => setPublisherModalOpen(true)} className="hidden items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold tracking-tight text-ink shadow-sm hover:bg-primary-strong sm:inline-flex">
+              <button onClick={() => setPublisherModalOpen(true)} className="hidden items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold tracking-tight text-primary-foreground shadow-sm hover:bg-primary-strong sm:inline-flex">
                 <Send aria-hidden="true" className="h-3.5 w-3.5" /> Schedule post
               </button>
               <ThemeToggle />
