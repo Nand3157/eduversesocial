@@ -6,6 +6,7 @@ import { publishToPlatform, safePublishResponse } from "@/lib/social-publisher";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 import type { MetaPostPayload } from "@/lib/meta-api";
+import { matchesRecurringSlot } from "@/lib/recurring-slots";
 
 const schema = z.object({
   platform: z.enum(["instagram", "facebook", "threads"]),
@@ -13,6 +14,7 @@ const schema = z.object({
   caption: z.string().trim().min(1).max(2200),
   mediaUrls: z.array(z.string().url()).max(10).optional(),
   scheduledTime: z.string().optional(),
+  approvalStatus: z.enum(["pending", "approved"]).optional(),
   targetAccountId: z.string().min(1),
   hashtags: z.array(z.string().regex(/^#[^\s#]{1,30}$/)).max(8).optional()
 });
@@ -76,6 +78,11 @@ export async function POST(request: Request) {
     const scheduled = new Date(input.scheduledTime);
     if (Number.isNaN(scheduled.getTime())) return NextResponse.json({ success: false, errorCode: "META_INVALID_MEDIA", message: "Scheduled time is not a valid date." }, { status: 400 });
     if (scheduled.getTime() <= Date.now()) return NextResponse.json({ success: false, errorCode: "META_INVALID_MEDIA", message: "Scheduled time must be in the future." }, { status: 400 });
+    const { data: recurringSlots } = await supabase.from("recurring_content_slots")
+      .select("weekday,local_time,timezone,approval_required")
+      .eq("workspace_id", member.workspace_id).eq("account_id", account.id).eq("enabled", true);
+    const slotRequiresApproval = (recurringSlots ?? []).some((slot) => slot.approval_required && matchesRecurringSlot(scheduled.toISOString(), slot));
+    const approvalStatus = input.approvalStatus === "pending" || slotRequiresApproval ? "pending" : "approved";
     const idempotencyKey = `${user.id}:${input.platform}:${input.targetAccountId}:${scheduled.toISOString()}:${finalCaption}`;
     const { data: post, error } = await supabase
       .from("scheduled_posts")
@@ -88,6 +95,7 @@ export async function POST(request: Request) {
         media: input.mediaUrls || [],
         scheduled_at: scheduled.toISOString(),
         status: "SCHEDULED",
+        approval_status: approvalStatus,
         idempotency_key: idempotencyKey
       })
       .select("id")
@@ -100,7 +108,7 @@ export async function POST(request: Request) {
       logger.error("schedule_insert_failed", { userId: user.id, platform: input.platform, reason: error.message });
       return NextResponse.json({ success: false, errorCode: "META_API_ERROR", message: "Could not schedule post." }, { status: 500 });
     }
-    return NextResponse.json({ success: true, platform: input.platform, postId: post.id, url: null, publishedAt: null, status: "SCHEDULED" });
+    return NextResponse.json({ success: true, platform: input.platform, postId: post.id, url: null, publishedAt: null, status: "SCHEDULED", approvalStatus });
   }
 
   try {

@@ -24,6 +24,8 @@ export type AnalyticsPost = {
   mediaType?: string;
   /** Human account label for per-account breakdowns. */
   accountLabel?: string;
+  /** Meta account id used to filter account-specific timing evidence. */
+  accountId?: string;
 };
 
 export type AnalyticsSnapshot = {
@@ -546,9 +548,9 @@ export async function fetchMetaAnalytics(token?: string, bypassCache = false): P
     const postTimestamp = (post: GraphPost) => post.timestamp ?? post.created_time;
     const posts = [
       ...pageResults.flatMap((result) => [
-        ...result.pagePosts.map(({ post, accountLabel }) => ({ post, platform: "Facebook Pages" as const, accountLabel, mediaType: "TEXT" as const })),
-        ...result.instagramPosts.map(({ post, accountLabel }) => ({ post, platform: "Instagram Business" as const, accountLabel, mediaType: normalizeContentType(post.media_type) }))
-      ]).map(({ post, platform, accountLabel, mediaType }): AnalyticsPost => {
+        ...result.pagePosts.map(({ post, accountId, accountLabel }) => ({ post, accountId, platform: "Facebook Pages" as const, accountLabel, mediaType: "TEXT" as const })),
+        ...result.instagramPosts.map(({ post, accountId, accountLabel }) => ({ post, accountId, platform: "Instagram Business" as const, accountLabel, mediaType: normalizeContentType(post.media_type) }))
+      ]).map(({ post, accountId, platform, accountLabel, mediaType }): AnalyticsPost => {
         const iso = postTimestamp(post);
         const likes = post.like_count ?? post.likes?.summary?.total_count ?? 0;
         const comments = post.comments_count ?? post.comments?.summary?.total_count ?? 0;
@@ -563,7 +565,8 @@ export async function fetchMetaAnalytics(token?: string, bypassCache = false): P
           status: "Live",
           timestamp: iso,
           mediaType,
-          accountLabel
+          accountLabel,
+          accountId
         };
       }),
       ...(threads?.posts ?? [])

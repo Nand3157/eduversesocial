@@ -15,6 +15,7 @@ import { accountStorageKey } from "@/lib/account-storage";
 const TZ_STORAGE_KEY = "eduverse:besttime-tz";
 const PLATFORM_STORAGE_KEY = "eduverse:besttime-platform";
 const CONTENT_STORAGE_KEY = "eduverse:besttime-content";
+const ACCOUNT_STORAGE_KEY = "eduverse:besttime-account";
 
 const CURATED_TIMEZONES = [
   "UTC",
@@ -65,6 +66,7 @@ function signalsFromSnapshot(snapshot: AnalyticsSnapshot | null): TimedPost[] {
       comments: expandCompact(post.comments),
       shares: expandCompact(post.shares),
       mediaType: post.mediaType ?? "TEXT",
+      accountId: post.accountId,
       accountLabel: post.accountLabel ?? post.platform
     }));
 }
@@ -95,16 +97,17 @@ export function BestTimeCard() {
   const timezoneStorageKey = accountStorageKey(TZ_STORAGE_KEY, userEmail);
   const platformStorageKey = accountStorageKey(PLATFORM_STORAGE_KEY, userEmail);
   const contentStorageKey = accountStorageKey(CONTENT_STORAGE_KEY, userEmail);
+  const accountStorageKeyValue = accountStorageKey(ACCOUNT_STORAGE_KEY, userEmail);
   const [timezone, setTimezone] = useState("UTC");
   const [platform, setPlatform] = useState("all");
   const [contentType, setContentType] = useState("all");
+  const [accountId, setAccountId] = useState("all");
   const [preferencesLoadedFor, setPreferencesLoadedFor] = useState("");
   const [publisherOpen, setPublisherOpen] = useState(false);
   const [publisherScheduleIso, setPublisherScheduleIso] = useState<string | undefined>(undefined);
 
   // Hydrate persisted prefs after mount to avoid SSR/client mismatch.
   useEffect(() => {
-    setPreferencesLoadedFor("");
     queueMicrotask(() => {
       try {
         const browserTz = browserTimezone();
@@ -114,12 +117,14 @@ export function BestTimeCard() {
         if (storedPlatform) setPlatform(storedPlatform);
         const storedContent = localStorage.getItem(contentStorageKey);
         if (storedContent) setContentType(storedContent);
+        const storedAccount = localStorage.getItem(accountStorageKeyValue);
+        if (storedAccount) setAccountId(storedAccount);
       } catch {
         setTimezone(browserTimezone());
       }
       setPreferencesLoadedFor(timezoneStorageKey);
     });
-  }, [timezoneStorageKey, platformStorageKey, contentStorageKey]);
+  }, [timezoneStorageKey, platformStorageKey, contentStorageKey, accountStorageKeyValue]);
 
   useEffect(() => {
     if (preferencesLoadedFor !== timezoneStorageKey) return;
@@ -127,8 +132,9 @@ export function BestTimeCard() {
       localStorage.setItem(timezoneStorageKey, timezone);
       localStorage.setItem(platformStorageKey, platform);
       localStorage.setItem(contentStorageKey, contentType);
+      localStorage.setItem(accountStorageKeyValue, accountId);
     } catch {}
-  }, [timezone, platform, contentType, preferencesLoadedFor, timezoneStorageKey, platformStorageKey, contentStorageKey]);
+  }, [timezone, platform, contentType, accountId, preferencesLoadedFor, timezoneStorageKey, platformStorageKey, contentStorageKey, accountStorageKeyValue]);
 
   const timezoneOptions = useMemo(() => {
     const browserTz = (() => {
@@ -143,6 +149,7 @@ export function BestTimeCard() {
   }, [timezone]);
 
   const signals = useMemo(() => signalsFromSnapshot(data), [data]);
+  const accountOptions = useMemo(() => [...new Map(signals.filter((signal) => signal.accountId).map((signal) => [signal.accountId!, signal.accountLabel ?? signal.accountId!])).entries()], [signals]);
 
   const result = useMemo(
     () =>
@@ -150,9 +157,10 @@ export function BestTimeCard() {
         timezone,
         topN: 3,
         platform: toPlatformParam(platform),
-        contentType: contentType === "all" ? undefined : contentType
+        contentType: contentType === "all" ? undefined : contentType,
+        accountId: accountId === "all" ? undefined : accountId
       }),
-    [signals, timezone, platform, contentType]
+    [signals, timezone, platform, contentType, accountId]
   );
 
   const handleSchedule = (slot: { dayOfWeek: number; hour: number; label: string; nextOccurrenceUtc?: string }) => {
@@ -194,7 +202,7 @@ export function BestTimeCard() {
           </div>
           {result.windows.length > 0 && <Badge variant={confidenceVariant}>{result.confidence} confidence · {result.sampleSize} posts</Badge>}
         </div>
-        <div className="mt-4 grid gap-2 sm:grid-cols-3">
+        <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
           <label className="block">
             <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-faintText">Timezone</span>
             <select
@@ -208,6 +216,13 @@ export function BestTimeCard() {
                   {tz}
                 </option>
               ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-faintText">Account</span>
+            <select aria-label="Filter by account" value={accountId} onChange={(e) => setAccountId(e.target.value)} className="h-9 w-full rounded-xl border border-borderSoft bg-surface px-2.5 text-xs text-ink outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/40">
+              <option value="all">All accounts</option>
+              {accountOptions.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
             </select>
           </label>
           <label className="block">

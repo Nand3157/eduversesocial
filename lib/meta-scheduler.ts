@@ -54,6 +54,7 @@ export async function processDueMetaPosts(supabase: SupabaseClient, limit = 20) 
     .from("scheduled_posts")
     .select("id,platform,content,media,account_id,attempts,social_accounts!inner(external_id,encrypted_token,token_expires_at)")
     .eq("status", "SCHEDULED")
+    .eq("approval_status", "approved")
     .lte("scheduled_at", new Date().toISOString())
     .order("scheduled_at")
     .limit(limit);
@@ -71,6 +72,7 @@ export async function processDueMetaPosts(supabase: SupabaseClient, limit = 20) 
       .update({ status: "PUBLISHING", attempts: row.attempts + 1, updated_at: new Date().toISOString() })
       .eq("id", row.id)
       .eq("status", "SCHEDULED")
+      .eq("approval_status", "approved")
       .select("id")
       .maybeSingle();
     if (!claim.data) return;

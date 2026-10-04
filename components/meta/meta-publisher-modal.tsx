@@ -46,6 +46,7 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess, initialCaption,
   const [uploadedMedia, setUploadedMedia] = useState<UploadedMedia[]>([]);
   const [uploading, setUploading] = useState(false);
   const [scheduleDate, setScheduleDate] = useState("");
+  const [needsApproval, setNeedsApproval] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [generatingHook, setGeneratingHook] = useState(false);
   const [hookError, setHookError] = useState<string | null>(null);
@@ -60,6 +61,7 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess, initialCaption,
   const [wasOpen, setWasOpen] = useState(false);
   if (isOpen && !wasOpen) {
     setWasOpen(true);
+    setNeedsApproval(false);
     if (initialCaption) setCaption(initialCaption);
     if (initialPlatform) setPlatform(initialPlatform);
     if (initialScheduleTime) {
@@ -114,14 +116,14 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess, initialCaption,
       .then((data) => {
         const accounts = (data.accounts ?? []) as MetaAccount[];
         setConnectedAccounts(accounts);
-        const firstAccount = accounts.find((account) => account.platform === "instagram" || account.platform === "facebook" || account.platform === "threads");
+        const firstAccount = accounts.find((account) => account.platform === initialPlatform) ?? accounts.find((account) => account.platform === "instagram" || account.platform === "facebook" || account.platform === "threads");
         if (firstAccount) {
           setPlatform(firstAccount.platform);
           setSelectedAccount(firstAccount);
         }
       })
       .catch(() => setConnectedAccounts([]));
-  }, [isOpen]);
+  }, [isOpen, initialPlatform]);
 
   const typedUrls = () => mediaUrls.split(/[\n,]/).map((url) => url.trim()).filter(Boolean);
   const allMediaUrls = () => [...uploadedMedia.map((media) => media.url), ...typedUrls()];
@@ -239,6 +241,7 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess, initialCaption,
           // datetime-local is the user's local time; convert to UTC ISO so the
           // server schedules the same instant regardless of its own timezone.
           scheduledTime: scheduleDate ? new Date(scheduleDate).toISOString() : undefined,
+          approvalStatus: scheduleDate && needsApproval ? "pending" : "approved",
           hashtags
         })
       });
@@ -247,7 +250,7 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess, initialCaption,
       // Structural classification: every publish/upload response carries a
       // machine-readable `success` flag — never sniff message text for red/green.
       if (res.ok && data.success !== false) {
-        setPublishedResult({ message: data.status === "SCHEDULED" ? `Post scheduled (${data.postId})` : `Published and confirmed by Meta (${data.postId})`, isError: false });
+        setPublishedResult({ message: data.status === "SCHEDULED" ? data.approvalStatus === "pending" ? `Post scheduled for review (${data.postId})` : `Post scheduled (${data.postId})` : `Published and confirmed by Meta (${data.postId})`, isError: false });
         setCelebrateKey((key) => key + 1);
         window.dispatchEvent(new Event("eduverse:analytics-refresh"));
         if (onSuccess) onSuccess();
@@ -357,6 +360,7 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess, initialCaption,
                     Best for {platform}: {bestSuggestion.window.label} ({bestSuggestion.timezone})
                   </button>
                 )}
+                {scheduleDate && <label className="mt-2 flex items-start gap-2 text-[11px] leading-5 text-mutedText"><input type="checkbox" checked={needsApproval} onChange={(event) => setNeedsApproval(event.target.checked)} className="mt-1 accent-primary" />Require approval before the scheduled post can publish</label>}
               </div>
             </div>
 

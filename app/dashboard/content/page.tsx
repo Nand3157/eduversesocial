@@ -10,6 +10,8 @@ import { MetaPublisherModal } from "@/components/meta/meta-publisher-modal";
 import { Modal, ModalContent, ModalTitle, ModalDescription } from "@/components/ui/modal";
 import { useDashboardStore } from "@/lib/stores/dashboard-store";
 import { accountStorageKey } from "@/lib/account-storage";
+import { ContentCalendar } from "@/components/dashboard/content-calendar";
+import { RepurposeStudio } from "@/components/dashboard/repurpose-studio";
 
 type CsvRow = { platform: string; content: string; date: string };
 
@@ -17,6 +19,8 @@ export default function ContentPage() {
   const userEmail = useDashboardStore((state) => state.userEmail);
   const csvCacheKey = accountStorageKey("eduverse:csv-import", userEmail);
   const [publisherOpen, setPublisherOpen] = useState(false);
+  const [publisherCaption, setPublisherCaption] = useState("");
+  const [publisherPlatform, setPublisherPlatform] = useState<"instagram" | "facebook" | "threads" | undefined>(undefined);
   const [csvPreview, setCsvPreview] = useState<CsvRow[] | null>(null);
   const [csvError, setCsvError] = useState<string | null>(null);
   const [csvSuccess, setCsvSuccess] = useState<string | null>(null);
@@ -113,13 +117,17 @@ export default function ContentPage() {
         </div>
       )}
 
+      <ContentCalendar />
+
+      <RepurposeStudio onSchedule={(caption, platform) => { setPublisherCaption(caption); setPublisherPlatform(platform); setPublisherOpen(true); }} />
+
       <Card>
         <CardContent className="p-5">
           <PostTable csvRows={csvPreview ?? undefined} />
         </CardContent>
       </Card>
 
-      <MetaPublisherModal isOpen={publisherOpen} onClose={() => setPublisherOpen(false)} onSuccess={() => { setPublisherOpen(false); setCsvSuccess("Post dispatched — check Meta and analytics will refresh shortly."); setTimeout(() => setCsvSuccess(null), 4000); }} />
+      <MetaPublisherModal isOpen={publisherOpen} onClose={() => setPublisherOpen(false)} initialCaption={publisherCaption || undefined} initialPlatform={publisherPlatform} onSuccess={() => { setPublisherOpen(false); setCsvSuccess("Post dispatched — check Meta and analytics will refresh shortly."); setTimeout(() => setCsvSuccess(null), 4000); }} />
 
       <Modal open={isCsvModalOpen} onOpenChange={setIsCsvModalOpen}>
         <ModalContent className="max-w-2xl">

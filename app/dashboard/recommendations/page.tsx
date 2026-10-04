@@ -18,6 +18,8 @@ import { accountStorageKey } from "@/lib/account-storage";
 
 type Rec = [string, string, string];
 
+function metricNumber(value: string) { return Number(value.replace(/[^\d.]/g, "")) || 0; }
+
 export default function RecommendationsPage() {
   const { data, loading } = useAnalytics();
   const userEmail = useDashboardStore((state) => state.userEmail);
@@ -34,10 +36,10 @@ export default function RecommendationsPage() {
   // initializer would desync server HTML from the first client render.
   useEffect(() => {
     let cancelled = false;
-    setDismissed([]);
-    setDismissedLoadedFor("");
     queueMicrotask(() => {
       if (cancelled) return;
+      setDismissed([]);
+      setDismissedLoadedFor("");
       let next: string[] = [];
       try {
         const raw = localStorage.getItem(dismissedStorageKey);
@@ -56,6 +58,10 @@ export default function RecommendationsPage() {
 
   const recommendations = allRecs.filter(([t]) => !dismissed.includes(t));
   const dismissedCount = allRecs.length - recommendations.length;
+  const strongestPost = [...(data?.recentPosts ?? [])].sort((a, b) =>
+    metricNumber(b.likes) + metricNumber(b.comments) + metricNumber(b.shares) - metricNumber(a.likes) - metricNumber(a.comments) - metricNumber(a.shares)
+  )[0];
+  const evidenceWindow = whyRec && data?.bestTimes?.windows.find((window) => whyRec[0].includes(window.label));
 
   const handleSchedule = (rec: Rec) => {
     const [title, timing, detail] = rec;
@@ -96,16 +102,17 @@ export default function RecommendationsPage() {
           {whyRec && (
             <div className="mt-4 space-y-4">
               <div><p className="text-sm font-semibold text-ink">{whyRec[0]}</p><p className="text-xs text-primary">{whyRec[1]}</p><p className="mt-2 text-sm leading-6 text-mutedText">{whyRec[2]}</p></div>
-              <div className="rounded-xl border border-borderSoft bg-surface p-3">
-                <p className="text-xs font-semibold uppercase tracking-wider text-faintText">Source signals</p>
-                <ul className="mt-2 list-disc space-y-1 pl-4 text-xs leading-5 text-mutedText">
-                  {(data?.memoryItems ?? []).slice(0, 3).map((m, i) => <li key={i}>{m}</li>)}
-                  {(data?.memoryItems?.length ?? 0) === 0 && <li>No memory items yet — connect Meta first.</li>}
-                  {data?.metrics?.slice(0, 2).map((m) => <li key={m.label}>{m.label}: {m.value}{m.suffix} — {m.detail}</li>)}
-                </ul>
-              </div>
-              <div className="rounded-xl border border-success/20 bg-success/10 p-3 text-xs leading-relaxed text-ink">
-                <strong className="text-success">Explain like dashboard:</strong> This picks the top-engaged recent post from Graph API and suggests repurposing its topic/format. Ask the AI chat “why did my last carousel perform well?” for a deeper explainer with citations.
+              <div className="rounded-xl border border-borderSoft bg-surface p-4">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-faintText">Evidence behind this recommendation</p>
+                {whyRec[0].toLowerCase().includes("post on") && evidenceWindow ? <>
+                  <p className="mt-2 text-sm font-semibold text-ink">{evidenceWindow.label} · {data?.bestTimes?.timezone ?? "UTC"}</p>
+                  <p className="mt-1 text-xs leading-5 text-mutedText">{evidenceWindow.avgEngagement} average engagements across {evidenceWindow.postCount} posts; {data?.bestTimes?.sampleSize ?? 0} timed posts in this prediction sample. {data?.bestTimes?.confidence ?? "low"} confidence.</p>
+                </> : strongestPost ? <>
+                  <p className="mt-2 text-xs font-semibold capitalize text-ink">{strongestPost.platform} · {strongestPost.date}</p>
+                  <blockquote className="mt-2 max-h-36 overflow-y-auto whitespace-pre-wrap border-l-2 border-primary/50 pl-3 text-sm leading-6 text-ink">{strongestPost.post}</blockquote>
+                  <p className="mt-3 text-xs tabular-nums text-mutedText">{strongestPost.likes} likes · {strongestPost.comments} comments · {strongestPost.shares} shares · {strongestPost.reach} reach</p>
+                  <p className="mt-2 text-xs leading-5 text-mutedText">Audience signal: this post has the highest visible likes + comments + shares in the currently returned recent-post sample. Reasoning: reuse its topic and format as an experiment; this is a correlation, not proof of cause.</p>
+                </> : <p className="mt-2 text-xs leading-5 text-mutedText">No source post or timing sample is available in the current Meta response. Connect an account and refresh analytics to show the supporting evidence.</p>}
               </div>
               <div className="flex justify-between gap-2 pt-2">
                 <Button variant="ghost" onClick={() => setWhyRec(null)}>Close</Button>
