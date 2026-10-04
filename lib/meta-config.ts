@@ -18,6 +18,7 @@ export const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
  *  - public_profile      : read the basic identity of the connecting user (Facebook Login requirement)
  *  - pages_show_list     : discover the Pages the user administers (/me/accounts)
  *  - pages_read_engagement : read Page insights and post metrics
+ *  - pages_read_user_content : read user-generated content on Pages, such as comments
  *  - pages_manage_posts  : publish to Pages owned by the user
  *  - instagram_basic     : read linked Instagram Business account info (Facebook Login flow)
  *  - instagram_content_publish : publish images, reels and carousels (Facebook Login flow)
@@ -30,6 +31,7 @@ export const META_REQUIRED_PERMISSIONS = [
   "public_profile",
   "pages_show_list",
   "pages_read_engagement",
+  "pages_read_user_content",
   "pages_manage_posts",
   "instagram_basic",
   "instagram_content_publish",
@@ -44,5 +46,4 @@ export const META_REQUIRED_PERMISSIONS = [
  *  - threads_manage_insights : read Threads user and media insights
  */
 export const THREADS_REQUIRED_PERMISSIONS = ["threads_basic", "threads_content_publish", "threads_manage_insights"] as const;
-
 
