@@ -477,7 +477,10 @@ export async function fetchMetaAnalytics(token?: string, bypassCache = false): P
       const instagramChildren = stored.filter((child) => child.platform === "instagram" && child.parent_account_id === row.id && child.external_id);
       const [pageInsights, pagePosts, pageFans, childResults] = await Promise.all([
         graphData<InsightRow[]>(pageToken, `${row.external_id!}/insights?metric=page_views_total,page_post_engagements&period=day&date_preset=last_28d`).catch((error) => { errors.push(`Facebook Page insights: ${error instanceof Error ? error.message : "unavailable."}`); return []; }),
-        graphData<GraphPost[]>(pageToken, `${row.external_id!}/posts?fields=id,message,created_time,permalink_url,shares,likes.summary(true).limit(0),comments.summary(true).limit(0)&limit=25`).catch(async (error) => {
+        // Meta denies nested likes/comments edges on this token even though its
+        // debug data includes pages_read_engagement. Load supported Page-owned
+        // post fields and leave per-post reaction/comment counts unavailable.
+        graphData<GraphPost[]>(pageToken, `${row.external_id!}/posts?fields=id,message,created_time,permalink_url,shares&limit=25`).catch(async (error) => {
           errors.push(`Facebook Page posts: ${error instanceof Error ? error.message : "unavailable."}`);
           if (error instanceof MetaError && error.code === "META_PERMISSION_ERROR") await markPermissionRequired(supabase, member?.workspace_id, row);
           return [];
@@ -552,14 +555,14 @@ export async function fetchMetaAnalytics(token?: string, bypassCache = false): P
         ...result.instagramPosts.map(({ post, accountId, accountLabel }) => ({ post, accountId, platform: "Instagram Business" as const, accountLabel, mediaType: normalizeContentType(post.media_type) }))
       ]).map(({ post, accountId, platform, accountLabel, mediaType }): AnalyticsPost => {
         const iso = postTimestamp(post);
-        const likes = post.like_count ?? post.likes?.summary?.total_count ?? 0;
-        const comments = post.comments_count ?? post.comments?.summary?.total_count ?? 0;
+        const likes = post.like_count ?? post.likes?.summary?.total_count;
+        const comments = post.comments_count ?? post.comments?.summary?.total_count;
         return {
           platform,
           post: post.caption || post.message || "Untitled post",
           date: iso ? new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "—",
-          likes: compact(likes),
-          comments: compact(comments),
+          likes: platform === "Facebook Pages" && likes === undefined ? "—" : compact(likes ?? 0),
+          comments: platform === "Facebook Pages" && comments === undefined ? "—" : compact(comments ?? 0),
           shares: compact(post.shares?.count ?? 0),
           reach: "—",
           status: "Live",
