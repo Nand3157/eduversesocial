@@ -215,7 +215,7 @@ export function MetaConnectModal({ isOpen, onClose, onConnected }: MetaConnectMo
                             {account.avatarUrl ? <Image src={account.avatarUrl} alt="" width={36} height={36} className="h-9 w-9 shrink-0 rounded-full border border-borderSoft object-cover" /> : <span aria-hidden="true" className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/15 text-xs font-semibold text-primary">{account.name.slice(0, 1).toUpperCase()}</span>}
                             <div className="min-w-0">
                               <p className="truncate text-xs font-semibold text-ink">{account.name}</p>
-                              {account.status === "permission_required" && <p className="mt-1 max-w-sm text-[11px] leading-relaxed text-warning">Grant this tester the Page MODERATE task and pages_read_engagement access, then reconnect.</p>}
+                              {account.status === "permission_required" && <p className="mt-1 max-w-sm text-[11px] leading-relaxed text-warning">Grant this tester the Page MODERATE or MANAGE task and pages_read_engagement access, then reconnect.</p>}
                               <p className="truncate text-[11px] text-mutedText">{account.platform === "instagram" ? "Instagram" : account.platform === "threads" ? "Threads" : "Facebook Page"} · {account.handle}{account.followers !== undefined ? ` · ${account.followers.toLocaleString()} followers` : ""}</p>
                             </div>
                           </div>

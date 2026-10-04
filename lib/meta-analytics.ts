@@ -444,7 +444,7 @@ export async function fetchMetaAnalytics(token?: string, bypassCache = false): P
     const missingPageAccess = stored.some((row) => row.status === "permission_required");
     const missingOrExpiredToken = stored.some((row) => row.status === "expired");
     const message = missingPageAccess
-      ? "Meta denied access to this Page. Check the Graph API error, the tester's Page MODERATE task, the pages_read_engagement grant, and the tester's app role, then reconnect."
+      ? "Meta denied access to this Page. Check the Graph API error, the tester's Page MODERATE or MANAGE task, the pages_read_engagement grant, and the tester's app role, then reconnect."
       : missingOrExpiredToken
         ? "The saved Meta access token has expired. Reconnect the affected account."
         : "Connect Meta to load live analytics.";

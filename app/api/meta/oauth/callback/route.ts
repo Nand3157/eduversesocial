@@ -47,8 +47,8 @@ export async function GET(request: Request) {
     const hasPageReadGrant = grantedScopes.includes("pages_read_engagement");
     for (const page of pages.data || []) {
       const pageTasks = new Set(page.tasks ?? []);
-      const hasModerationTask = ["MODERATE", "PROFILE_PLUS_MODERATE", "PROFILE_PLUS_FULL_CONTROL"].some((task) => pageTasks.has(task));
-      const accessStatus = !hasPageReadGrant || (page.tasks !== undefined && !hasModerationTask) ? "permission_required" : "active";
+      const hasPageAccessTask = ["MANAGE", "PROFILE_PLUS_MANAGE", "MODERATE", "PROFILE_PLUS_MODERATE", "PROFILE_PLUS_FULL_CONTROL"].some((task) => pageTasks.has(task));
+      const accessStatus = !hasPageReadGrant || (page.tasks !== undefined && !hasPageAccessTask) ? "permission_required" : "active";
       permissionRequired ||= accessStatus === "permission_required";
       const { data: pageRow, error: pageSaveError } = await supabase.from("social_accounts").upsert({ workspace_id: member.workspace_id, platform: "facebook", handle: page.name, external_id: page.id, display_name: page.name, encrypted_token: encrypt(page.access_token), token_expires_at: null, scopes: grantedScopes, status: accessStatus }, { onConflict: "workspace_id,platform,external_id" }).select("id").single();
       if (pageSaveError || !pageRow) throw pageSaveError ?? new Error("Meta Page account could not be saved.");

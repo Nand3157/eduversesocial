@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   KeyRound,
   Link2,
+  Link2Off,
   ShieldCheck,
   UserPlus,
   UserRound,
@@ -58,6 +59,8 @@ export default function SettingsPage() {
   // Accounts state
   const [isMetaConnectOpen, setIsMetaConnectOpen] = useState(false);
   const [metaAccounts, setMetaAccounts] = useState<MetaAccount[]>([]);
+  const [disconnectingAccount, setDisconnectingAccount] = useState<string | null>(null);
+  const [connectedAccountsError, setConnectedAccountsError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -170,7 +173,7 @@ export default function SettingsPage() {
     const outcomes: Array<[string | null, Record<string, string>]> = [
       [searchParams.get("meta"), {
         connected: "Meta accounts connected.",
-        permission_required: "Meta connected, but this tester needs the Page MODERATE task and pages_read_engagement access before analytics can load.",
+        permission_required: "Meta connected, but this tester needs the Page MODERATE or MANAGE task and pages_read_engagement access before analytics can load.",
         no_pages: "Meta authorized the app, but returned no Pages for this tester. Give the tester a role on the Page, then reconnect.",
         denied: "Meta connection cancelled.",
         state_invalid: "Meta connection failed: security state mismatch. Try again.",
@@ -347,6 +350,29 @@ export default function SettingsPage() {
     }
   }
 
+  async function disconnectMetaAccount(account: MetaAccount) {
+    const accountKey = `${account.platform}:${account.id}`;
+    if (disconnectingAccount) return;
+    setDisconnectingAccount(accountKey);
+    setConnectedAccountsError("");
+    try {
+      const response = await fetch("/api/meta/connect", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accountId: account.id })
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(result?.message || "Could not disconnect this account.");
+      setMetaAccounts((accounts) => accounts.filter((item) => !(item.id === account.id && item.platform === account.platform)));
+      window.dispatchEvent(new Event("eduverse:analytics-refresh"));
+      triggerToast(`${account.name} disconnected.`);
+    } catch (error) {
+      setConnectedAccountsError(error instanceof Error ? error.message : "Could not disconnect this account.");
+    } finally {
+      setDisconnectingAccount(null);
+    }
+  }
+
   const connectedList = metaAccounts.map((account) => account.platform === "instagram" ? `${account.name} (${account.handle})` : account.name);
 
   return (
@@ -446,6 +472,32 @@ export default function SettingsPage() {
                   How to revoke →
                 </a>
               </div>
+              {connectedAccountsError && <p role="alert" className="mt-3 text-xs text-danger">{connectedAccountsError}</p>}
+              {metaAccounts.length > 0 && (
+                <ul className="mt-4 space-y-2 border-t border-borderSoft pt-3">
+                  {metaAccounts.map((account) => {
+                    const accountKey = `${account.platform}:${account.id}`;
+                    return (
+                      <li key={accountKey} className="flex items-center justify-between gap-3 rounded-xl border border-borderSoft bg-surface px-3 py-2">
+                        <div className="min-w-0">
+                          <p className="truncate text-xs font-semibold text-ink">{account.name}</p>
+                          <p className="text-[11px] capitalize text-mutedText">{account.platform} · {account.status.replaceAll("_", " ")}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => void disconnectMetaAccount(account)}
+                          disabled={disconnectingAccount !== null}
+                          aria-label={`Disconnect ${account.name}`}
+                          className="inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium text-danger transition hover:bg-danger/10 disabled:pointer-events-none disabled:opacity-50"
+                        >
+                          <Link2Off aria-hidden="true" className="h-3.5 w-3.5" />
+                          {disconnectingAccount === accountKey ? "Disconnecting…" : "Disconnect"}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </div>
           </CardContent>
         </Card>
