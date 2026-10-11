@@ -15,9 +15,9 @@ interface MetaConnectModalProps {
 
 const STATUS_META: Record<MetaAccount["status"], { label: string; className: string }> = {
   active: { label: "Connected", className: "border-success/25 bg-success/10 text-success" },
-  token_expiring: { label: "Token expiring soon", className: "border-warning/30 bg-warning/10 text-warning" },
+  token_expiring: { label: "Token expiring soon", className: "border-[var(--warn)] bg-[var(--warn-soft)] text-warning-ink" },
   expired: { label: "Token expired", className: "border-danger/25 bg-danger/10 text-danger" },
-  permission_required: { label: "Permission required", className: "border-warning/30 bg-warning/10 text-warning" },
+  permission_required: { label: "Permission required", className: "border-[var(--warn)] bg-[var(--warn-soft)] text-warning-ink" },
   disconnected: { label: "Disconnected", className: "border-borderSoft bg-surface text-mutedText" }
 };
 
@@ -132,11 +132,11 @@ export function MetaConnectModal({ isOpen, onClose, onConnected }: MetaConnectMo
 
             <div aria-live="polite">
               {authRequired && (
-                <div className="flex items-start gap-2 rounded-xl border border-warning/30 bg-warning/10 p-4 text-xs leading-relaxed text-warning">
+                <div className="flex items-start gap-2 rounded-xl border border-[var(--warn)] bg-[var(--warn-soft)] p-4 text-xs leading-relaxed text-warning-ink">
                   <AlertCircle aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
                   <div className="space-y-2">
                     <p className="font-semibold">Sign in required</p>
-                    <p className="text-warning/80">You need to be logged in to connect Meta accounts. Sign in first, then return here to connect.</p>
+                    <p className="warn-text-soft">You need to be logged in to connect Meta accounts. Sign in first, then return here to connect.</p>
                     <a href="/login?next=/dashboard/settings" className="inline-flex items-center justify-center rounded-lg bg-ink px-4 py-2 text-xs font-semibold text-background hover:bg-ink/90">
                       Go to login
                     </a>
@@ -179,7 +179,7 @@ export function MetaConnectModal({ isOpen, onClose, onConnected }: MetaConnectMo
             </div>
             <a
               href="/demo"
-              className="flex items-center justify-center gap-1.5 rounded-xl border border-warning/20 bg-warning/10 px-3 py-2.5 text-xs font-medium text-warning transition hover:bg-warning/15"
+              className="flex items-center justify-center gap-1.5 rounded-xl border border-[var(--warn)] bg-[var(--warn-soft)] px-3 py-2.5 text-xs font-medium text-warning-ink transition hover:bg-[var(--warn-soft-strong)]"
             >
               <Eye aria-hidden="true" className="h-3.5 w-3.5" /> Prefer to preview first? Explore Live Demo — no OAuth needed
             </a>
@@ -215,7 +215,7 @@ export function MetaConnectModal({ isOpen, onClose, onConnected }: MetaConnectMo
                             {account.avatarUrl ? <Image src={account.avatarUrl} alt="" width={36} height={36} className="h-9 w-9 shrink-0 rounded-full border border-borderSoft object-cover" /> : <span aria-hidden="true" className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/15 text-xs font-semibold text-primary">{account.name.slice(0, 1).toUpperCase()}</span>}
                             <div className="min-w-0">
                               <p className="truncate text-xs font-semibold text-ink">{account.name}</p>
-                              {account.status === "permission_required" && <p className="mt-1 max-w-sm text-[11px] leading-relaxed text-warning">Grant this tester the Page MODERATE or MANAGE task and pages_read_engagement access, then reconnect.</p>}
+                              {account.status === "permission_required" && <p className="mt-1 max-w-sm text-[11px] leading-relaxed text-warning-ink">Grant this tester the Page MODERATE or MANAGE task and pages_read_engagement access, then reconnect.</p>}
                               <p className="truncate text-[11px] text-mutedText">{account.platform === "instagram" ? "Instagram" : account.platform === "threads" ? "Threads" : "Facebook Page"} · {account.handle}{account.followers !== undefined ? ` · ${account.followers.toLocaleString()} followers` : ""}</p>
                             </div>
                           </div>

@@ -36,7 +36,7 @@ function readCachedRows(payload: unknown): CsvRow[] {
 }
 
 export function PostTable({ csvRows }: { csvRows?: CsvRow[] }) {
-  const { data, loading } = useAnalytics();
+  const { data, loading, error } = useAnalytics();
   const userEmail = useDashboardStore((state) => state.userEmail);
   const csvCacheKey = accountStorageKey(CSV_CACHE_KEY, userEmail);
   const [query, setQuery] = useState("");
@@ -162,13 +162,13 @@ export function PostTable({ csvRows }: { csvRows?: CsvRow[] }) {
         </div>
       )}
 
-      {loading ? <div role="status" className="rounded-xl border border-dashed border-borderSoft bg-surface/50 p-8 text-center text-xs text-mutedText">Loading live Meta posts…</div> : filtered.length === 0 ? (
+      {loading && !data?.success && localCsvRows.length === 0 ? <div role="status" className="rounded-xl border border-dashed border-borderSoft bg-surface/50 p-8 text-center text-xs text-mutedText">Loading live Meta posts…</div> : filtered.length === 0 ? (
         <div className="rounded-xl border border-dashed border-borderSoft bg-surface/50 p-8 text-center text-xs leading-relaxed text-mutedText">
-          <p>{data?.error ? "Meta could not return posts:" : "No live Meta posts returned yet."}</p>
-          {data?.error && <p role="alert" className="mt-2 text-warning">{data.error}</p>}
-          <button type="button" className="mt-3 font-medium text-primary underline underline-offset-4" onClick={() => window.location.assign(new URL("/api/meta/oauth", window.location.href))}>
+          <p>{error ? "Analytics could not load." : data?.error ? "Meta could not return posts:" : "No live Meta posts returned yet."}</p>
+          {data?.error && <p role="alert" className="mt-2 text-warning-ink">{data.error}</p>}
+          {!error && <button type="button" className="mt-3 font-medium text-primary underline underline-offset-4" onClick={() => window.location.assign(new URL("/api/meta/oauth", window.location.href))}>
             {data?.accounts?.length ? "Reconnect Meta and approve Page read access" : "Connect Meta"}
-          </button>
+          </button>}
         </div>
       ) : <>
         {/* Desktop table */}

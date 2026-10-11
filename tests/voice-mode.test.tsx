@@ -12,6 +12,9 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { ChatInterface } from "@/components/dashboard/chat-interface";
+import { accountStorageKey } from "@/lib/account-storage";
+
+const VOICE_MODE_KEY = accountStorageKey("eduverse:voice-mode", "learner@eduverse.app");
 
 const encoder = new TextEncoder();
 let postController: ReadableStreamDefaultController<Uint8Array> | null = null;
@@ -35,9 +38,9 @@ if (typeof window.localStorage?.getItem !== "function") {
 }
 const clearVoiceModeStorage = () => {
   try {
-    window.localStorage.removeItem("eduverse:voice-mode");
+    window.localStorage.removeItem(VOICE_MODE_KEY);
   } catch {
-    localStorageStore.delete("eduverse:voice-mode");
+    localStorageStore.delete(VOICE_MODE_KEY);
   }
 };
 
@@ -191,7 +194,7 @@ describe("voice mode (auto read-aloud)", () => {
       buttonWithLabel("Turn voice mode on — replies are read aloud automatically").click();
     });
     expect(buttonWithLabel("Turn voice mode off")).toBeTruthy();
-    expect(window.localStorage.getItem("eduverse:voice-mode")).toBe("1");
+    expect(window.localStorage.getItem(VOICE_MODE_KEY)).toBe("1");
 
     await sendPrompt();
     await finishStream(["Hello ", "spoken ", "answer."]);
@@ -204,7 +207,7 @@ describe("voice mode (auto read-aloud)", () => {
 
   it("does not read history retroactively and stays silent while streaming", async () => {
     // Voice mode persisted from a previous visit.
-    window.localStorage.setItem("eduverse:voice-mode", "1");
+    window.localStorage.setItem(VOICE_MODE_KEY, "1");
     await mount();
 
     await sendPrompt();
@@ -235,7 +238,7 @@ describe("voice mode (auto read-aloud)", () => {
     await act(async () => {
       buttonWithLabel("Turn voice mode off").click();
     });
-    expect(window.localStorage.getItem("eduverse:voice-mode")).toBe("0");
+    expect(window.localStorage.getItem(VOICE_MODE_KEY)).toBe("0");
     expect(audioEvents.filter((event) => event.kind === "pause" || event.kind === "stop-src").length).toBeGreaterThan(0);
 
     // A subsequent reply is not spoken while the mode is off.

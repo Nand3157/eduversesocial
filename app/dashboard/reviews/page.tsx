@@ -34,7 +34,7 @@ function Stars({ rating }: { rating: number }) {
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
-    pending: "bg-warning/15 text-warning border-warning/25",
+    pending: "bg-[var(--warn-soft)] text-warning-ink border-[var(--warn)]",
     approved: "bg-success/15 text-success border-success/25",
     rejected: "bg-danger/10 text-danger border-danger/20"
   };
@@ -141,9 +141,9 @@ export default function ReviewsModerationPage() {
       />
 
       {isForbiddenError && (
-        <Card className="border-warning/30 bg-warning/10">
+        <Card className="border-[var(--warn)] bg-[var(--warn-soft)]">
           <CardContent className="flex gap-3 p-5">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-warning/20 text-warning">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[var(--warn-soft-strong)] text-warning-ink">
               <Lock aria-hidden="true" className="h-5 w-5" />
             </span>
             <div>

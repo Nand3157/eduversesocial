@@ -81,8 +81,9 @@ describe("Facebook OAuth callback", () => {
     installFetch((url) => {
       if (url.includes("oauth/access_token")) return { status: 200, body: { access_token: "short-token", expires_in: 5000 } };
       if (url.includes("me/accounts")) {
-        return { status: 200, body: { data: [{ id: "page_1", name: "Page", access_token: "page-token", instagram_business_account: { id: "ig_1", username: "ig.user" } }] } };
+        return { status: 200, body: { data: [{ id: "page_1", name: "Page", access_token: "page-token", tasks: ["MODERATE"], instagram_business_account: { id: "ig_1", username: "ig.user" } }] } };
       }
+      if (url.includes("me/permissions")) return { status: 200, body: { data: [{ permission: "pages_read_engagement", status: "granted" }] } };
       throw new Error(`Unexpected URL ${url}`);
     });
     const { GET } = await import("@/app/api/meta/oauth/callback/route");

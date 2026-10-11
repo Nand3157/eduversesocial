@@ -26,7 +26,7 @@ export default function DemoPage() {
             <span className="hidden font-display text-lg font-semibold tracking-tight text-ink sm:inline">
               Edu<em className="font-normal text-primary">Verse</em>
             </span>
-            <span className="ml-2 hidden items-center gap-1.5 rounded-full border border-warning/20 bg-warning/10 px-2.5 py-1 text-[11px] font-semibold text-warning sm:inline-flex">
+            <span className="ml-2 hidden items-center gap-1.5 rounded-full border border-[var(--warn)] bg-[var(--warn-soft)] px-2.5 py-1 text-[11px] font-semibold text-warning-ink sm:inline-flex">
               <Eye className="h-3 w-3" /> Demo — simulated data
             </span>
           </Link>

@@ -6,6 +6,7 @@ import { MetaError } from "@/lib/meta-errors";
 import { createClient } from "@/lib/supabase/server";
 import { decrypt } from "@/lib/crypto";
 import { mapLimit } from "@/lib/async";
+import { hasInsightValues } from "@/lib/meta-insight-availability";
 import { logger } from "@/lib/logger";
 import { computeBestTimes, describeBestWindow, normalizeContentType, normalizePlatform, type BestTimeResult, type TimedPost } from "@/lib/best-time";
 
@@ -33,7 +34,7 @@ export type AnalyticsSnapshot = {
   live: boolean;
   cached?: boolean;
   accounts: MetaAccount[];
-  metrics: Array<{ label: string; value: number; suffix: string; detail: string }>;
+  metrics: Array<{ label: string; value: number | null; suffix: string; detail: string }>;
   engagementData: Array<{ label: string; engagement: number; comments: number }>;
   platformBreakdown: Array<{ name: string; value: number }>;
   postingData: Array<{ label: string; value: number }>;
@@ -170,7 +171,9 @@ type ThreadsInsightsResult = {
   posts: AnalyticsPost[];
   timingSignals: TimedPost[];
   reach: number;
+  hasReachData: boolean;
   engaged: number;
+  hasEngagementData: boolean;
   followers: number;
   postingCount: number;
   engagementDaily: Array<{ key: string; engagement: number; comments: number }>;
@@ -268,7 +271,9 @@ async function fetchThreadsAnalytics(token: string): Promise<ThreadsInsightsResu
     posts: postRows,
     timingSignals,
     reach: totalValues.get("views") ?? postRows.reduce((total, row) => total + expandCompact(row.reach), 0),
+    hasReachData: totalValues.has("views") || postsWithInsights.some(({ values }) => values.has("views")),
     engaged: (totalValues.get("likes") ?? 0) + (totalValues.get("replies") ?? 0) + (totalValues.get("reposts") ?? 0) + (totalValues.get("quotes") ?? 0),
+    hasEngagementData: ["likes", "replies", "reposts", "quotes"].some((name) => totalValues.has(name)) || postsWithInsights.some(({ values }) => ["likes", "replies", "reposts", "quotes"].some((name) => values.has(name))),
     followers: totalValues.get("followers_count") ?? 0,
     postingCount: (posts?.data || []).length,
     engagementDaily: Array.from(daily, ([key, values]) => ({ key, ...values }))
@@ -528,6 +533,8 @@ export async function fetchMetaAnalytics(token?: string, bypassCache = false): P
     // from page_views_total because page_impressions is rejected for
     // dev-mode page tokens (Graph API v26 returns "invalid metric").
     const engaged = sumInsight(allRows, ["page_post_engagements", "total_interactions"]) + (threads?.engaged ?? 0);
+    const hasReachData = hasInsightValues(allRows, ["page_views_total", "reach"]) || Boolean(threads?.hasReachData);
+    const hasEngagementData = hasInsightValues(allRows, ["page_post_engagements", "total_interactions"]) || Boolean(threads?.hasEngagementData);
     const postCount = pageResults.reduce((total, result) => total + result.pagePosts.length + result.instagramPosts.length, 0) + (threads?.postingCount ?? 0);
 
     const daily = new Map<string, { engagement: number; comments: number }>();
@@ -613,10 +620,10 @@ const followers = [
     ];
 
     const metrics = [
-      { label: "Views (28d)", value: reach, suffix: "", detail: "Live Meta Graph data" },
-      { label: "Engagement (28d)", value: engaged, suffix: "", detail: "Live Meta Graph data" },
+      { label: "Views (28d)", value: hasReachData ? reach : null, suffix: "", detail: hasReachData ? "Live Meta Graph data" : "No view insight data returned by Meta" },
+      { label: "Engagement (28d)", value: hasEngagementData ? engaged : null, suffix: "", detail: hasEngagementData ? "Live Meta Graph data" : "No engagement insight data returned by Meta" },
       { label: "Published posts", value: postCount, suffix: "", detail: "Returned by Meta" },
-      { label: "Engagement rate", value: reach ? Number(((engaged / reach) * 100).toFixed(1)) : 0, suffix: "%", detail: "Calculated from Meta data" }
+      { label: "Engagement rate", value: hasReachData && hasEngagementData && reach > 0 ? Number(((engaged / reach) * 100).toFixed(1)) : null, suffix: "%", detail: hasReachData && hasEngagementData && reach > 0 ? "Calculated from Meta data" : "Requires view and engagement insights" }
     ];
 
     const bestTimeMemory = bestTimes.windows.length

@@ -257,7 +257,7 @@ export function BestTimeCard() {
         </div>
       </CardHeader>
       <CardContent>
-        {loading ? (
+        {loading && !data?.success ? (
           <div role="status" className="rounded-xl border border-dashed border-borderSoft bg-surface/50 p-6 text-center text-xs text-mutedText">
             Loading live posting windows…
           </div>

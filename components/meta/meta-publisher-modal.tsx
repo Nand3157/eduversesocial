@@ -12,7 +12,7 @@ import { EASE_OUT } from "@/components/motion-variants";
 interface MetaPublisherModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess?: () => void;
+  onSuccess?: (result: { status: string; approvalStatus?: string }) => void;
   initialCaption?: string;
   initialPlatform?: "instagram" | "facebook" | "threads";
   /** UTC ISO timestamp to prefill the schedule field (e.g. from best-time). */
@@ -25,8 +25,6 @@ type PublishResult = { message: string; isError: boolean };
 
 const MAX_UPLOAD_MB = 4;
 const MAX_UPLOADS = 4;
-const DEFAULT_HASHTAGS = ["#AI", "#Automation", "#CreatorEconomy", "#EduVerse"];
-
 const FIELD_CLASS =
   "w-full rounded-xl border border-borderSoft bg-surface p-2.5 text-xs text-ink placeholder:text-faintText transition-[border-color,box-shadow] outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/40";
 
@@ -41,7 +39,7 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess, initialCaption,
   const [platform, setPlatform] = useState<"instagram" | "facebook" | "threads">("instagram");
   const [selectedAccount, setSelectedAccount] = useState<MetaAccount | null>(null);
   const [mediaType, setMediaType] = useState<"CAROUSEL" | "IMAGE" | "VIDEO" | "TEXT">("CAROUSEL");
-  const [caption, setCaption] = useState("5 AI automations creators use weekly to save 10 hours 🚀 swipe to see the exact prompts!");
+  const [caption, setCaption] = useState("");
   const [mediaUrls, setMediaUrls] = useState("");
   const [uploadedMedia, setUploadedMedia] = useState<UploadedMedia[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -53,8 +51,11 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess, initialCaption,
   const [hookSuggestions, setHookSuggestions] = useState<string[]>([]);
   const [publishedResult, setPublishedResult] = useState<PublishResult | null>(null);
   const [connectedAccounts, setConnectedAccounts] = useState<MetaAccount[]>([]);
+  const [accountsLoading, setAccountsLoading] = useState(false);
+  const [accountsLoadFailed, setAccountsLoadFailed] = useState(false);
+  const [accountsRetry, setAccountsRetry] = useState(0);
   const [celebrateKey, setCelebrateKey] = useState(0);
-  const [hashtags, setHashtags] = useState<string[]>(DEFAULT_HASHTAGS);
+  const [hashtags, setHashtags] = useState<string[]>([]);
   const [hashtagInput, setHashtagInput] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -111,19 +112,36 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess, initialCaption,
 
   useEffect(() => {
     if (!isOpen) return;
-    fetch("/api/meta/connect", { cache: "no-store" })
-      .then((response) => (response.ok ? response.json() : { accounts: [] }))
+    const controller = new AbortController();
+    setAccountsLoading(true);
+    setAccountsLoadFailed(false);
+    fetch("/api/meta/connect", { cache: "no-store", signal: controller.signal })
+      .then(async (response) => {
+        const data = await response.json().catch(() => null);
+        if (!response.ok || data?.success === false) throw new Error("Could not load Meta channels.");
+        return data;
+      })
       .then((data) => {
-        const accounts = (data.accounts ?? []) as MetaAccount[];
+        const accounts = Array.isArray(data?.accounts) ? data.accounts as MetaAccount[] : [];
         setConnectedAccounts(accounts);
         const firstAccount = accounts.find((account) => account.platform === initialPlatform) ?? accounts.find((account) => account.platform === "instagram" || account.platform === "facebook" || account.platform === "threads");
+        setSelectedAccount(firstAccount ?? null);
         if (firstAccount) {
           setPlatform(firstAccount.platform);
-          setSelectedAccount(firstAccount);
         }
       })
-      .catch(() => setConnectedAccounts([]));
-  }, [isOpen, initialPlatform]);
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setConnectedAccounts([]);
+          setSelectedAccount(null);
+          setAccountsLoadFailed(true);
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setAccountsLoading(false);
+      });
+    return () => controller.abort();
+  }, [isOpen, initialPlatform, accountsRetry]);
 
   const typedUrls = () => mediaUrls.split(/[\n,]/).map((url) => url.trim()).filter(Boolean);
   const allMediaUrls = () => [...uploadedMedia.map((media) => media.url), ...typedUrls()];
@@ -253,7 +271,7 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess, initialCaption,
         setPublishedResult({ message: data.status === "SCHEDULED" ? data.approvalStatus === "pending" ? `Post scheduled for review (${data.postId})` : `Post scheduled (${data.postId})` : `Published and confirmed by Meta (${data.postId})`, isError: false });
         setCelebrateKey((key) => key + 1);
         window.dispatchEvent(new Event("eduverse:analytics-refresh"));
-        if (onSuccess) onSuccess();
+        onSuccess?.({ status: data.status, approvalStatus: data.approvalStatus });
       } else {
         setPublishedResult({ message: data.message || data.error || "Failed to publish. Check the post details and try again.", isError: true });
       }
@@ -291,7 +309,16 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess, initialCaption,
               <legend className="mb-2 text-xs font-medium text-mutedText">
                 Target Channel {connectedAccounts.length > 1 ? `(${connectedAccounts.length} accounts returned by Meta — select one)` : ""}
               </legend>
-              {connectedAccounts.length === 0 ? <div className="rounded-xl border border-dashed border-borderSoft bg-surface p-4 text-xs leading-relaxed text-mutedText">No connected Meta channel is available. Connect a Facebook Page with a linked Instagram Business account first.</div> : <div className="grid gap-2 sm:grid-cols-2">
+      {accountsLoading ? (
+        <div role="status" aria-live="polite" className="rounded-xl border border-dashed border-borderSoft bg-surface p-4 text-xs text-mutedText">Loading connected Meta channels…</div>
+      ) : accountsLoadFailed ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed border-borderSoft bg-surface p-4 text-xs text-mutedText">
+          <span role="alert">Meta channels could not be loaded. Check your connection and try again.</span>
+          <button type="button" onClick={() => setAccountsRetry((attempt) => attempt + 1)} className="rounded-lg border border-borderSoft px-3 py-1.5 font-semibold text-ink transition hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">Try again</button>
+        </div>
+      ) : connectedAccounts.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-borderSoft bg-surface p-4 text-xs leading-relaxed text-mutedText">No connected Meta channels were found. Connect a Facebook Page or linked Instagram Business account in Settings.</div>
+      ) : <div className="grid gap-2 sm:grid-cols-2">
                 {connectedAccounts.map((account) => {
                   const id = account.platform as "instagram" | "facebook" | "threads";
                   const selected = selectedAccount?.id === account.id && selectedAccount?.platform === account.platform;
@@ -459,7 +486,7 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess, initialCaption,
               />
               <div className="mt-1 flex justify-between text-[10px] text-faintText">
                 <span>The hook generator reads your images and links to craft single-sentence hooks.</span>
-                <span className={caption.length > 2000 ? "text-warning" : ""}>{caption.length}/2200</span>
+                <span className={caption.length > 2000 ? "text-warning-ink" : ""}>{caption.length}/2200</span>
               </div>
               {hookSuggestions.length > 0 && (
                 <div className="mt-2 space-y-1.5">
@@ -515,7 +542,7 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess, initialCaption,
                 <Dialog.Close className="touch-manipulation rounded-xl border border-borderSoft bg-surface px-4 py-2 text-xs font-semibold text-ink transition hover:bg-surface">Cancel</Dialog.Close>
                 <button
                   type="submit"
-                  disabled={publishing || connectedAccounts.length === 0}
+                  disabled={publishing || accountsLoading || accountsLoadFailed || connectedAccounts.length === 0}
                   className="inline-flex touch-manipulation items-center gap-2 rounded-xl bg-success px-5 py-2 text-xs font-semibold text-background transition-[background-color] hover:bg-success/90 focus-visible:ring-2 focus-visible:ring-success/50 focus-visible:ring-offset-2 focus-visible:ring-offset-card focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
                 >
                   <Send aria-hidden="true" className="h-3.5 w-3.5" />

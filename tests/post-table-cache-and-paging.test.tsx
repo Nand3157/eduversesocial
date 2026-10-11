@@ -1,21 +1,11 @@
 // @vitest-environment jsdom
 /**
- * Logic defects #4 + #5 (post-table, one file-scoped pass).
- *
- * Ground truth from the code (the audit's quoted internals — persistedPostIds,
- * a View CSV panel, an existing broken key handler — don't exist anywhere in
- * the repo): the real issues are:
- *   #4: `eduverse:csv-import` is a global, identity-less cache hydrated
- *       whenever no `csvRows` prop is active, with no cap or shape check —
- *       so rows imported in one context can resurface under another, and the
- *       payload is read without bound.
- *   #5: the pager has no keyboard support at all, and `page` is never
- *       re-clamped when `totalPages` shrinks (empty page + "Page 3 of 1").
+ * Account-scoped CSV draft cache and keyboard pagination behavior.
  *
  * Pinned behaviors:
  *   1. an active selection always wins — persisted A never renders under B;
  *   2. with no selection, the cache hydrates (the feature still works);
- *   3. the cache read is shape-checked and capped at 50; cache events are
+ *   3. the account-scoped cache read is shape-checked and capped at 50; events are
  *      capped too; repeated exports keep exactly one storage key;
  *   4. malformed payloads are ignored;
  *   5. Clear empties rows AND removes the storage key;
@@ -28,8 +18,9 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { AnalyticsProvider } from "@/components/dashboard/analytics-context";
 import { PostTable } from "@/components/dashboard/post-table";
 import type { AnalyticsSnapshot } from "@/lib/meta-analytics";
+import { accountStorageKey } from "@/lib/account-storage";
 
-const CSV_KEY = "eduverse:csv-import";
+const CSV_KEY = accountStorageKey("eduverse:csv-import", "learner@eduverse.app");
 
 const row = (n: number) => ({ platform: "instagram", content: `Cached draft ${n}`, date: "Sep 1, 2026" });
 const rows = (count: number) => Array.from({ length: count }, (_, i) => row(i + 1));
@@ -46,7 +37,7 @@ const recentPosts = Array.from({ length: 7 }, (_, i) => ({
 }));
 
 function snapshotWith(posts: typeof recentPosts): AnalyticsSnapshot {
-  return { live: true, recentPosts: posts } as unknown as AnalyticsSnapshot;
+  return { success: true, live: true, recentPosts: posts } as unknown as AnalyticsSnapshot;
 }
 
 beforeAll(() => {

@@ -41,9 +41,10 @@ export function AnalyticsProvider({ children, initialData }: { children: React.R
       })
       .catch(() => {
         // Distinguish load failure from "Meta not connected" so the UI can
-        // offer a retry instead of connect-Meta guidance.
+        // offer a retry instead of connect-Meta guidance. Keep the previous
+        // snapshot visible when a refresh fails; a transient API error must not
+        // erase usable data from every dashboard section.
         if (!cancelled) {
-          setData(null);
           setError(true);
         }
       })

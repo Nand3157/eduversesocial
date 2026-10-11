@@ -54,7 +54,7 @@ export function AuthForm({ mode, next }: { mode: Mode; next?: string }) {
     : [];
   const strength = !pwd ? 0 : [pwd.length >= 12, /[a-z]/.test(pwd) && /[A-Z]/.test(pwd), /\d/.test(pwd), pwd.length >= 16, /[^A-Za-z0-9]/.test(pwd)].filter(Boolean).length;
   const strengthLabel = ["", "Weak", "Fair", "Good", "Strong", "Very strong"][strength] ?? "";
-  const strengthColor = ["bg-transparent", "bg-danger", "bg-warning", "bg-warning", "bg-success", "bg-success"][strength] ?? "bg-transparent";
+  const strengthColor = ["bg-transparent", "bg-danger", "bg-[var(--warn-soft)]", "bg-[var(--warn-soft)]", "bg-success", "bg-success"][strength] ?? "bg-transparent";
 
   return (
     <form ref={formRef} action={formAction} className="mt-3 space-y-2.5">
@@ -112,7 +112,7 @@ export function AuthForm({ mode, next }: { mode: Mode; next?: string }) {
                   <span key={i} className={`h-1 flex-1 rounded-full transition-colors ${i < strength ? strengthColor : "bg-borderSoft"}`} />
                 ))}
               </span>
-              <span className={`text-[11px] font-medium ${strength <= 2 ? "text-danger" : strength === 3 ? "text-warning" : "text-success"}`}>{strengthLabel}</span>
+              <span className={`text-[11px] font-medium ${strength <= 2 ? "text-danger" : strength === 3 ? "text-warning-ink" : "text-success"}`}>{strengthLabel}</span>
             </span>
           )}
           {isSignupOrReset && (
@@ -185,7 +185,7 @@ export function AuthForm({ mode, next }: { mode: Mode; next?: string }) {
       {mode === "signup" && (
         <Link
           href="/demo"
-          className="flex items-center justify-center gap-1.5 rounded-xl border border-warning/20 bg-warning/10 px-3 py-2.5 text-xs font-medium text-warning transition hover:bg-warning/15"
+          className="flex items-center justify-center gap-1.5 rounded-xl border border-[var(--warn)] bg-[var(--warn-soft)] px-3 py-2.5 text-xs font-medium text-warning-ink transition hover:bg-[var(--warn-soft-strong)]"
         >
           <Eye aria-hidden="true" className="h-3.5 w-3.5" /> Explore Live Demo — no signup required
         </Link>

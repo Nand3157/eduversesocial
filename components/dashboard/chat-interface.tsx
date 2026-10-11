@@ -316,10 +316,14 @@ export function ChatInterface() {
 
   // Voice mode: every new assistant reply is read aloud as it finishes —
   // dictate with the mic, send, and just listen. Persists across visits.
-  const [voiceMode, setVoiceMode] = useState(false);
+  const [voiceMode, setVoiceMode] = useState(() => {
+    try { return window.localStorage.getItem(voiceModeStorageKey) === "1"; } catch { return false; }
+  });
   useEffect(() => {
-    try { setVoiceMode(window.localStorage.getItem(voiceModeStorageKey) === "1"); }
-    catch { setVoiceMode(false); }
+    queueMicrotask(() => {
+      try { setVoiceMode(window.localStorage.getItem(voiceModeStorageKey) === "1"); }
+      catch { setVoiceMode(false); }
+    });
   }, [voiceModeStorageKey]);
   // Signature of the last assistant message voice mode has handled (or the
   // baseline captured when the mode was enabled, so existing history is
@@ -801,7 +805,7 @@ export function ChatInterface() {
         {/* Input area */}
         <div className="shrink-0 border-t border-borderSoft p-4">
           {persistenceWarning && (
-            <p role="status" className="mb-3 flex items-center gap-1.5 rounded-xl border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning">
+            <p role="status" className="mb-3 flex items-center gap-1.5 rounded-xl border border-[var(--warn)] bg-[var(--warn-soft)] px-3 py-2 text-xs text-warning-ink">
               <CloudOff aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
               Saving is temporarily unavailable — replies still work, but this conversation won&apos;t appear in your history.
             </p>

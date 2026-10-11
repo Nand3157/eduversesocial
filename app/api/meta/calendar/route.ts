@@ -40,8 +40,12 @@ export async function GET(request: Request) {
     context.supabase.from("recurring_content_slots").select("id,account_id,platform,label,weekday,local_time,timezone,content_type,approval_required,enabled")
       .eq("workspace_id", context.workspaceId).eq("user_id", context.user.id).eq("enabled", true)
   ]);
-  if (posts.error || slots.error) return NextResponse.json({ message: "Could not load the calendar." }, { status: 500 });
-  return NextResponse.json({ posts: posts.data ?? [], slots: slots.data ?? [] });
+  if (posts.error && slots.error) return NextResponse.json({ message: "Could not load calendar posts or recurring slots." }, { status: 500 });
+  const warnings = [
+    ...(posts.error ? ["Scheduled posts could not load."] : []),
+    ...(slots.error ? ["Recurring slots could not load."] : [])
+  ];
+  return NextResponse.json({ posts: posts.data ?? [], slots: slots.data ?? [], warnings });
 }
 
 export async function POST(request: Request) {

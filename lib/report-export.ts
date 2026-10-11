@@ -34,7 +34,7 @@ function downloadBlob(content: BlobPart, filename: string, type: string) {
 export function snapshotExportRows(snapshot: AnalyticsSnapshot) {
   const rows: Record<(typeof EXPORT_COLUMNS)[number], ExportCell>[] = [];
 
-  snapshot.metrics.forEach((metric) => rows.push({ section: "metric", platform: "", date: "", label: metric.label, value: metric.value, likes: "", comments: "", shares: "", reach: "", status: "", detail: metric.detail }));
+  snapshot.metrics.forEach((metric) => rows.push({ section: "metric", platform: "", date: "", label: metric.label, value: metric.value ?? "Not available", likes: "", comments: "", shares: "", reach: "", status: "", detail: metric.detail }));
   snapshot.platformBreakdown.forEach((item) => rows.push({ section: "platform", platform: item.name, date: "", label: "Engagement share", value: item.value, likes: "", comments: "", shares: "", reach: "", status: "", detail: "" }));
   snapshot.postingData.forEach((item) => rows.push({ section: "posting", platform: item.label, date: "", label: "Published posts", value: item.value, likes: "", comments: "", shares: "", reach: "", status: "", detail: "" }));
   snapshot.growthData.forEach((item) => rows.push({ section: "audience", platform: item.label, date: "", label: "Followers", value: item.followers, likes: "", comments: "", shares: "", reach: "", status: "", detail: "" }));
@@ -96,7 +96,7 @@ export function openSnapshotPdf(snapshot: AnalyticsSnapshot) {
   printWindow.opener = null;
 
   const generatedAt = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date());
-  const metrics = snapshot.metrics.map((metric) => `<div class="metric"><span>${escapeHtml(metric.label)}</span><strong>${escapeHtml(metric.value)}${escapeHtml(metric.suffix)}</strong><small>${escapeHtml(metric.detail)}</small></div>`).join("");
+  const metrics = snapshot.metrics.map((metric) => `<div class="metric"><span>${escapeHtml(metric.label)}</span><strong>${metric.value === null ? "—" : `${escapeHtml(metric.value)}${escapeHtml(metric.suffix)}`}</strong><small>${escapeHtml(metric.detail)}</small></div>`).join("");
   const platformRows = snapshot.platformBreakdown.map((item) => [item.name, item.value]);
   const postRows = snapshot.recentPosts.map((post) => [post.platform, post.date, post.post, post.likes, post.comments, post.reach]);
   const memoryRows = snapshot.memoryItems.map((item) => [item]);

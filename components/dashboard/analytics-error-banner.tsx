@@ -9,7 +9,11 @@ import { useAnalytics } from "@/components/dashboard/analytics-context";
  */
 export function AnalyticsErrorBanner() {
   const { data, error, loading, refresh } = useAnalytics();
-  const message = data?.error ?? (error ? "Analytics failed to load. Retry the request." : null);
+  const message = error
+    ? data?.success
+      ? "Analytics refresh failed. Showing the last available snapshot."
+      : "Analytics failed to load. Retry the request."
+    : data?.error ?? null;
   if (!message || loading) return null;
   const needsReconnect = /permission|authorized|scope|reconnect|denied|Graph API #(?:10|200|190)/i.test(message);
   return (

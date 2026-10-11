@@ -59,25 +59,36 @@ export default function SettingsPage() {
   // Accounts state
   const [isMetaConnectOpen, setIsMetaConnectOpen] = useState(false);
   const [metaAccounts, setMetaAccounts] = useState<MetaAccount[]>([]);
+  const [metaAccountsLoading, setMetaAccountsLoading] = useState(true);
+  const [metaAccountsRetry, setMetaAccountsRetry] = useState(0);
   const [disconnectingAccount, setDisconnectingAccount] = useState<string | null>(null);
+  const [metaAccountsLoadError, setMetaAccountsLoadError] = useState(false);
   const [connectedAccountsError, setConnectedAccountsError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
     const loadAccounts = async () => {
+      setMetaAccountsLoading(true);
+      setMetaAccountsLoadError(false);
       try {
         const response = await fetch("/api/meta/connect", { cache: "no-store" });
-        const data = await response.json();
-        if (!cancelled) setMetaAccounts(data.accounts ?? []);
+        const data = await response.json().catch(() => null);
+        if (!response.ok || data?.success === false) throw new Error("Could not load Meta accounts.");
+        if (!cancelled) setMetaAccounts(Array.isArray(data?.accounts) ? data.accounts : []);
       } catch {
-        if (!cancelled) setMetaAccounts([]);
+        if (!cancelled) {
+          setMetaAccounts([]);
+          setMetaAccountsLoadError(true);
+        }
+      } finally {
+        if (!cancelled) setMetaAccountsLoading(false);
       }
     };
     void loadAccounts();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [metaAccountsRetry]);
 
   // Notifications state
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -90,7 +101,6 @@ export default function SettingsPage() {
   const [notificationsLoadedFor, setNotificationsLoadedFor] = useState("");
 
   useEffect(() => {
-    setNotificationsLoadedFor("");
     queueMicrotask(() => {
       let saved = { weeklyReports: true, audienceSpikes: true, aiDigest: true, milestones: false };
       try {
@@ -120,10 +130,9 @@ export default function SettingsPage() {
   // client render agree (avoids a hydration mismatch when rows were persisted).
   useEffect(() => {
     let cancelled = false;
-    setMembersLoadedFor("");
-    setTeamMembers([{ name: userName, email: userEmail, role: "Owner" }]);
     queueMicrotask(() => {
       if (cancelled) return;
+      setTeamMembers([{ name: userName, email: userEmail, role: "Owner" }]);
       try {
         const raw = localStorage.getItem(teamStorageKey);
         if (raw) {
@@ -136,7 +145,7 @@ export default function SettingsPage() {
     return () => {
       cancelled = true;
     };
-  }, [teamStorageKey]);
+  }, [teamStorageKey, userName, userEmail]);
 
   // Persist team members whenever they change (only once hydrated)
   useEffect(() => {
@@ -161,6 +170,7 @@ export default function SettingsPage() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleteSuccess, setDeleteSuccess] = useState(false);
+  const [serverDeleted, setServerDeleted] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState("");
 
@@ -306,11 +316,10 @@ export default function SettingsPage() {
     if (!email) { setInviteError("Enter an email address."); return; }
     if (!emailRe.test(email)) { setInviteError("Enter a valid email (e.g. colleague@company.com)."); return; }
     if (teamMembers.some((m) => m.email.toLowerCase() === email)) { setInviteError("That email is already in the workspace."); return; }
-    if (teamMembers.length >= 10) { setInviteError("Workspace limit: 10 members on this plan. Remove someone first."); return; }
     if (email === userEmail.toLowerCase()) { setInviteError("You are already the owner."); return; }
     setTeamMembers((prev) => [...prev, { name: email.split("@")[0], email, role: inviteRole }]);
     setInviteEmail("");
-    triggerToast(`Invite queued locally for ${email} — email delivery requires backend (coming soon, persisted for now).`);
+    triggerToast(`Saved a local invite draft for ${email}. No access was granted.`);
   }
 
   async function handleDeleteAccount(e: React.FormEvent) {
@@ -320,7 +329,12 @@ export default function SettingsPage() {
     if (deleteLoading) return;
     setDeleteLoading(true);
     try {
-      // Clear local artifacts first so UI reflects deletion even if server is slow
+      const res = await fetch("/api/account/delete", { method: "DELETE" });
+      const data = await res.json().catch(() => null);
+      if (!res.ok && res.status !== 404) throw new Error(data?.message || "Deletion failed.");
+
+      // Preserve browser data on network/server errors. Clear only after the
+      // server confirms deletion or explicitly requests the local-only fallback.
       try {
         localStorage.removeItem(teamStorageKey);
         localStorage.removeItem(notificationStorageKey);
@@ -328,21 +342,12 @@ export default function SettingsPage() {
         localStorage.removeItem("eduverse-dashboard-store");
         localStorage.removeItem("theme");
       } catch {}
-      const res = await fetch("/api/account/delete", { method: "DELETE" }).catch(() => null);
-      if (res && !res.ok) {
-        const data = await res.json().catch(() => null);
-        // If backend not ready, still sign out locally and show honest message
-        if (res.status === 404) {
-          setDeleteSuccess(true);
-          triggerToast("Local data cleared. Permanent deletion needs admin — contact hello@eduverse.app with your email.");
-          setTimeout(() => { router.push("/login"); }, 1500);
-          return;
-        }
-        throw new Error(data?.message || "Deletion failed.");
-      }
       setDeleteSuccess(true);
-      triggerToast("Account data cleared locally. Signing out…");
-      setTimeout(() => { router.push("/login"); }, 1200);
+      setServerDeleted(res.status !== 404);
+      triggerToast(res.status === 404
+        ? "Browser data cleared. Contact hello@eduverse.app to request permanent server deletion."
+        : "Account deleted. Signing out…");
+      setTimeout(() => { router.push("/login"); }, res.status === 404 ? 1500 : 1200);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Could not delete account.";
       triggerToast(msg);
@@ -451,7 +456,11 @@ export default function SettingsPage() {
             <div className="min-w-0 flex-1">
               <p className="font-semibold">Connected accounts</p>
               <p className="mt-1 text-sm leading-6 text-mutedText">
-                {connectedList.length > 0
+                {metaAccountsLoading
+                  ? "Checking your Meta connection…"
+                  : metaAccountsLoadError
+                    ? "Your connection status could not be checked."
+                    : connectedList.length > 0
                   ? `${connectedList.join(", ")} loaded from Meta Graph API.`
                   : "No Facebook Page or linked Instagram Business account connected."}
               </p>
@@ -472,6 +481,12 @@ export default function SettingsPage() {
                   How to revoke →
                 </a>
               </div>
+              {metaAccountsLoadError && (
+                <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-danger">
+                  <p role="alert">Could not load connected accounts. Check your connection and try again.</p>
+                  <button type="button" onClick={() => setMetaAccountsRetry((attempt) => attempt + 1)} className="rounded-lg border border-borderSoft px-3 py-1.5 font-semibold text-ink transition hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">Try again</button>
+                </div>
+              )}
               {connectedAccountsError && <p role="alert" className="mt-3 text-xs text-danger">{connectedAccountsError}</p>}
               {metaAccounts.length > 0 && (
                 <ul className="mt-4 space-y-2 border-t border-borderSoft pt-3">
@@ -536,38 +551,12 @@ export default function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Access</CardTitle>
-            <CardDescription>{teamMembers.length} team members active in this workspace.</CardDescription>
+            <CardDescription>{teamMembers.length - 1} local invite drafts. Only signed-in workspace members have access.</CardDescription>
           </CardHeader>
           <CardContent>
             <Button onClick={() => setIsAccessOpen(true)} size="sm" variant="secondary">
-              Manage access
+              Manage invite drafts
             </Button>
-          </CardContent>
-        </Card>
-
-        {/* Billing / Plan Card — P3 */}
-        <Card className="border-primary/20 bg-accent-soft/30">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">Plan & Limits <Badge variant="primary">Free</Badge></CardTitle>
-            <CardDescription>Free plan limits — upgrade unlocks more. Usage is live from your workspace.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {[
-              { label: "Team members", used: teamMembers.length, total: 10 },
-              { label: "Connected accounts", used: metaAccounts.length, total: 3 },
-              { label: "Scheduled posts / month", used: 0, total: 10, hint: "via /api/meta/scheduler" },
-              { label: "AI chat / min", used: 0, total: 60, hint: "Gemini 3.5 Flash" },
-            ].map((item) => (
-              <div key={item.label}>
-                <div className="flex justify-between text-xs"><span className="font-medium text-ink">{item.label}</span><span className="tabular-nums text-mutedText">{item.used}/{item.total}</span></div>
-                <div className="mt-1 h-1.5 rounded-full bg-borderSoft overflow-hidden"><div aria-hidden="true" className="h-full w-full origin-left bg-primary transition-transform duration-500" style={{ transform: `scaleX(${Math.min(1, item.used/item.total)})` }} /></div>
-                {item.hint && <p className="text-[10px] text-faintText">{item.hint}</p>}
-              </div>
-            ))}
-            <div className="flex gap-2 pt-2">
-              <Button size="sm" variant="secondary" onClick={() => triggerToast("Upgrade flow coming soon — contact hello@eduverse.app for Pro. Free limits above apply.")}>View upgrade</Button>
-              <Button size="sm" variant="ghost" onClick={() => triggerToast("Billing portal coming soon.")}>Billing portal</Button>
-            </div>
           </CardContent>
         </Card>
 
@@ -580,7 +569,7 @@ export default function SettingsPage() {
             <div>
               <p className="font-semibold text-danger">Delete account</p>
               <p className="mt-1 text-sm text-mutedText">
-                Permanently remove your workspace and all connected data.
+                Request deletion of your account and associated data. Shared workspaces owned by others remain available to their members.
               </p>
               <Button className="mt-4" onClick={() => setIsDeleteOpen(true)} size="sm" variant="secondary">
                 Request account deletion
@@ -820,7 +809,7 @@ export default function SettingsPage() {
       <Modal onOpenChange={setIsAccessOpen} open={isAccessOpen}>
         <ModalContent className="max-w-lg">
           <ModalTitle>Workspace Access & Members</ModalTitle>
-          <ModalDescription>Manage team permissions and invite collaborators. Invites are queued locally and will email once backend is configured — persisted across reloads.</ModalDescription>
+          <ModalDescription>These are browser-local invite drafts only. They do not send email or grant workspace access.</ModalDescription>
 
           <form className="mt-4 flex gap-2" onSubmit={handleInviteMember} noValidate>
             <label className="sr-only" htmlFor="invite-email">Invite email</label>
@@ -850,14 +839,14 @@ export default function SettingsPage() {
             </select>
             <Button size="sm" type="submit" variant="primary">
               <UserPlus aria-hidden="true" className="h-4 w-4" />
-              Invite
+              Save draft
             </Button>
           </form>
           {inviteError && <p id="invite-error" className="mt-2 text-xs text-danger">{inviteError}</p>}
-          <p className="mt-1 text-[10px] text-mutedText">Demo mode: invites stay local until email service is connected. Limit 10 members.</p>
+          <p className="mt-1 text-[10px] text-mutedText">Drafts stay in this browser. Invite delivery and access management are not configured.</p>
 
           <div className="mt-5 space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-faintText">Team Members · {teamMembers.length}/10</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-faintText">Signed-in account and local drafts</p>
             {teamMembers.map((m, idx) => (
               <div
                 className="flex items-center justify-between rounded-xl border border-borderSoft p-3 text-sm dark:border-borderSoft"
@@ -866,7 +855,7 @@ export default function SettingsPage() {
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold truncate">{m.name}</p>
                   <p className="text-xs text-mutedText truncate">{m.email}</p>
-                  {idx !== 0 && <span className="mt-1 inline-flex rounded-full bg-warning/15 px-1.5 py-0.5 text-[10px] font-medium text-warning">Local — pending email</span>}
+                  {idx !== 0 && <span className="mt-1 inline-flex rounded-full bg-[var(--warn-soft)] px-1.5 py-0.5 text-[10px] font-medium text-warning-ink">Draft only — no access</span>}
                 </div>
                 <div className="ml-2 flex items-center gap-2 shrink-0">
                   <Badge variant={m.role === "Owner" ? "primary" : "default"}>{m.role}</Badge>
@@ -891,18 +880,18 @@ export default function SettingsPage() {
         <ModalContent>
           <ModalTitle className="text-danger">Delete Account & Workspace</ModalTitle>
           <ModalDescription>
-            Clears local data immediately and attempts server deletion. For GDPR permanent erasure of Supabase backups, email hello@eduverse.app after this step.
+            Requests server-side account deletion. Browser data is cleared only after the server confirms deletion or returns its local-only fallback. Contact hello@eduverse.app if permanent deletion is unavailable.
           </ModalDescription>
           {deleteSuccess ? (
             <div className="my-6 text-center">
               <CheckCircle2 className="mx-auto h-12 w-12 text-success" />
-              <p className="mt-2 font-semibold text-success">Local data cleared — signing out…</p>
-              <p className="mt-1 text-xs text-mutedText">If you need backup deletion, contact hello@eduverse.app.</p>
+              <p className="mt-2 font-semibold text-success">{serverDeleted ? "Account deleted — signing out…" : "Browser data cleared — signing out…"}</p>
+              {!serverDeleted && <p className="mt-1 text-xs text-mutedText">Contact hello@eduverse.app to request permanent server deletion.</p>}
             </div>
           ) : (
             <form className="mt-4 space-y-4" onSubmit={handleDeleteAccount}>
               <div className="rounded-xl border border-danger/30 bg-danger/10 p-3 text-xs leading-relaxed text-danger">
-                Type <strong>DELETE</strong> to clear local workspace data and sign out. We attempt server-side deletion too; if the admin API is not configured, you are signed out locally and receive contact instructions.
+                Type <strong>DELETE</strong> to request account deletion. Browser data is retained if the request fails.
               </div>
               <label className="sr-only" htmlFor="delete-confirm">Type DELETE to confirm</label>
               <input

@@ -10,6 +10,7 @@ import { MetaPublisherModal } from "@/components/meta/meta-publisher-modal";
 import { Modal, ModalContent, ModalTitle, ModalDescription } from "@/components/ui/modal";
 import { useDashboardStore } from "@/lib/stores/dashboard-store";
 import { accountStorageKey } from "@/lib/account-storage";
+import { parseCsv } from "@/lib/csv";
 import { ContentCalendar } from "@/components/dashboard/content-calendar";
 import { RepurposeStudio } from "@/components/dashboard/repurpose-studio";
 
@@ -31,11 +32,13 @@ export default function ContentPage() {
 
   const handleCsvFile = (file: File) => {
     if (!file.name.toLowerCase().endsWith(".csv")) {
+      setCsvPreview(null);
       setCsvError("Please upload a .csv file.");
       setIsCsvModalOpen(true);
       return;
     }
     if (file.size > 2 * 1024 * 1024) {
+      setCsvPreview(null);
       setCsvError("CSV must be under 2 MB.");
       setIsCsvModalOpen(true);
       return;
@@ -44,9 +47,9 @@ export default function ContentPage() {
     reader.onload = () => {
       try {
         const text = String(reader.result || "");
-        const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-        if (lines.length < 2) throw new Error("CSV is empty. Needs header + at least 1 row.");
-        const header = lines[0].toLowerCase().split(",").map((h) => h.trim().replace(/^"|"$/g, ""));
+        const records = parseCsv(text);
+        if (records.length < 2) throw new Error("CSV is empty. Needs header + at least 1 row.");
+        const header = records[0]!.map((value) => value.trim().toLowerCase());
         const hasPlatform = header.includes("platform");
         const hasContent = header.includes("content") || header.includes("caption") || header.includes("post");
         if (!hasPlatform || !hasContent) throw new Error("CSV header must include 'platform' and 'content' (or caption/post). Optional: date.");
@@ -54,8 +57,8 @@ export default function ContentPage() {
         const contentIdx = header.indexOf("content") !== -1 ? header.indexOf("content") : header.indexOf(header.includes("caption") ? "caption" : "post");
         const dateIdx = header.indexOf("date");
         const rows: CsvRow[] = [];
-        for (let i = 1; i < Math.min(lines.length, 51); i++) {
-          const cols = lines[i].split(",").map((c) => c.trim().replace(/^"|"$/g, ""));
+        for (const record of records.slice(1, 51)) {
+          const cols = record.map((value) => value.trim());
           const platform = (cols[platformIdx] || "instagram").toLowerCase();
           const content = cols[contentIdx] || "";
           const date = dateIdx !== -1 ? cols[dateIdx] || new Intl.DateTimeFormat(undefined, { year: "numeric", month: "short", day: "numeric" }).format(new Date()) : new Intl.DateTimeFormat(undefined, { year: "numeric", month: "short", day: "numeric" }).format(new Date());
@@ -64,17 +67,20 @@ export default function ContentPage() {
           rows.push({ platform, content: content.slice(0, 2200), date });
         }
         if (rows.length === 0) throw new Error("No valid rows. Check platform is instagram/facebook/threads and content is not empty.");
-        if (lines.length > 51) setCsvError(`Showing first 50 of ${lines.length - 1} rows. Split larger files.`);
+        if (records.length > 51) setCsvError(`Showing first 50 of ${records.length - 1} rows. Split larger files.`);
         else setCsvError(null);
         setCsvPreview(rows);
         setIsCsvModalOpen(true);
-        try { localStorage.setItem(csvCacheKey, JSON.stringify({ at: new Date().toISOString(), rows })); } catch {}
-        window.dispatchEvent(new CustomEvent("eduverse:csv-imported", { detail: rows }));
       } catch (e) {
         setCsvPreview(null);
         setCsvError(e instanceof Error ? e.message : "Could not parse CSV.");
         setIsCsvModalOpen(true);
       }
+    };
+    reader.onerror = () => {
+      setCsvPreview(null);
+      setCsvError("Could not read the selected CSV file.");
+      setIsCsvModalOpen(true);
     };
     reader.readAsText(file);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -123,17 +129,17 @@ export default function ContentPage() {
 
       <Card>
         <CardContent className="p-5">
-          <PostTable csvRows={csvPreview ?? undefined} />
+          <PostTable />
         </CardContent>
       </Card>
 
-      <MetaPublisherModal isOpen={publisherOpen} onClose={() => setPublisherOpen(false)} initialCaption={publisherCaption || undefined} initialPlatform={publisherPlatform} onSuccess={() => { setPublisherOpen(false); setCsvSuccess("Post dispatched — check Meta and analytics will refresh shortly."); setTimeout(() => setCsvSuccess(null), 4000); }} />
+      <MetaPublisherModal isOpen={publisherOpen} onClose={() => setPublisherOpen(false)} initialCaption={publisherCaption || undefined} initialPlatform={publisherPlatform} onSuccess={({ status }) => { setPublisherOpen(false); setCsvSuccess(status === "SCHEDULED" ? "Post scheduled. Track its status in the content calendar." : "Post published and confirmed by Meta."); setTimeout(() => setCsvSuccess(null), 4000); }} />
 
       <Modal open={isCsvModalOpen} onOpenChange={setIsCsvModalOpen}>
         <ModalContent className="max-w-2xl">
           <ModalTitle>CSV Import Preview</ModalTitle>
           <ModalDescription>Parsed {csvPreview?.length ?? 0} rows. Content stays local until you publish. Max 50 rows per import.</ModalDescription>
-          {csvError && <div className="mt-4 rounded-xl border border-warning/30 bg-warning/10 p-3 text-xs text-warning">{csvError}</div>}
+          {csvError && <div className="mt-4 rounded-xl border border-[var(--warn)] bg-[var(--warn-soft)] p-3 text-xs text-warning-ink">{csvError}</div>}
           {csvPreview && csvPreview.length > 0 ? (
             <>
               <div className="mt-4 max-h-72 overflow-auto rounded-xl border border-borderSoft">
@@ -145,7 +151,13 @@ export default function ContentPage() {
               {csvPreview.length > 10 && <p className="mt-2 text-xs text-mutedText">Showing 10 of {csvPreview.length} rows. All rows are searchable in the library below after import.</p>}
               <div className="mt-4 flex justify-between gap-2">
                 <Button variant="ghost" onClick={() => { setCsvPreview(null); setIsCsvModalOpen(false); }}>Discard</Button>
-                <Button variant="primary" onClick={() => { setCsvSuccess(`Imported ${csvPreview.length} rows from CSV — visible in library (local only, not yet published). Use New post to dispatch.`); setIsCsvModalOpen(false); setTimeout(() => setCsvSuccess(null), 5000); }}>
+                <Button variant="primary" onClick={() => {
+                  try { localStorage.setItem(csvCacheKey, JSON.stringify({ at: new Date().toISOString(), rows: csvPreview })); } catch {}
+                  window.dispatchEvent(new CustomEvent("eduverse:csv-imported", { detail: csvPreview }));
+                  setCsvSuccess(`Saved ${csvPreview.length} draft rows in this browser. They are not published to Meta.`);
+                  setIsCsvModalOpen(false);
+                  setTimeout(() => setCsvSuccess(null), 5000);
+                }}>
                   <FileText className="h-4 w-4" /> Keep in library
                 </Button>
               </div>

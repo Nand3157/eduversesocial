@@ -39,15 +39,25 @@ export function ContentCalendar() {
     const start = new Date(month.getFullYear(), month.getMonth(), 0);
     const end = new Date(month.getFullYear(), month.getMonth() + 1, 2);
     try {
-      const [calendarResponse, accountResponse] = await Promise.all([
+      const [calendarResult, accountResult] = await Promise.allSettled([
         fetch(`/api/meta/calendar?start=${encodeURIComponent(start.toISOString())}&end=${encodeURIComponent(end.toISOString())}`, { cache: "no-store" }),
         fetch("/api/meta/connect", { cache: "no-store" })
       ]);
-      const calendarJson = await calendarResponse.json();
-      if (!calendarResponse.ok) throw new Error(calendarJson.message || "Calendar unavailable.");
+      if (calendarResult.status === "rejected") throw new Error("Calendar unavailable. Check your connection and retry.");
+      const calendarResponse = calendarResult.value;
+      const calendarJson = await calendarResponse.json().catch(() => null);
+      if (!calendarResponse.ok) throw new Error(calendarJson?.message || "Calendar unavailable.");
       setData({ posts: calendarJson.posts ?? [], slots: calendarJson.slots ?? [] });
-      if (accountResponse.ok) { const accountsJson = await accountResponse.json(); const list = (accountsJson.accounts ?? []) as MetaAccount[]; setAccounts(list); setSlotAccount((current) => current || list[0]?.id || ""); }
-      setMessage("");
+      const warnings = Array.isArray(calendarJson.warnings) ? calendarJson.warnings.filter((item: unknown): item is string => typeof item === "string") : [];
+      if (accountResult.status === "fulfilled" && accountResult.value.ok) {
+        const accountsJson = await accountResult.value.json().catch(() => null);
+        const list = (accountsJson?.accounts ?? []) as MetaAccount[];
+        setAccounts(list);
+        setSlotAccount((current) => current || list[0]?.id || "");
+      } else {
+        warnings.push("Connected accounts could not load; recurring slots cannot be added yet.");
+      }
+      setMessage(warnings.join(" "));
     } catch (error) { setMessage(error instanceof Error ? error.message : "Could not load calendar."); }
   }, [month]);
   useEffect(() => { queueMicrotask(() => void load()); }, [load]);
@@ -113,7 +123,7 @@ export function ContentCalendar() {
               } catch { return false; }
             });
             return <div key={key} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); const id = event.dataTransfer.getData("text/plain"); const post = data.posts.find((item) => item.id === id); if (post) { const original = new Date(post.scheduled_at); const next = localDateTimeIso(key, `${pad(original.getHours())}:${pad(original.getMinutes())}`); if (Date.parse(next) > Date.now()) void updatePost(post.id, { scheduledAt: next }); else setMessage("Choose a future date to reschedule."); } }} className={`min-h-28 border-b border-r border-borderSoft p-1.5 ${inMonth ? "bg-card" : "bg-surface/50"}`}><div className={`mb-1 text-right text-[10px] tabular-nums ${inMonth ? "text-mutedText" : "text-faintText"}`}>{date.getDate()}</div><div className="space-y-1">
-              {posts.map((post) => <button draggable onDragStart={(event) => event.dataTransfer.setData("text/plain", post.id)} onClick={() => { setSelected(post); setScheduleValue(localInput(post.scheduled_at)); }} key={post.id} className="group flex w-full touch-manipulation items-start gap-1 rounded-lg border border-borderSoft bg-surface px-1.5 py-1 text-left text-[10px] leading-4 text-ink hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"><GripVertical className="mt-0.5 h-3 w-3 shrink-0 text-faintText opacity-60" /><span className="min-w-0 flex-1"><span className="font-semibold capitalize">{post.platform}</span><span className="ml-1 text-mutedText">{new Date(post.scheduled_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span><span className="block truncate">{post.content}</span><span className={`mt-0.5 inline-block rounded px-1 py-0.5 ${post.approval_status === "approved" ? "bg-success/10 text-success" : post.approval_status === "pending" ? "bg-warning/10 text-warning" : "bg-danger/10 text-danger"}`}>{post.approval_status}</span></span></button>)}
+              {posts.map((post) => <button draggable onDragStart={(event) => event.dataTransfer.setData("text/plain", post.id)} onClick={() => { setSelected(post); setScheduleValue(localInput(post.scheduled_at)); }} key={post.id} className="group flex w-full touch-manipulation items-start gap-1 rounded-lg border border-borderSoft bg-surface px-1.5 py-1 text-left text-[10px] leading-4 text-ink hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"><GripVertical className="mt-0.5 h-3 w-3 shrink-0 text-faintText opacity-60" /><span className="min-w-0 flex-1"><span className="font-semibold capitalize">{post.platform}</span><span className="ml-1 text-mutedText">{new Date(post.scheduled_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span><span className="block truncate">{post.content}</span><span className={`mt-0.5 inline-block rounded px-1 py-0.5 ${post.approval_status === "approved" ? "bg-success/10 text-success" : post.approval_status === "pending" ? "bg-[var(--warn-soft)] text-warning-ink" : "bg-danger/10 text-danger"}`}>{post.approval_status}</span></span></button>)}
               {slots.map((slot) => <div key={slot.id} className="truncate rounded-md border border-dashed border-primary/30 bg-accent-soft/50 px-1.5 py-1 text-[9px] leading-4 text-primary" title={`${slot.label} · ${slot.timezone}`}>↻ {slot.local_time.slice(0, 5)} {slot.label}</div>)}
             </div></div>;
           })}

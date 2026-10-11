@@ -35,8 +35,11 @@
   --accent-glow: rgba(168, 77, 29, 0.24);
   --ok: #177A4D;
   --ok-rgb: 23 122 77;
-  --warn: #E4532A;
-  --warn-rgb: 228 83 42;
+  --warn: #B45309;
+  --warn-rgb: 180 83 9;
+  --warn-soft: rgba(180, 83, 9, 0.10);
+  --warn-soft-strong: rgba(180, 83, 9, 0.18);
+  --warn-ink: #78350F;
   --bad: #C0392B;
   --bad-rgb: 192 57 43;
   --shadow-soft: 0 1px 2px rgba(15,17,21,0.06), 0 14px 36px -18px rgba(15,17,21,0.18);
@@ -77,8 +80,11 @@
   --accent-glow: rgba(216,120,67,0.22);
   --ok: #9BC39C;
   --ok-rgb: 155 195 156;
-  --warn: #E2A05D;
-  --warn-rgb: 226 160 93;
+  --warn: #D97706;
+  --warn-rgb: 217 119 6;
+  --warn-soft: rgba(217, 119, 6, 0.14);
+  --warn-soft-strong: rgba(217, 119, 6, 0.22);
+  --warn-ink: #FFF3E0;
   --bad: #E07A68;
   --bad-rgb: 224 122 104;
   --shadow-soft: 0 1px 2px rgba(0,0,0,0.4), 0 16px 40px -20px rgba(0,0,0,0.6);
@@ -406,7 +412,8 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); box-sha
   --landing-paper-deep: #E5EDF6;
   --landing-ink: #0B1220;
   --landing-muted: #516174;
-  --landing-line: #D6DFE8;
+  --landing-line: #B6C2D4;
+  --landing-line-dark: #45483F;
   --landing-signal: var(--accent);
   --landing-signal-dark: var(--accent-strong);
   --landing-action-ink: var(--accent-foreground);
@@ -420,13 +427,15 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); box-sha
   --landing-paper-deep: var(--surface);
   --landing-ink: var(--ink);
   --landing-muted: var(--muted);
-  --landing-line: var(--line);
+  --landing-line: var(--landing-line-dark);
   --landing-signal: var(--accent);
   --landing-signal-dark: var(--accent-strong);
   --landing-action-ink: #151816;
   --landing-header-action-ink: var(--landing-signal);
   --landing-success: var(--ok);
 }
+.text-warning-ink { color: var(--warn-ink); }
+.warn-text-soft { color: color-mix(in srgb, var(--warn-ink) 80%, transparent); }
 .landing-shell a { transition: color 160ms ease, opacity 160ms ease, text-decoration-color 160ms ease; }
 .landing-wrap { width: min(calc(100% - 2.5rem), 80rem); margin-inline: auto; }
 .landing-header { border-bottom: 1px solid transparent; background: color-mix(in srgb, var(--landing-paper) 84%, transparent); backdrop-filter: blur(12px); transition: background-color 180ms ease, border-color 180ms ease; }

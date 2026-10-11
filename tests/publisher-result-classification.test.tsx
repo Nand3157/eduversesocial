@@ -43,6 +43,7 @@ let publishResponder: PublishResponder = () => {
   throw new Error("unexpected publish call");
 };
 let connectAccounts: unknown[] = [];
+let connectResponder: () => Promise<Response> = () => Promise.resolve(jsonResponse({ accounts: connectAccounts }));
 
 const jsonResponse = (body: unknown, ok = true, status = 200): Response =>
   ({ ok, status, json: () => Promise.resolve(body) }) as Response;
@@ -50,7 +51,7 @@ const jsonResponse = (body: unknown, ok = true, status = 200): Response =>
 const fetchMock = (input: RequestInfo | URL): Promise<Response> => {
   const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
   if (url.startsWith("/api/meta/publish")) return Promise.resolve(publishResponder());
-  if (url.startsWith("/api/meta/connect")) return Promise.resolve(jsonResponse({ accounts: connectAccounts }));
+  if (url.startsWith("/api/meta/connect")) return connectResponder();
   return Promise.resolve(jsonResponse({}));
 };
 
@@ -71,6 +72,7 @@ beforeAll(() => {
 
 beforeEach(() => {
   connectAccounts = [{ id: "acc1", platform: "instagram", name: "EduVerse" }];
+  connectResponder = () => Promise.resolve(jsonResponse({ accounts: connectAccounts }));
   publishResponder = () => jsonResponse({ success: false, message: "no responder configured" }, false, 500);
 });
 
@@ -120,6 +122,27 @@ const statusBox = () => document.body.querySelector('[role="status"]');
 // ---- tests ----------------------------------------------------------------
 
 describe("publisher result classification (logic defect #2)", () => {
+  it("starts a new post without invented caption or hashtags", async () => {
+    await mountModal();
+    expect((document.querySelector("#publisher-caption") as HTMLTextAreaElement | null)?.value).toBe("");
+    expect(document.body.textContent).toContain("Hashtags — editable (0/8)");
+  });
+
+  it("shows a retry path when connected Meta channels fail to load", async () => {
+    connectResponder = () => Promise.reject(new Error("offline"));
+    await mountModal();
+    expect(document.body.textContent).toContain("Meta channels could not be loaded.");
+
+    connectResponder = () => Promise.resolve(jsonResponse({ accounts: connectAccounts }));
+    const retry = [...document.body.querySelectorAll("button")].find((button) => button.textContent?.includes("Try again"));
+    expect(retry).toBeTruthy();
+    await act(async () => {
+      retry!.click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(document.body.textContent).toContain("EduVerse");
+  });
+
   it("1. source contract: every error payload carries success:false; string sniffing is gone", () => {
     // The full literal error list the route + lib can return is substantial.
     expect(routeErrorMessages.length).toBeGreaterThanOrEqual(10);

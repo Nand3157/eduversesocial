@@ -10,7 +10,7 @@ const badgeVariants = cva(
         default: "border-borderSoft bg-surface text-ink",
         primary: "border-primary/25 bg-accent-soft text-primary",
         success: "border-success/25 bg-success/10 text-success",
-        warning: "border-warning/25 bg-warning/10 text-warning",
+        warning: "border-[var(--warn)] bg-[var(--warn-soft)] text-[var(--warn-ink)] dark:bg-[var(--warn-soft-strong)]",
         danger: "border-danger/25 bg-danger/10 text-danger",
         outline: "border-borderSoft bg-transparent text-mutedText"
       }

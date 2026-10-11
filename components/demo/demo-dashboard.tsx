@@ -162,7 +162,7 @@ export function DemoDashboard() {
               <div key={m.label} className="catalog-card p-4">
                 <p className="mono text-[10px] tracking-[0.14em] text-mutedText">{m.label.toUpperCase()}</p>
                 <p className="mt-2 font-display text-[26px] font-[650] leading-none tracking-tight text-ink">
-                  <AnimatedNumber suffix={m.suffix} value={m.value} />
+                  <AnimatedNumber suffix={m.suffix} value={m.value ?? 0} />
                 </p>
                 <p className="mt-1.5 mono text-[11px] tracking-[0.04em] text-success flex items-center gap-1.5"><span className="h-1 w-1 rounded-full bg-success" aria-hidden="true" />{m.detail}</p>
                 <p className="mt-1 mono text-[10px] tracking-[0.06em] text-faintText">Simulated · sample Graph data</p>
@@ -178,7 +178,7 @@ export function DemoDashboard() {
             <div key={m.label} className="rounded-2xl border border-borderSoft bg-surface p-3.5">
               <p className="mono text-[10px] tracking-[0.12em] text-mutedText line-clamp-1">{m.label.toUpperCase()}</p>
               <p className="mt-1.5 font-display text-[20px] font-[700] leading-none tracking-tight text-ink">
-                <AnimatedNumber suffix={m.suffix} value={m.value} />
+                  <AnimatedNumber suffix={m.suffix} value={m.value ?? 0} />
               </p>
               <p className="mt-1 mono text-[11px] text-success flex items-center gap-1"><span className="h-1 w-1 rounded-full bg-success" />{m.detail.slice(0, 22)}</p>
             </div>
@@ -614,14 +614,14 @@ export function DemoPreviewMini() {
     <div className="rounded-2xl border border-borderSoft bg-card p-4 shadow-glass">
       <div className="flex items-center justify-between">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-mutedText">Sandbox preview</p>
-        <Badge variant="warning" className="bg-warning/15 text-warning border-warning/20 text-[10px]">Simulated</Badge>
+        <Badge variant="warning" className="text-[10px]">Simulated</Badge>
       </div>
       <div className="mt-3 grid grid-cols-3 gap-2">
         {snap.metrics.slice(0, 3).map((m) => (
           <div key={m.label} className="rounded-xl border border-borderSoft bg-surface px-3 py-2.5">
             <p className="text-[10px] leading-none text-mutedText">{m.label}</p>
             <p className="mt-1 font-display text-sm font-semibold text-ink">
-              {m.value.toLocaleString("en-US")}
+              {(m.value ?? 0).toLocaleString("en-US")}
               {m.suffix}
             </p>
           </div>

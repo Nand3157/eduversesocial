@@ -16,19 +16,21 @@ export function IntegrationCenter() {
   const userEmail = useDashboardStore((state) => state.userEmail);
   const zapierStorageKey = accountStorageKey("eduverse:zapier-webhook-url", userEmail);
   const apiUrl = "/api/v1";
-  const [zapierUrl, setZapierUrl] = useState("");
+  const [savedZapierUrl, setSavedZapierUrl] = useState({ key: "", value: "" });
+  const zapierUrl = savedZapierUrl.key === zapierStorageKey ? savedZapierUrl.value : "";
   const [zapierMessage, setZapierMessage] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    setZapierUrl("");
     queueMicrotask(() => {
-      try { setZapierUrl(localStorage.getItem(zapierStorageKey) || ""); } catch {}
+      let value = "";
+      try { value = localStorage.getItem(zapierStorageKey) || ""; } catch {}
+      setSavedZapierUrl({ key: zapierStorageKey, value });
     });
   }, [zapierStorageKey]);
 
   const saveZapierUrl = (value: string) => {
-    setZapierUrl(value);
+    setSavedZapierUrl({ key: zapierStorageKey, value });
     try { localStorage.setItem(zapierStorageKey, value); } catch {}
   };
 

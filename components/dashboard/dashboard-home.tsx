@@ -79,7 +79,7 @@ export function DashboardHome() {
   const userName = useDashboardStore((state) => state.userName);
   const firstName = userName ? userName.trim().split(" ")[0] : "there";
   const greeting = useSyncExternalStore(subscribeGreeting, getGreeting, () => "Good morning");
-  const { data: analytics, loading: analyticsLoading } = useAnalytics();
+  const { data: analytics, loading: analyticsLoading, error: analyticsError } = useAnalytics();
   const [connectModalOpen, setConnectModalOpen] = useState(false);
   const [publisherModalOpen, setPublisherModalOpen] = useState(false);
   const [acetate, setAcetate] = useState<"terrain" | "engagement" | "memory">("terrain");
@@ -95,7 +95,7 @@ export function DashboardHome() {
       {/* Catalog header */}
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-2 mono text-[10px] tracking-[0.14em] text-mutedText">
-          <span className="inline-flex items-center gap-1.5"><span className={`h-1.5 w-1.5 rounded-full ${analytics?.live ? "bg-success animate-pulse" : "bg-faintText"}`} aria-hidden="true" /> {analytics?.live ? "LIVE ACETATE — META GRAPH" : "NO ACETATE MOUNTED"}</span>
+          <span className="inline-flex items-center gap-1.5"><span className={`h-1.5 w-1.5 rounded-full ${analyticsError ? "bg-danger" : analytics?.live ? "bg-success animate-pulse" : "bg-faintText"}`} aria-hidden="true" /> {analyticsError ? "SYNC UNAVAILABLE" : analytics?.live ? "LIVE ACETATE — META GRAPH" : "NO ACETATE MOUNTED"}</span>
           <span className="h-3 w-px bg-borderSoft" aria-hidden="true" />
           <span>FAC 001 — ATLAS TABLE</span>
           <span className="h-3 w-px bg-borderSoft" aria-hidden="true" />
@@ -125,7 +125,7 @@ export function DashboardHome() {
         <div className="brass-rule" aria-hidden="true" />
       </div>
 
-      {!analyticsLoading && !analytics?.live && (
+      {!analyticsLoading && !analyticsError && !analytics?.live && (
         <div className="grid gap-3">
           <div className="catalog-card p-5 sm:p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -175,7 +175,7 @@ export function DashboardHome() {
 
         {/* punched windows — metrics */}
         <div className="bg-surface-muted p-4 sm:p-5">
-          {analyticsLoading ? (
+          {analyticsLoading && !metrics.length ? (
             <div role="status" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {[0,1,2].map((s)=>(
                 <div key={s} className="h-28 rounded-[10px] border border-borderSoft bg-card/60 animate-pulse" aria-hidden="true" />
@@ -190,13 +190,13 @@ export function DashboardHome() {
                     <p className="mono text-[10px] tracking-[0.14em] text-faintText">{metric.label.toUpperCase()}</p>
                     <span className="h-1.5 w-1.5 rounded-full bg-primary mt-1.5 shrink-0" aria-hidden="true" />
                   </div>
-                  <p className="mt-2 display-nums text-[28px] font-[650] leading-none tracking-tight text-ink"><AnimatedNumber suffix={metric.suffix} value={metric.value} /></p>
+                  <p className="mt-2 display-nums text-[28px] font-[650] leading-none tracking-tight text-ink">{metric.value === null ? "—" : <AnimatedNumber suffix={metric.suffix} value={metric.value} />}</p>
                   <p className="mt-1.5 mono text-[11px] tracking-[0.04em] text-success flex items-center gap-1.5"><span className="h-1 w-1 rounded-full bg-success" aria-hidden="true" />{metric.detail}</p>
                 </motion.div>
               ))}
             </motion.div>
           ) : (
-            <div className="rounded-[10px] border border-dashed border-borderSoft bg-card/50 px-4 py-8 text-center mono text-xs tracking-[0.12em] text-mutedText">NO TERRAIN MOUNTED — CONNECT META TO PUNCH WINDOWS</div>
+            <div className="rounded-[10px] border border-dashed border-borderSoft bg-card/50 px-4 py-8 text-center mono text-xs tracking-[0.12em] text-mutedText">{analyticsError ? "ANALYTICS UNAVAILABLE — RETRY FROM THE NOTICE ABOVE" : "NO TERRAIN MOUNTED — CONNECT META TO PUNCH WINDOWS"}</div>
           )}
 
           {/* acetate veil — a restrained amber wash that keeps the active layer legible */}
@@ -207,9 +207,9 @@ export function DashboardHome() {
             </div>
           )}
           {acetate==="memory" && (
-            <div className="mt-4 flex items-center gap-2 rounded-[10px] border border-warning/25 bg-warning/10 px-3 py-2.5">
-              <Bookmark aria-hidden="true" className="h-3.5 w-3.5 text-warning" />
-              <span className="mono text-[11px] tracking-[0.10em] text-warning">MEMORY ACETATE — ISOLINES COMPOUNDING</span>
+            <div className="mt-4 flex items-center gap-2 rounded-[10px] border border-[var(--warn)] bg-[var(--warn-soft)] px-3 py-2.5">
+              <Bookmark aria-hidden="true" className="h-3.5 w-3.5 text-warning-ink" />
+              <span className="mono text-[11px] tracking-[0.10em] text-warning-ink">MEMORY ACETATE — ISOLINES COMPOUNDING</span>
             </div>
           )}
         </div>
