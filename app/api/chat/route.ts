@@ -5,6 +5,7 @@ import { fetchMetaAnalytics } from "@/lib/meta-analytics";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { logger } from "@/lib/logger";
+import { getGeminiModel } from "@/lib/ai/model";
 
 export const runtime = "nodejs";
 
@@ -18,7 +19,7 @@ const messageSchema = z.object({
 });
 const requestSchema = z.object({ conversationId: z.string().uuid().optional(), messages: z.array(messageSchema).min(1).max(20) });
 type ChatMessage = z.infer<typeof messageSchema>;
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash";
+const GEMINI_MODEL = getGeminiModel();
 // chat_messages.content_check caps a row at 20 000 characters. maxOutputTokens
 // is 4096, which is ~16k characters of prose, so replies are clamped rather
 // than risking a constraint violation that would drop the answer from history.

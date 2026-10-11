@@ -4,6 +4,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { assertHttpsMedia } from "@/lib/meta-api";
 import { logger } from "@/lib/logger";
+import { getGeminiModel } from "@/lib/ai/model";
 
 export const runtime = "nodejs";
 
@@ -19,7 +20,7 @@ const hookSchema = z.object({
   tone: z.enum(["professional", "witty", "bold"]).optional()
 });
 
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash";
+const GEMINI_MODEL = getGeminiModel();
 
 const FORMAT_HINTS: Record<z.infer<typeof hookSchema>["mediaType"], string> = {
   CAROUSEL: "Carousel — tease the swipe: each slide delivers one idea, so the hook must promise a numbered payoff.",
