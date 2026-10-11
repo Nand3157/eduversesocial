@@ -11,6 +11,7 @@ import { logger } from "@/lib/logger";
 import { computeBestTimes, describeBestWindow, normalizeContentType, normalizePlatform, type BestTimeResult, type TimedPost } from "@/lib/best-time";
 
 export type AnalyticsPost = {
+  id?: string;
   platform: string;
   post: string;
   date: string;
@@ -21,6 +22,7 @@ export type AnalyticsPost = {
   status: "Live";
   /** ISO timestamp from Meta when available — powers best-time predictions. */
   timestamp?: string;
+  permalink?: string;
   /** Normalized content type (IMAGE | VIDEO | CAROUSEL | TEXT) when known. */
   mediaType?: string;
   /** Human account label for per-account breakdowns. */
@@ -32,6 +34,7 @@ export type AnalyticsPost = {
 export type AnalyticsSnapshot = {
   success: boolean;
   live: boolean;
+  postDataVersion?: number;
   cached?: boolean;
   accounts: MetaAccount[];
   metrics: Array<{ label: string; value: number | null; suffix: string; detail: string }>;
@@ -221,6 +224,7 @@ async function fetchThreadsAnalytics(token: string): Promise<ThreadsInsightsResu
     const mediaType = normalizeContentType((post as { media_type?: string }).media_type ?? "TEXT");
     const accountLabel = profile?.username ? `@${profile.username}` : profile?.name ?? "Threads";
     return {
+      id: post.id,
       platform: "Threads",
       post: post.text || "Untitled thread",
       date: post.timestamp ? new Date(post.timestamp).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "—",
@@ -230,6 +234,7 @@ async function fetchThreadsAnalytics(token: string): Promise<ThreadsInsightsResu
       reach: compact(values.get("views") ?? 0),
       status: "Live",
       timestamp: post.timestamp,
+      permalink: post.permalink,
       mediaType,
       accountLabel
     };
@@ -308,7 +313,7 @@ async function readAnalyticsCache(supabase: SupabaseClient, accountId: string | 
   // Payloads predating best-time signals are also treated as stale so the
   // next read recomputes timing windows instead of serving a day of empties.
   if (payload && payload.success && !payload.error) {
-    if (!payload.bestTimes || !payload.timingSignals) return null;
+    if (!payload.bestTimes || !payload.timingSignals || payload.postDataVersion !== 2) return null;
     return payload;
   }
   return null;
@@ -482,9 +487,9 @@ export async function fetchMetaAnalytics(token?: string, bypassCache = false): P
       const instagramChildren = stored.filter((child) => child.platform === "instagram" && child.parent_account_id === row.id && child.external_id);
       const [pageInsights, pagePosts, pageFans, childResults] = await Promise.all([
         graphData<InsightRow[]>(pageToken, `${row.external_id!}/insights?metric=page_views_total,page_post_engagements&period=day&date_preset=last_28d`).catch((error) => { errors.push(`Facebook Page insights: ${error instanceof Error ? error.message : "unavailable."}`); return []; }),
-        // Meta denies nested likes/comments edges on this token even though its
-        // debug data includes pages_read_engagement. Load supported Page-owned
-        // post fields and leave per-post reaction/comment counts unavailable.
+        // Keep the post feed request limited to fields this token can read.
+        // Reaction/comment totals are loaded separately below so an unavailable
+        // engagement edge never makes the whole Page feed disappear.
         graphData<GraphPost[]>(pageToken, `${row.external_id!}/posts?fields=id,message,created_time,permalink_url,shares&limit=25`).catch(async (error) => {
           errors.push(`Facebook Page posts: ${error instanceof Error ? error.message : "unavailable."}`);
           if (error instanceof MetaError && error.code === "META_PERMISSION_ERROR") await markPermissionRequired(supabase, member?.workspace_id, row);
@@ -508,9 +513,20 @@ export async function fetchMetaAnalytics(token?: string, bypassCache = false): P
           return { insights, media, followers: profile.followers_count, account: child };
         }))
       ]);
+      const pagePostsWithCounts = await mapLimit(pagePosts, 3, async (post) => {
+        const [likes, comments] = await Promise.all([
+          graphRequest<{ summary?: { total_count?: number } }>("facebook", `${post.id}/reactions?type=LIKE&limit=0&summary=true`, pageToken).catch(() => undefined),
+          graphRequest<{ summary?: { total_count?: number } }>("facebook", `${post.id}/comments?limit=0&summary=true`, pageToken).catch(() => undefined)
+        ]);
+        return {
+          ...post,
+          like_count: post.like_count ?? likes?.summary?.total_count,
+          comments_count: post.comments_count ?? comments?.summary?.total_count
+        };
+      });
       return {
         pageInsights,
-        pagePosts: pagePosts.map((post) => ({ post, accountId: row.id, accountLabel: row.display_name ?? row.external_id! })),
+        pagePosts: pagePostsWithCounts.map((post) => ({ post, accountId: row.id, accountLabel: row.display_name ?? row.external_id! })),
         instagramPosts: childResults.flatMap((result) => result.media.map((post) => ({ post, accountId: result.account.id, accountLabel: result.account.username ? `@${result.account.username}` : result.account.display_name ?? result.account.external_id! }))),
         instagramInsights: childResults.flatMap((result) => result.insights),
         pageLabel: row.display_name ?? row.external_id!,
@@ -565,6 +581,7 @@ export async function fetchMetaAnalytics(token?: string, bypassCache = false): P
         const likes = post.like_count ?? post.likes?.summary?.total_count;
         const comments = post.comments_count ?? post.comments?.summary?.total_count;
         return {
+          id: post.id,
           platform,
           post: post.caption || post.message || "Untitled post",
           date: iso ? new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "—",
@@ -574,6 +591,7 @@ export async function fetchMetaAnalytics(token?: string, bypassCache = false): P
           reach: "—",
           status: "Live",
           timestamp: iso,
+          permalink: post.permalink_url ?? post.permalink,
           mediaType,
           accountLabel,
           accountId
@@ -593,8 +611,8 @@ export async function fetchMetaAnalytics(token?: string, bypassCache = false): P
         ...result.pagePosts.map(({ post, accountId, accountLabel }) => {
           const iso = postTimestamp(post);
           if (!iso) return null;
-          const likes = post.likes?.summary?.total_count ?? 0;
-          const comments = post.comments?.summary?.total_count ?? 0;
+          const likes = post.like_count ?? post.likes?.summary?.total_count ?? 0;
+          const comments = post.comments_count ?? post.comments?.summary?.total_count ?? 0;
           const shares = post.shares?.count ?? 0;
           return { timestamp: iso, platform: "facebook", engagement: likes + comments + shares, likes, comments, shares, mediaType: "TEXT", accountId, accountLabel } as TimedPost;
         }),
@@ -648,6 +666,7 @@ const followers = [
     const snapshot: AnalyticsSnapshot = {
       success: true,
       live: true,
+      postDataVersion: 2,
       accounts: [...stored.flatMap(accountFromStored), ...(threads?.accounts ?? [])],
       metrics,
       engagementData: toEngagementTimeline(daily),

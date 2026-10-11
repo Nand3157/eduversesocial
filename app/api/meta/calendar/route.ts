@@ -35,7 +35,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ message: "A valid calendar date range is required." }, { status: 400 });
   }
   const [posts, slots] = await Promise.all([
-    context.supabase.from("scheduled_posts").select("id,platform,content,media,scheduled_at,status,approval_status,account_id,social_accounts!inner(display_name,username,handle)")
+    context.supabase.from("scheduled_posts").select("id,platform,content,media,scheduled_at,published_at,external_post_id,status,approval_status,account_id,social_accounts!inner(display_name,username,handle)")
       .eq("workspace_id", context.workspaceId).eq("user_id", context.user.id).gte("scheduled_at", start).lt("scheduled_at", end).order("scheduled_at"),
     context.supabase.from("recurring_content_slots").select("id,account_id,platform,label,weekday,local_time,timezone,content_type,approval_required,enabled")
       .eq("workspace_id", context.workspaceId).eq("user_id", context.user.id).eq("enabled", true)
