@@ -198,6 +198,7 @@ export default function PrivacyPage() {
                     Scopes: <code className="rounded bg-surface px-1.5 py-0.5">public_profile</code>{" "}
                     <code className="rounded bg-surface px-1.5 py-0.5">pages_show_list</code>{" "}
                     <code className="rounded bg-surface px-1.5 py-0.5">pages_read_engagement</code>{" "}
+                    <code className="rounded bg-surface px-1.5 py-0.5">read_insights</code>{" "}
                     <code className="rounded bg-surface px-1.5 py-0.5">pages_read_user_content</code>{" "}
                     <code className="rounded bg-surface px-1.5 py-0.5">pages_manage_posts</code>{" "}
                     <code className="rounded bg-surface px-1.5 py-0.5">instagram_basic</code>{" "}

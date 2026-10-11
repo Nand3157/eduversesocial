@@ -454,7 +454,7 @@ export async function fetchMetaAnalytics(token?: string, bypassCache = false): P
     const missingPageAccess = stored.some((row) => row.status === "permission_required");
     const missingOrExpiredToken = stored.some((row) => row.status === "expired");
     const message = missingPageAccess
-      ? "Meta denied access to this Page. Check the Graph API error, the tester's Page MODERATE or MANAGE task, the pages_read_engagement grant, and the tester's app role, then reconnect."
+      ? "Meta denied access to this Page. Check the Graph API error, the tester's Page ANALYZE, MODERATE, or MANAGE task, the required permission grant, and the tester's app role, then reconnect."
       : missingOrExpiredToken
         ? "The saved Meta access token has expired. Reconnect the affected account."
         : "Connect Meta to load live analytics.";
@@ -473,6 +473,9 @@ export async function fetchMetaAnalytics(token?: string, bypassCache = false): P
     if (stored.some((row) => row.platform === "facebook" && row.status === "active" && !row.scopes?.includes("pages_read_engagement"))) {
       errors.push("This Meta connection has no recorded pages_read_engagement grant. Reconnect Meta and approve Page read access.");
     }
+    if (stored.some((row) => row.platform === "facebook" && row.status === "active" && !row.scopes?.includes("read_insights"))) {
+      errors.push("Facebook Page views and engagement require the read_insights permission. Reconnect Meta and approve Page insights access; post and account data can still load meanwhile.");
+    }
 
     let threads: ThreadsInsightsResult | null = null;
     if (supabase && member) {
@@ -485,8 +488,11 @@ export async function fetchMetaAnalytics(token?: string, bypassCache = false): P
     const pageResults = await Promise.all(stored.filter((row) => row.platform === "facebook" && row.external_id && tokens.has(row.id)).map(async (row) => {
       const pageToken = tokens.get(row.id)!;
       const instagramChildren = stored.filter((child) => child.platform === "instagram" && child.parent_account_id === row.id && child.external_id);
-      const [pageInsights, pagePosts, pageFans, childResults] = await Promise.all([
-        graphData<InsightRow[]>(pageToken, `${row.external_id!}/insights?metric=page_views_total,page_post_engagements&period=day&date_preset=last_28d`).catch((error) => { errors.push(`Facebook Page insights: ${error instanceof Error ? error.message : "unavailable."}`); return []; }),
+      const [pageViews, pageEngagement, pagePosts, pageFans, childResults] = await Promise.all([
+        // Isolate metrics: Meta can reject one metric while returning another.
+        // A combined request turns that partial failure into two empty cards.
+        graphData<InsightRow[]>(pageToken, `${row.external_id!}/insights?metric=page_media_view&period=day&date_preset=last_28d`).catch((error) => { errors.push(`Facebook Page media views: ${error instanceof Error ? error.message : "unavailable."}`); return []; }),
+        graphData<InsightRow[]>(pageToken, `${row.external_id!}/insights?metric=page_post_engagements&period=day&date_preset=last_28d`).catch((error) => { errors.push(`Facebook Page engagement insights: ${error instanceof Error ? error.message : "unavailable."}`); return []; }),
         // Keep the post feed request limited to fields this token can read.
         // Reaction/comment totals are loaded separately below so an unavailable
         // engagement edge never makes the whole Page feed disappear.
@@ -515,8 +521,8 @@ export async function fetchMetaAnalytics(token?: string, bypassCache = false): P
       ]);
       const pagePostsWithCounts = await mapLimit(pagePosts, 3, async (post) => {
         const [likes, comments] = await Promise.all([
-          graphRequest<{ summary?: { total_count?: number } }>("facebook", `${post.id}/reactions?type=LIKE&limit=0&summary=true`, pageToken).catch(() => undefined),
-          graphRequest<{ summary?: { total_count?: number } }>("facebook", `${post.id}/comments?limit=0&summary=true`, pageToken).catch(() => undefined)
+          graphRequest<{ summary?: { total_count?: number } }>("facebook", `${post.id}/reactions?type=LIKE&limit=0&summary=true`, pageToken).catch((error) => { errors.push(`Facebook post likes: ${error instanceof Error ? error.message : "unavailable."}`); return undefined; }),
+          graphRequest<{ summary?: { total_count?: number } }>("facebook", `${post.id}/comments?limit=0&summary=true`, pageToken).catch((error) => { errors.push(`Facebook post comments: ${error instanceof Error ? error.message : "unavailable."}`); return undefined; })
         ]);
         return {
           ...post,
@@ -525,7 +531,7 @@ export async function fetchMetaAnalytics(token?: string, bypassCache = false): P
         };
       });
       return {
-        pageInsights,
+        pageInsights: [...pageViews, ...pageEngagement],
         pagePosts: pagePostsWithCounts.map((post) => ({ post, accountId: row.id, accountLabel: row.display_name ?? row.external_id! })),
         instagramPosts: childResults.flatMap((result) => result.media.map((post) => ({ post, accountId: result.account.id, accountLabel: result.account.username ? `@${result.account.username}` : result.account.display_name ?? result.account.external_id! }))),
         instagramInsights: childResults.flatMap((result) => result.insights),
@@ -541,15 +547,16 @@ export async function fetchMetaAnalytics(token?: string, bypassCache = false): P
     ]);
     if (threads) insightGroups.push({ platform: "Threads", rows: [] });
     const allRows = insightGroups.flatMap((group) => group.rows);
-    const reach = sumInsight(allRows, ["page_views_total", "reach"]) + (threads?.reach ?? 0);
+    const reach = sumInsight(allRows, ["page_media_view", "reach"]) + (threads?.reach ?? 0);
     // One metric per platform: page_post_engagements counts every engagement on
     // a Page's posts, total_interactions every interaction on Instagram posts.
     // accounts_engaged counts *unique* people who engaged, so summing both
     // families would roughly double-count the same actions. Reach is derived
-    // from page_views_total because page_impressions is rejected for
-    // dev-mode page tokens (Graph API v26 returns "invalid metric").
+    // from page_media_view, which measures displayed/played Page content rather
+    // than profile visits. Legacy impression metrics are deprecated by Meta.
     const engaged = sumInsight(allRows, ["page_post_engagements", "total_interactions"]) + (threads?.engaged ?? 0);
-    const hasReachData = hasInsightValues(allRows, ["page_views_total", "reach"]) || Boolean(threads?.hasReachData);
+    const hasReachData = hasInsightValues(allRows, ["page_media_view", "reach"]) || Boolean(threads?.hasReachData);
+    const pageInsightsNeedAudience = pageResults.some((result) => result.fanCount !== undefined && result.fanCount < 100);
     const hasEngagementData = hasInsightValues(allRows, ["page_post_engagements", "total_interactions"]) || Boolean(threads?.hasEngagementData);
     const postCount = pageResults.reduce((total, result) => total + result.pagePosts.length + result.instagramPosts.length, 0) + (threads?.postingCount ?? 0);
 
@@ -638,8 +645,8 @@ const followers = [
     ];
 
     const metrics = [
-      { label: "Views (28d)", value: hasReachData ? reach : null, suffix: "", detail: hasReachData ? "Live Meta Graph data" : "No view insight data returned by Meta" },
-      { label: "Engagement (28d)", value: hasEngagementData ? engaged : null, suffix: "", detail: hasEngagementData ? "Live Meta Graph data" : "No engagement insight data returned by Meta" },
+      { label: "Views (28d)", value: hasReachData ? reach : null, suffix: "", detail: hasReachData ? "Live Meta Graph data" : pageInsightsNeedAudience ? "Meta Page insights require at least 100 Page likes" : "No view insight data returned by Meta" },
+      { label: "Engagement (28d)", value: hasEngagementData ? engaged : null, suffix: "", detail: hasEngagementData ? "Live Meta Graph data" : pageInsightsNeedAudience ? "Meta Page insights require at least 100 Page likes" : "No engagement insight data returned by Meta" },
       { label: "Published posts", value: postCount, suffix: "", detail: "Returned by Meta" },
       { label: "Engagement rate", value: hasReachData && hasEngagementData && reach > 0 ? Number(((engaged / reach) * 100).toFixed(1)) : null, suffix: "%", detail: hasReachData && hasEngagementData && reach > 0 ? "Calculated from Meta data" : "Requires view and engagement insights" }
     ];
