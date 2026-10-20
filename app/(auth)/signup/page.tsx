@@ -4,7 +4,7 @@ import { AuthShell } from "@/components/auth/auth-shell";
 
 export const metadata: Metadata = {
   title: "Create your account",
-  description: "Create a free EduVerse account and start learning what your audience really wants."
+  description: "Create a free EduVerse workspace to connect your Meta accounts and learn from live engagement."
 };
 
-export default function SignUpPage() { return <AuthShell description="Start building a better understanding of your audience." title="Create your account"><AuthForm mode="signup" /></AuthShell>; }
+export default function SignUpPage() { return <AuthShell description="Create a workspace to connect Instagram, Facebook, or Threads and learn from live engagement." title="Create your account"><AuthForm mode="signup" /></AuthShell>; }

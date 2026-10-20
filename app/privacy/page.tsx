@@ -230,7 +230,7 @@ export default function PrivacyPage() {
               <p className="rounded-xl border border-borderSoft bg-surface px-4 py-3 text-xs">
                 <strong className="text-ink">Sandbox alternative:</strong> Not ready to connect? Use{" "}
                 <Link href="/demo" className="font-medium text-primary hover:underline">
-                  Explore Live Demo
+                  Explore the sample demo
                 </Link>{" "}
                 — a read-only mock dashboard with simulated data. No OAuth, no tokens stored.
               </p>

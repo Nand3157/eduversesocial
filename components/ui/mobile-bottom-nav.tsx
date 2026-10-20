@@ -2,14 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowRight, Eye, Home, LayoutDashboard, MessageSquareText, Sparkles } from "lucide-react";
+import { ArrowRight, Eye, LayoutDashboard, MessageSquareText, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const landingTabs = [
-  { label: "Home", href: "/#top", icon: Home },
-  { label: "Demo", href: "/demo", icon: Eye },
-  { label: "How", href: "/#how", icon: Sparkles },
-] as const;
 
 const dashboardTabs = [
   { label: "Home", href: "/dashboard", icon: LayoutDashboard },
@@ -27,14 +21,6 @@ export function LandingMobileDock() {
         <Link href="/signup" className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-sm">
           Start free <ArrowRight className="h-4 w-4" />
         </Link>
-      </div>
-      <div className="mx-auto mt-2 flex max-w-md items-center justify-around">
-        {landingTabs.map(({ label, href, icon: Icon }) => (
-          <a key={label} href={href} className="flex min-h-[44px] flex-col items-center justify-center gap-0.5 rounded-xl px-3 py-1 text-faintText">
-            <Icon className="h-4 w-4" />
-            <span className="mono text-[10px] tracking-[0.08em]">{label}</span>
-          </a>
-        ))}
       </div>
     </div>
   );

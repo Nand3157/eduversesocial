@@ -181,7 +181,7 @@ export function MetaConnectModal({ isOpen, onClose, onConnected }: MetaConnectMo
               href="/demo"
               className="flex items-center justify-center gap-1.5 rounded-xl border border-[var(--warn)] bg-[var(--warn-soft)] px-3 py-2.5 text-xs font-medium text-warning-ink transition hover:bg-[var(--warn-soft-strong)]"
             >
-              <Eye aria-hidden="true" className="h-3.5 w-3.5" /> Prefer to preview first? Explore Live Demo — no OAuth needed
+              <Eye aria-hidden="true" className="h-3.5 w-3.5" /> Prefer to preview first? Explore the demo — no account connection needed
             </a>
 
             <div aria-live="polite">

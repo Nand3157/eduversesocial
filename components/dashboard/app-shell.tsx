@@ -38,18 +38,18 @@ import { DashboardMobileDock } from "@/components/ui/mobile-bottom-nav";
 import type { AnalyticsSnapshot } from "@/lib/meta-analytics";
 
 const baseNavigation = [
-  ["Dashboard", "/dashboard", LayoutDashboard, "FAC 001"],
-  ["Analytics", "/dashboard/analytics", ChartNoAxesCombined, "FAC 014"],
-  ["Memory", "/dashboard/memory", Brain, "FAC 022"],
-  ["Content", "/dashboard/content", TableProperties, "FAC 030"],
-  ["Recommendations", "/dashboard/recommendations", WandSparkles, "FAC 041"],
-  ["AI Chat", "/dashboard/chat", Bot, "FAC 055"],
-  ["Notifications", "/dashboard/notifications", Bell, "FAC 063"],
-  ["Integrations", "/dashboard/integrations", PlugZap, "FAC 082"],
-  ["Settings", "/dashboard/settings", Settings, "FAC 088"],
+  ["Dashboard", "/dashboard", LayoutDashboard],
+  ["Analytics", "/dashboard/analytics", ChartNoAxesCombined],
+  ["Memory", "/dashboard/memory", Brain],
+  ["Content", "/dashboard/content", TableProperties],
+  ["Recommendations", "/dashboard/recommendations", WandSparkles],
+  ["AI Chat", "/dashboard/chat", Bot],
+  ["Notifications", "/dashboard/notifications", Bell],
+  ["Integrations", "/dashboard/integrations", PlugZap],
+  ["Settings", "/dashboard/settings", Settings],
 ] as const;
 
-const reviewNavEntry = ["Reviews", "/dashboard/reviews", Star, "FAC 071"] as const;
+const reviewNavEntry = ["Reviews", "/dashboard/reviews", Star] as const;
 
 const subscribeNothing = () => () => undefined;
 const getMounted = () => true;
@@ -61,6 +61,7 @@ export function AppShell({ children, email, profile, initialAnalytics }: { child
   const [connectModalOpen, setConnectModalOpen] = useState(false);
   const [publisherModalOpen, setPublisherModalOpen] = useState(false);
   const mobileNavCloseRef = useRef<HTMLButtonElement>(null);
+  const mobileNavDialogRef = useRef<HTMLDivElement>(null);
   const mounted = useSyncExternalStore(subscribeNothing, getMounted, getServerMounted);
 
   useEffect(() => {
@@ -93,14 +94,23 @@ export function AppShell({ children, email, profile, initialAnalytics }: { child
     if (!open) return;
     const prev = document.activeElement as HTMLElement | null;
     mobileNavCloseRef.current?.focus();
-    const onKeyDown = (e: KeyboardEvent) => { if (e.key === "Escape") closeMobileNav(); };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeMobileNav();
+      if (e.key !== "Tab") return;
+      const focusable = Array.from(mobileNavDialogRef.current?.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled])') ?? []).filter((element) => element.tabIndex !== -1 && element.offsetParent !== null);
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (!first || !last) return;
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
     document.addEventListener("keydown", onKeyDown);
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => { document.removeEventListener("keydown", onKeyDown); document.body.style.overflow = prevOverflow; prev?.focus?.(); };
   }, [open, closeMobileNav]);
 
-  const cabinet = () => (
+  const sidebar = () => (
     <aside className={cn("flex h-full flex-col bg-surface text-ink border-r border-borderSoft shadow-sm", collapsed && "lg:w-[76px]")}>
       {/* top brass plate */}
       <div className="shrink-0 border-b border-borderSoft bg-surface">
@@ -111,20 +121,20 @@ export function AppShell({ children, email, profile, initialAnalytics }: { child
               <span className="block font-display text-[15px] font-semibold tracking-tight leading-none">EduVerse</span>
             </span>
           </Link>
-          <button aria-label="Collapse cabinet" onClick={toggleSidebar} className="hidden h-8 w-8 place-items-center text-faintText hover:text-ink lg:grid">
+          <button aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} onClick={toggleSidebar} className="hidden h-8 w-8 place-items-center text-faintText hover:text-ink lg:grid">
             <ChevronLeft aria-hidden="true" className={cn("h-4 w-4 transition-transform", collapsed && "rotate-180")} />
           </button>
         </div>
         {!collapsed && <div className="brass-rule mx-3 opacity-20" aria-hidden="true" />}
         {!collapsed && (
           <div className="px-3 py-2.5">
-            <p className="mono text-[10px] tracking-[0.12em] text-faintText">CATALOG — AUDIENCE MEMORY</p>
-            <p className="mt-1 text-xs leading-4 text-mutedText">Live acetate on atlas table. Pull a drawer.</p>
+            <p className="mono text-[10px] tracking-[0.12em] text-faintText">AUDIENCE MEMORY</p>
+            <p className="mt-1 text-xs leading-4 text-mutedText">Connect Meta to see live audience data and recommendations.</p>
           </div>
         )}
       </div>
 
-      <nav aria-label="Archive drawers" className="flex-1 overflow-y-auto px-2 py-3">
+      <nav aria-label="Dashboard navigation" className="flex-1 overflow-y-auto px-2 py-3">
         <div className={cn("grid gap-1", collapsed && "gap-1.5")}>
           {navigation.map(([label, href, Icon], idx) => {
             const active = pathname === href;
@@ -138,7 +148,7 @@ export function AppShell({ children, email, profile, initialAnalytics }: { child
                   onClick={() => setOpen(false)}
                   className={cn("group relative flex items-center gap-3 rounded-[10px] px-2.5 py-2.5 text-sm transition-colors", collapsed ? "justify-center" : "justify-start")}
                 >
-                  {/* drawer plate */}
+                  {/* Navigation item surface */}
                   <span
                     className={cn(
                       "absolute inset-0 rounded-[10px] border transition-colors",
@@ -166,20 +176,15 @@ export function AppShell({ children, email, profile, initialAnalytics }: { child
         {!collapsed ? (
           <div className="space-y-3">
             <button onClick={() => setConnectModalOpen(true)} className="flex w-full items-center justify-between rounded-full bg-primary px-3.5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary-strong">
-              <span className="flex items-center gap-2"><Sparkles aria-hidden="true" className="h-3.5 w-3.5" /> Meta sync</span>
-              <span className="mono rounded-full bg-ink px-2 py-0.5 text-[10px] tracking-[0.12em] text-primary">LIVE</span>
+              <span className="flex items-center gap-2"><Sparkles aria-hidden="true" className="h-3.5 w-3.5" /> Connect Meta</span>
             </button>
             <div className="rounded-[12px] border border-borderSoft bg-surface-muted p-3">
-              <div className="flex items-center justify-between">
-                <span className="mono text-[10px] tracking-[0.14em] text-faintText">ATLAS TABLE</span>
-                <span className="flex items-center gap-1.5 mono text-[10px] tracking-[0.10em] text-success"><span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" aria-hidden="true" /> READY</span>
-              </div>
-              <p className="mt-1.5 text-xs leading-4 text-mutedText">Lay acetates to read terrain. Pins hold next actions.</p>
+              <p className="text-xs leading-4 text-mutedText">Live analytics and recommendations appear after you connect an account.</p>
             </div>
           </div>
         ) : (
           <div className="grid place-items-center gap-2">
-            <button onClick={() => setConnectModalOpen(true)} aria-label="Meta sync" className="grid h-9 w-9 place-items-center rounded-full bg-primary text-primary-foreground shadow-sm hover:bg-primary-strong"><Sparkles aria-hidden="true" className="h-4 w-4" /></button>
+            <button onClick={() => setConnectModalOpen(true)} aria-label="Connect Meta accounts" className="grid h-9 w-9 place-items-center rounded-full bg-primary text-primary-foreground shadow-sm hover:bg-primary-strong"><Sparkles aria-hidden="true" className="h-4 w-4" /></button>
           </div>
         )}
       </div>
@@ -193,27 +198,27 @@ export function AppShell({ children, email, profile, initialAnalytics }: { child
         <MetaConnectModal isOpen={connectModalOpen} onClose={() => setConnectModalOpen(false)} onConnected={() => window.dispatchEvent(new Event("eduverse:analytics-refresh"))} />
         <MetaPublisherModal isOpen={publisherModalOpen} onClose={() => setPublisherModalOpen(false)} />
 
-        <div className="sticky top-0 hidden h-screen lg:block">{cabinet()}</div>
+        <div className="sticky top-0 hidden h-screen lg:block">{sidebar()}</div>
 
         <AnimatePresence>
           {open && (
             <motion.div animate={{ opacity: 1 }} exit={{ opacity: 0 }} initial={{ opacity: 0 }} transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }} className="fixed inset-0 z-50 lg:hidden">
-              <div role="dialog" aria-modal="true" aria-label="Archive cabinet" className="absolute inset-0">
-                <button aria-label="Close cabinet" tabIndex={-1} className="absolute inset-0 bg-ink/60 backdrop-blur-sm" onClick={() => setOpen(false)} />
+              <div ref={mobileNavDialogRef} role="dialog" aria-modal="true" aria-label="Dashboard navigation" className="absolute inset-0">
+                <button aria-label="Close navigation menu" tabIndex={-1} className="absolute inset-0 bg-ink/60 backdrop-blur-sm" onClick={() => setOpen(false)} />
                 <motion.div animate={{ x: 0 }} exit={{ x: -280 }} initial={{ x: -280 }} transition={{ type: "spring", stiffness: 320, damping: 32 }} className="relative h-full w-[300px] bg-surface border-r border-borderSoft">
-                  {cabinet()}
-                  <button ref={mobileNavCloseRef} aria-label="Close cabinet" className="absolute right-3 top-3 grid h-10 w-10 place-items-center rounded-full bg-ink text-background" onClick={() => setOpen(false)}><X aria-hidden="true" className="h-4 w-4" /></button>
+                  {sidebar()}
+                  <button ref={mobileNavCloseRef} aria-label="Close navigation menu" className="absolute right-3 top-3 grid h-10 w-10 place-items-center rounded-full bg-ink text-background" onClick={() => setOpen(false)}><X aria-hidden="true" className="h-4 w-4" /></button>
                 </motion.div>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <div className="min-w-0">
+        <div className="min-w-0" inert={open || undefined}>
           <GlassHeader className="flex h-[64px] items-center gap-3 px-4 sm:px-6">
-            <Button aria-label="Open cabinet" className="lg:hidden bg-surface text-ink hover:bg-surface-muted border border-borderSoft" onClick={() => setOpen(true)} size="icon" variant="secondary"><Menu aria-hidden="true" className="h-5 w-5" /></Button>
+            <Button aria-label="Open navigation menu" className="lg:hidden bg-surface text-ink hover:bg-surface-muted border border-borderSoft" onClick={() => setOpen(true)} size="icon" variant="secondary"><Menu aria-hidden="true" className="h-5 w-5" /></Button>
             <div className="hidden items-center gap-2 sm:flex">
-              <span className="mono text-[10px] tracking-[0.16em] text-faintText">DRAWER</span>
+              <span className="mono text-[10px] tracking-[0.16em] text-faintText">WORKSPACE</span>
               <span className="h-3 w-px bg-borderSoft" aria-hidden="true" />
               <span className="mono text-xs tracking-[0.08em] text-ink">{(navigation.find(([,h]) => h===pathname)?.[0] as string) ?? "Dashboard"}</span>
             </div>

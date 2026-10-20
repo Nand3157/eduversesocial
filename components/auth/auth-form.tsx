@@ -187,7 +187,7 @@ export function AuthForm({ mode, next }: { mode: Mode; next?: string }) {
           href="/demo"
           className="flex items-center justify-center gap-1.5 rounded-xl border border-[var(--warn)] bg-[var(--warn-soft)] px-3 py-2.5 text-xs font-medium text-warning-ink transition hover:bg-[var(--warn-soft-strong)]"
         >
-          <Eye aria-hidden="true" className="h-3.5 w-3.5" /> Explore Live Demo — no signup required
+          <Eye aria-hidden="true" className="h-3.5 w-3.5" /> Explore the demo — no signup required
         </Link>
       )}
       {details.helper && (

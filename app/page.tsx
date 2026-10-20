@@ -77,7 +77,7 @@ const productLinks = [
 
 const exploreLinks = [
   { label: "How it works", href: "/#how" },
-  { label: "Live Demo", href: "/demo" },
+  { label: "Demo", href: "/demo" },
   { label: "Developers", href: "/developers" },
   { label: "About EduVerse", href: "/about" },
   { label: "Contact", href: "/contact" },
@@ -142,13 +142,13 @@ function Footer() {
         </nav>
 
         <div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-white/40">Trusted by</p>
+          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-white/40">Platforms &amp; security</p>
           <ul className="mt-4 space-y-2.5 text-sm text-white/60">
             <li className="inline-flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-success" /> Official Meta Graph OAuth
+              <span className="h-1.5 w-1.5 rounded-full bg-success" /> Official platform authorization
             </li>
             <li>Instagram · Facebook · Threads</li>
-            <li>Encrypted, revocable anytime</li>
+            <li>Tokens encrypted and revocable</li>
             <li>
               <Link href="/privacy" className="inline-flex min-h-11 items-center font-medium text-[var(--accent)] hover:underline">
                 Privacy & Data Security
@@ -156,7 +156,7 @@ function Footer() {
             </li>
             <li>
               <Link href="/demo" className="inline-flex min-h-11 items-center font-medium text-[var(--accent)] hover:underline">
-                Explore Live Demo (no login)
+                Preview sample data (no login)
               </Link>
             </li>
           </ul>
@@ -170,9 +170,8 @@ function Footer() {
             Privacy Policy
           </Link>
           <Link href="/demo" className="inline-flex min-h-11 items-center font-medium text-white/40 hover:text-white">
-            Live Demo
+            Preview demo
           </Link>
-          <span className="font-mono">TC 00:42:11:04 · LIVE MEMORY ONLY</span>
         </div>
       </div>
     </footer>

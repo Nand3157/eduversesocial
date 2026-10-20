@@ -8,7 +8,7 @@ import { ThemeToggle } from "@/components/providers/theme-toggle";
 import { GlassHeader } from "@/components/layout/glass-header";
 
 export const metadata: Metadata = {
-  title: "Live Demo — Sandbox Dashboard",
+  title: "Sample Dashboard Demo",
   description:
     "Explore a simulated EduVerse dashboard with sample Meta Graph analytics — no OAuth or account required. See metrics, charts, and recommendations before you connect.",
 };
@@ -54,7 +54,7 @@ export default function DemoPage() {
             Home
           </Link>
           <span className="text-faintText">/</span>
-          <span className="font-medium text-ink">Live Demo</span>
+          <span className="font-medium text-ink">Sample demo</span>
           <span className="text-faintText">·</span>
           <span>Read-only sandbox — nothing is saved, no Meta connection made.</span>
         </div>
@@ -63,7 +63,7 @@ export default function DemoPage() {
 
       <footer className="bg-transparent px-4 py-6 pb-28 sm:px-8 sm:pt-8 md:pb-8">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 text-xs text-mutedText sm:flex-row">
-          <p>Demo uses synthetic data inspired by real Meta Graph API shapes. Connect your accounts for live numbers.</p>
+          <p>All figures here are synthetic examples. Connect your accounts to see live data in your workspace.</p>
           <div className="flex gap-4">
             <Link href="/privacy" className="inline-flex min-h-[44px] items-center font-medium text-primary hover:underline">
               Privacy Policy

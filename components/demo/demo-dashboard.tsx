@@ -103,7 +103,7 @@ export function DemoDashboard() {
                 <Badge className="border-0 bg-primary text-primary-foreground mono text-[10px]">Demo</Badge>
               </p>
               <p className="mt-1 max-w-xl text-xs leading-relaxed text-mutedText">
-                This is a read-only mock dashboard so you can explore the layout before connecting Meta. Connect your own accounts to replace this with live Graph API data.
+                Explore a sample dashboard before connecting an account. Connect Instagram, Facebook, or Threads to replace these examples with live data.
               </p>
             </div>
           </div>
@@ -125,7 +125,7 @@ export function DemoDashboard() {
         <div className="flex flex-wrap items-center gap-2 mono text-[10px] tracking-[0.14em] text-mutedText">
           <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" aria-hidden="true" /> Demo workspace · no OAuth required</span>
           <span className="h-3 w-px bg-borderSoft" aria-hidden="true" />
-          <span>ATLAS TABLE · SIMULATED</span>
+          <span>DASHBOARD PREVIEW · SIMULATED DATA</span>
           <span className="h-3 w-px bg-borderSoft" aria-hidden="true" />
           <span>{formatAtlasDate()}</span>
         </div>
@@ -134,7 +134,7 @@ export function DemoDashboard() {
             <h1 className="text-balance font-heading text-[28px] font-[600] tracking-tight leading-none text-ink sm:text-[36px]">
               Good morning, <span className="text-primary">explorer.</span>
             </h1>
-            <p className="mt-2 max-w-[60ch] text-sm leading-6 text-mutedText">This preview is populated with sample Meta analytics. Everything below becomes live after OAuth.</p>
+            <p className="mt-2 max-w-[60ch] text-sm leading-6 text-mutedText">This preview uses sample Meta analytics. Connect an account to replace these examples with live data.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Badge variant="primary" className="gap-1.5 rounded-full">
@@ -148,11 +148,11 @@ export function DemoDashboard() {
         <div className="brass-rule opacity-20" aria-hidden="true" />
       </div>
 
-      {/* Metrics — desktop atlas sheet, mobile expandable compact */}
+      {/* Metrics — desktop overview, mobile expandable compact */}
       {/* Desktop */}
       <div className="hidden md:block atlas-sheet overflow-hidden">
         <div className="flex items-center gap-2 border-b border-borderSoft bg-surface-muted px-4 py-3">
-          <span className="mono text-[10px] tracking-[0.14em] text-mutedText">TERRAIN READINGS · SIMULATED</span>
+          <span className="mono text-[10px] tracking-[0.14em] text-mutedText">OVERVIEW METRICS · SIMULATED</span>
           <span className="h-1 w-1 rounded-full bg-primary" aria-hidden="true" />
           <span className="text-sm font-semibold tracking-tight text-ink">Demo metrics — sample data</span>
         </div>
@@ -172,7 +172,7 @@ export function DemoDashboard() {
         </div>
       </div>
       {/* Mobile compact metrics - expandable */}
-      <MobileExpandable kicker="TERRAIN READINGS" title="Demo metrics" subtitle="4 windows · 142.9K views · 18.4K engaged" icon={<BarChart3 className="h-4 w-4" />} defaultOpen>
+      <MobileExpandable kicker="SAMPLE DATA" title="Demo metrics" subtitle="4 metrics · 142.9K views · 18.4K engagements" icon={<BarChart3 className="h-4 w-4" />} defaultOpen>
         <div className="grid gap-3 grid-cols-2">
           {snap.metrics.map((m) => (
             <div key={m.label} className="rounded-2xl border border-borderSoft bg-surface p-3.5">
@@ -193,7 +193,7 @@ export function DemoDashboard() {
         <div className="xl:col-span-2 flex">
           <div className="catalog-card overflow-hidden flex flex-col h-full w-full">
             <div className="flex items-center justify-between gap-3 border-b border-borderSoft bg-surface-muted px-4 py-3">
-              <span className="mono text-[10px] tracking-[0.14em] text-mutedText">FAC 022 · TIMELINE</span>
+              <span className="mono text-[10px] tracking-[0.14em] text-mutedText">ENGAGEMENT TIMELINE</span>
               <span className="text-sm font-semibold tracking-tight text-ink">Engagement over time</span>
             </div>
             <div className="p-3 sm:p-4 flex-1 flex flex-col min-h-[280px]">
@@ -222,9 +222,9 @@ export function DemoDashboard() {
 
         <div className="catalog-card flex h-full flex-col overflow-hidden">
           <div className="flex flex-wrap items-center gap-2 border-b border-borderSoft bg-surface-muted px-4 py-3">
-            <span className="mono text-[10px] tracking-[0.14em] text-mutedText">FAC 014 · TELEMETRY</span>
+            <span className="mono text-[10px] tracking-[0.14em] text-mutedText">PLATFORM BREAKDOWN</span>
             <span className="h-1 w-1 shrink-0 rounded-full bg-primary max-sm:hidden" aria-hidden="true" />
-            <span className="text-sm font-semibold tracking-tight text-ink">Channel telemetry</span>
+            <span className="text-sm font-semibold tracking-tight text-ink">Audience by platform</span>
           </div>
           <div className="flex flex-1 flex-col bg-card p-4 sm:p-5">
             <p className="mono text-[11px] leading-relaxed text-faintText">Share of engagement across networks.</p>
@@ -258,7 +258,7 @@ export function DemoDashboard() {
       </div>
       {/* Mobile charts - beautiful expandables */}
       <div className="grid gap-3 md:hidden">
-        <MobileExpandable kicker="FAC 022 · TIMELINE" title="Engagement over time" subtitle="14-day simulated trend · +12.9%" icon={<LineChartIcon className="h-4 w-4" />} defaultOpen>
+        <MobileExpandable kicker="SAMPLE DATA" title="Engagement over time" subtitle="14-day trend · +12.9%" icon={<LineChartIcon className="h-4 w-4" />} defaultOpen>
           <div role="img" aria-label="Area chart: engagement over the last 14 simulated days." className="h-[220px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={snap.engagementData}>
@@ -280,7 +280,7 @@ export function DemoDashboard() {
           <p className="mt-2 text-center mono text-[10px] tracking-[0.06em] text-faintText">Simulated 14-day sample · drag to inspect</p>
         </MobileExpandable>
 
-        <MobileExpandable kicker="FAC 014 · TELEMETRY" title="Channel telemetry" subtitle="Instagram 52% · Facebook 31% · Threads 17%" icon={<Users className="h-4 w-4" />}>
+        <MobileExpandable kicker="SAMPLE DATA" title="Audience by platform" subtitle="Instagram 52% · Facebook 31% · Threads 17%" icon={<Users className="h-4 w-4" />}>
           <div className="flex flex-col items-center gap-4">
             <div role="img" aria-label="Pie chart: share of engagement by network." className="h-[180px] w-[180px] shrink-0">
               <ResponsiveContainer width="100%" height="100%">
@@ -375,7 +375,7 @@ export function DemoDashboard() {
         </Card>
       </div>
       <div className="grid gap-3 md:hidden">
-        <MobileExpandable kicker="FAC 031" title="Posting frequency" subtitle="22 Instagram · 16 Facebook · 9 Threads" icon={<BarChart3 className="h-4 w-4" />}>
+        <MobileExpandable kicker="SAMPLE DATA" title="Posting frequency" subtitle="22 Instagram · 16 Facebook · 9 Threads" icon={<BarChart3 className="h-4 w-4" />}>
           <div role="img" aria-label="Bar chart: simulated posting frequency per day." className="h-[200px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={snap.postingData}>
@@ -388,7 +388,7 @@ export function DemoDashboard() {
             </ResponsiveContainer>
           </div>
         </MobileExpandable>
-        <MobileExpandable kicker="FAC 032" title="Audience size" subtitle="34.2K IG · 18.7K Facebook" icon={<Users className="h-4 w-4" />}>
+        <MobileExpandable kicker="SAMPLE DATA" title="Audience size" subtitle="34.2K Instagram · 18.7K Facebook" icon={<Users className="h-4 w-4" />}>
           <div role="img" aria-label="Line chart: simulated audience growth over time." className="h-[200px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={snap.growthData}>
@@ -401,7 +401,7 @@ export function DemoDashboard() {
             </ResponsiveContainer>
           </div>
         </MobileExpandable>
-        <MobileExpandable kicker="FAC 033" title="Sentiment trend" subtitle="Avg 0.71 · peak 0.78" icon={<MessageSquare className="h-4 w-4" />}>
+        <MobileExpandable kicker="SAMPLE DATA" title="Comment sentiment" subtitle="Average 0.71 · peak 0.78" icon={<MessageSquare className="h-4 w-4" />}>
           <div role="img" aria-label="Area chart: simulated comment sentiment trend." className="h-[200px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={snap.sentimentData}>
@@ -427,7 +427,7 @@ export function DemoDashboard() {
           <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <CardTitle>Recommendation (simulated)</CardTitle>
-              <CardDescription>How EduVerse turns live signals into a posting brief.</CardDescription>
+              <CardDescription>See how live audience signals shape a posting recommendation.</CardDescription>
             </div>
             <Badge variant="success" className="rounded-full">Demo suggestion</Badge>
           </CardHeader>
@@ -479,7 +479,7 @@ export function DemoDashboard() {
       </div>
       {/* Mobile recommendations + memory */}
       <div className="grid gap-3 md:hidden">
-        <MobileExpandable kicker="FAC 041 · RECOMMENDATIONS" title="Recommendation" subtitle="Optimal window · simulated" icon={<Sparkles className="h-4 w-4" />} defaultOpen count={`${snap.recommendations.length} ready`}>
+        <MobileExpandable kicker="SAMPLE DATA" title="Recommendation" subtitle="Suggested time · simulated" icon={<Sparkles className="h-4 w-4" />} defaultOpen count={`${snap.recommendations.length} ready`}>
           <div className="space-y-4">
             {snap.recommendations.slice(0,1).map(([title, timing, detail]) => (
               <div key={title} className="space-y-3">
@@ -495,7 +495,7 @@ export function DemoDashboard() {
             ))}
           </div>
         </MobileExpandable>
-        <MobileExpandable kicker="FAC 022 · MEMORY" title="Audience memory" subtitle={`${snap.memoryItems.length} cards filed · simulated`} icon={<Check className="h-3.5 w-3.5" />} count={`${snap.memoryItems.length} cards`}>
+        <MobileExpandable kicker="SAMPLE DATA" title="Audience memory" subtitle={`${snap.memoryItems.length} signals saved · simulated`} icon={<Check className="h-3.5 w-3.5" />} count={`${snap.memoryItems.length} signals`}>
           <div className="space-y-3">
             {snap.memoryItems.map((item) => (
               <div key={item} className="flex gap-3 rounded-xl border border-borderSoft bg-surface px-3 py-3">
@@ -558,7 +558,7 @@ export function DemoDashboard() {
         </Card>
       </div>
       <div className="md:hidden">
-        <MobileExpandable kicker="FAC 030 · LEDGER" title="Recent posts" subtitle={`${snap.recentPosts.length} simulated posts`} icon={<Eye className="h-4 w-4" />}>
+        <MobileExpandable kicker="SAMPLE DATA" title="Recent posts" subtitle={`${snap.recentPosts.length} simulated posts`} icon={<Eye className="h-4 w-4" />}>
           <div className="grid gap-3">
             {snap.recentPosts.map((post, i) => (
               <div key={`${post.post}-${i}`} className="rounded-2xl border border-borderSoft bg-surface p-4">

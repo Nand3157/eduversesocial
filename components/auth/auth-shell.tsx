@@ -12,9 +12,9 @@ export function AuthShell({ children, title, description }: { children: React.Re
       <div className="relative z-10 grid w-full max-w-5xl items-center gap-10 lg:grid-cols-[1fr_420px]">
         <div className="hidden max-w-lg lg:block">
           <p className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-accent-soft px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-primary"><Sparkles aria-hidden="true" className="h-3.5 w-3.5" /> EduVerse workspace</p>
-          <p className="mt-6 text-balance font-display text-6xl font-medium leading-[0.98] tracking-tight text-ink">Make every signal a <em className="italic text-primary">lesson.</em></p>
-          <p className="mt-6 max-w-md text-base leading-relaxed text-mutedText">A calmer way to turn audience behavior into better ideas, better timing, and better outcomes.</p>
-          <div className="mt-8 flex items-center gap-3 text-xs text-mutedText"><span className="h-2 w-2 animate-pulse rounded-full bg-success" /> Live learning system <span className="h-px w-10 bg-borderSoft" /> Private by default</div>
+          <p className="mt-6 text-balance font-display text-6xl font-medium leading-[0.98] tracking-tight text-ink">Plan your next post with <em className="italic text-primary">real signals.</em></p>
+          <p className="mt-6 max-w-md text-base leading-relaxed text-mutedText">See what people saved, discussed, and engaged with across Instagram, Facebook, and Threads.</p>
+          <div className="mt-8 flex items-center gap-3 text-xs text-mutedText"><span className="h-2 w-2 rounded-full bg-success" aria-hidden="true" /> Live data when connected <span className="h-px w-10 bg-borderSoft" aria-hidden="true" /> Encrypted Meta tokens</div>
         </div>
         <section className="w-full rounded-[20px] border border-borderSoft/80 bg-card/90 p-4 shadow-glass backdrop-blur-xl sm:p-5 max-h-[calc(100vh-2rem)] overflow-y-auto">
           <Link aria-label="EduVerse home" className="inline-flex items-center gap-2" href="/">
@@ -30,7 +30,7 @@ export function AuthShell({ children, title, description }: { children: React.Re
             </Link>
             <span className="h-3 w-px bg-borderSoft" />
             <Link href="/demo" className="font-medium text-primary hover:underline">
-              Explore Live Demo
+              Explore the sample demo
             </Link>
             <span className="hidden sm:inline text-faintText">· AES-256-GCM · RLS-isolated</span>
           </div>
