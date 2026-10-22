@@ -267,8 +267,8 @@ export function BestTimeCard() {
           </div>
         ) : result.windows.length === 0 ? (
           <div className="rounded-xl border border-dashed border-borderSoft bg-surface/50 p-6 text-xs leading-relaxed text-mutedText" role="status">
-            {result.reason ?? "Not enough timed history yet."} Publish a few more posts (or wait for Meta to return timestamps), then refresh — windows appear once at least 5 timed posts are available
-            {platform !== "all" || contentType !== "all" ? " for these filters. Try widening the platform/format filters." : "."}
+            {result.reason ?? "Not enough timed history yet. Publish a few more posts (or wait for Meta to return timestamps), then refresh — windows appear once at least 5 timed posts are available"}
+            {platform !== "all" || contentType !== "all" ? " Try widening the platform/format filters." : ""}
           </div>
         ) : (
           <div aria-live="polite" className="space-y-3">

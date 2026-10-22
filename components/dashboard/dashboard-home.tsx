@@ -80,6 +80,9 @@ export function DashboardHome() {
   const firstName = userName ? userName.trim().split(" ")[0] : "there";
   const greeting = useSyncExternalStore(subscribeGreeting, getGreeting, () => "Good morning");
   const { data: analytics, loading: analyticsLoading, error: analyticsError } = useAnalytics();
+  // A stored account whose token or Page permission lapsed keeps its row but
+  // returns no data; that is a different problem from "no account yet".
+  const needsReconnect = (analytics?.accounts.length ?? 0) > 0 && !analytics?.live;
   const [connectModalOpen, setConnectModalOpen] = useState(false);
   const [publisherModalOpen, setPublisherModalOpen] = useState(false);
   const [acetate, setAcetate] = useState<"overview" | "engagement" | "memory">("overview");
@@ -95,7 +98,7 @@ export function DashboardHome() {
       {/* Catalog header */}
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-2 mono text-[10px] tracking-[0.14em] text-mutedText">
-          <span className="inline-flex items-center gap-1.5"><span className={`h-1.5 w-1.5 rounded-full ${analyticsError ? "bg-danger" : analytics?.live ? "bg-success animate-pulse" : "bg-faintText"}`} aria-hidden="true" /> {analyticsError ? "ANALYTICS UNAVAILABLE" : analytics?.live ? "LIVE META DATA" : "NO CONNECTED ACCOUNTS"}</span>
+          <span className="inline-flex items-center gap-1.5"><span className={`h-1.5 w-1.5 rounded-full ${analyticsError ? "bg-danger" : analytics?.live ? "bg-success animate-pulse" : needsReconnect ? "bg-[var(--warn)]" : "bg-faintText"}`} aria-hidden="true" /> {analyticsError ? "ANALYTICS UNAVAILABLE" : analytics?.live ? "LIVE META DATA" : needsReconnect ? "META NEEDS ATTENTION" : "NO CONNECTED ACCOUNTS"}</span>
           <span className="h-3 w-px bg-borderSoft" aria-hidden="true" />
           <span>DASHBOARD OVERVIEW</span>
           <span className="h-3 w-px bg-borderSoft" aria-hidden="true" />
@@ -131,12 +134,12 @@ export function DashboardHome() {
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="space-y-2.5">
                 <div className="inline-flex items-center gap-2">
-                  <span className="mono text-[10px] tracking-[0.14em] text-faintText">CONNECT YOUR ACCOUNTS</span>
+                  <span className="mono text-[10px] tracking-[0.14em] text-faintText">{needsReconnect ? "CONNECTION NEEDS ATTENTION" : "CONNECT YOUR ACCOUNTS"}</span>
                   <span className="h-1 w-1 rounded-full bg-primary" aria-hidden="true" />
-                  <span className="mono text-[10px] tracking-[0.12em] text-primary">REQUIRED</span>
+                  <span className="mono text-[10px] tracking-[0.12em] text-primary">{needsReconnect ? "RECONNECT" : "REQUIRED"}</span>
                 </div>
-                <h2 className="text-balance font-display text-xl font-semibold tracking-tight text-ink">Connect an account to see live audience data.</h2>
-                <p className="max-w-[52ch] text-sm leading-6 text-mutedText">Connect Instagram, Facebook, or Threads to review engagement, saves, and posting times. Access tokens are encrypted and scoped to your workspace.</p>
+                <h2 className="text-balance font-display text-xl font-semibold tracking-tight text-ink">{needsReconnect ? "Meta is connected but not returning data." : "Connect an account to see live audience data."}</h2>
+                <p className="max-w-[52ch] text-sm leading-6 text-mutedText">{needsReconnect ? "The saved token or its Page permissions no longer allow analytics. Reconnect Meta to restore this workspace; nothing here was deleted." : "Connect Instagram, Facebook, or Threads to review engagement, saves, and posting times. Access tokens are encrypted and scoped to your workspace."}</p>
                 <p className="flex items-center gap-1.5 mono text-[11px] tracking-[0.06em] text-faintText"><Lock aria-hidden="true" className="h-3 w-3 text-success" /> ENCRYPTED · RLS ISOLATED · <Link href="/privacy" className="text-primary underline decoration-primary/30 underline-offset-4 hover:decoration-primary">Privacy & Data Security</Link></p>
               </div>
               <div className="flex shrink-0 gap-2">

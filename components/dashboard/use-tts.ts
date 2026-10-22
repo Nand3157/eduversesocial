@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { clampSpeechText, stripMarkdownForSpeech } from "@/lib/speech/speech-text";
 
 export type UseTts = {
@@ -36,9 +36,12 @@ export function useTts(): UseTts {
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
   const [errorIndex, setErrorIndex] = useState<number | null>(null);
   const [usingDeviceVoice, setUsingDeviceVoice] = useState(false);
-  // Computed during render: browser audio support is stable for the page's
-  // lifetime, so this never needs to be state.
-  const unsupported = !playbackSupported();
+  // Audio support is only knowable in the browser. The server snapshot is
+  // `false` so the first client render matches the server HTML — reading
+  // window during render made the server ship `disabled` and the client flip
+  // it off, which React reports as a hydration mismatch.
+  const playbackReady = useSyncExternalStore(subscribeToNothing, playbackSupported, () => false);
+  const unsupported = !playbackReady;
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const objectUrlRef = useRef<string | null>(null);
@@ -204,6 +207,11 @@ export function useTts(): UseTts {
   );
 
   return { loadingIndex, playingIndex, unsupported, errorIndex, usingDeviceVoice, toggle, stop };
+}
+
+/** Support never changes mid-session, so there is nothing to subscribe to. */
+function subscribeToNothing() {
+  return () => {};
 }
 
 /** SSR-safe check for any playback path; stable across a page's lifetime. */

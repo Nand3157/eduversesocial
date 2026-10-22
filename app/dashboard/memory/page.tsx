@@ -4,6 +4,7 @@ import { Check, Database, Hash, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { PageHeading } from "@/components/dashboard/page-heading";
 import { useAnalytics } from "@/components/dashboard/analytics-context";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { staggerContainer, staggerItem, staggerItemFast } from "@/components/motion-variants";
 
@@ -12,6 +13,13 @@ export default function MemoryPage() {
   const memoryItems = data?.memoryItems ?? [];
   const postCount = data?.recentPosts.length ?? 0;
   const accountCount = data?.accounts.length ?? 0;
+  // Only claim a category when the snapshot actually carries it. Topic/hashtag
+  // extraction is not implemented, so it stays "not yet" rather than "available".
+  const coverage: Array<[string, boolean]> = [
+    ["Audience behavior", (data?.timingSignals?.length ?? 0) > 0 || (data?.metrics?.length ?? 0) > 0],
+    ["Content performance", postCount > 0],
+    ["Topic and hashtag patterns", false]
+  ];
 
   return (
     <div className="space-y-6">
@@ -28,9 +36,9 @@ export default function MemoryPage() {
           </CardContent>
         </Card>
         <Card>
-          <CardHeader><CardTitle>Signal coverage</CardTitle><CardDescription>Data categories available from the current Meta connection.</CardDescription></CardHeader>
+          <CardHeader><CardTitle>Signal coverage</CardTitle><CardDescription>What this connection actually supplies right now.</CardDescription></CardHeader>
           <CardContent className="space-y-3">
-            {["Audience behavior", "Content performance", "Topic and hashtag patterns"].map((label) => <div className="flex items-center gap-3 rounded-lg border border-borderSoft bg-surface p-3 text-sm text-mutedText" key={label}><Hash className="h-4 w-4 text-primary" />{label}</div>)}
+            {coverage.map(([label, available]) => <div className="flex items-center gap-3 rounded-lg border border-borderSoft bg-surface p-3 text-sm text-mutedText" key={label}><Hash className="h-4 w-4 text-primary" /><span className="flex-1">{label}</span><Badge variant={available ? "success" : "outline"}>{available ? "Available" : "Not yet"}</Badge></div>)}
           </CardContent>
         </Card>
       </div>

@@ -12,7 +12,7 @@ export const FAQS: ReadonlyArray<{ question: string; answer: string }> = [
   {
     question: "What is EduVerse?",
     answer:
-      "EduVerse is a social intelligence platform for Instagram Reels, Facebook Pages, and Threads. It connects through the official Meta Graph API, indexes your real engagement signals — reach, saves, comment sentiment, posting windows — into a persistent audience memory, and recommends exactly what to post and when."
+      "EduVerse is a social intelligence platform for Instagram Reels, Facebook Pages, and Threads. It connects through the official Meta Graph API, keeps your real engagement signals in a persistent audience memory (reach, saves, comment sentiment, posting windows), and recommends what to post and when."
   },
   {
     question: "How much does EduVerse cost?",
@@ -22,7 +22,7 @@ export const FAQS: ReadonlyArray<{ question: string; answer: string }> = [
   {
     question: "What are the cancellation and refund terms?",
     answer:
-      "Because EduVerse is free during early access, there is nothing to cancel and no charges to refund — no card is stored and no auto-renewal exists. You stay in control instead: disconnect your Meta accounts from Dashboard > Settings at any time, revoke authorization from Meta's own Business settings, or permanently delete your workspace via Settings > Delete account, which clears local data immediately and requests server-side erasure."
+      "Because EduVerse is free during early access, there is nothing to cancel and nothing to refund. No card is stored and nothing renews. You can disconnect your Meta accounts from Dashboard > Settings, revoke access inside Meta's own Business settings, or delete the workspace from Settings > Delete account, which clears local data immediately and requests server-side erasure."
   },
   {
     question: "What kind of customer support is offered?",
@@ -42,12 +42,12 @@ export const FAQS: ReadonlyArray<{ question: string; answer: string }> = [
   {
     question: "What makes EduVerse different from other social tools?",
     answer:
-      "Persistent audience memory: instead of resetting after each session like typical dashboards, EduVerse compounds what it learns from your engagement callbacks, so recommendations sharpen as your audience changes. It is also honest by construction — it shows simulated sandbox data clearly labeled as such and only claims numbers Meta actually returned."
+      "Persistent audience memory: instead of resetting after each session like typical dashboards, EduVerse compounds what it learns from your engagement callbacks, so recommendations sharpen as your audience changes. It also labels sandbox data as simulated, and it only shows numbers Meta actually returned."
   },
   {
     question: "Is my Meta data safe with EduVerse?",
     answer:
-      "Yes. Access uses Meta's official Graph OAuth with least-privilege scopes (pages_show_list and related). Tokens are AES-256-GCM encrypted and row-level isolated per workspace, never displayed in full, and revocable in one click — either from EduVerse Settings or directly inside Meta Business settings. Full details are on the Privacy & Data Security page."
+      "Yes. Access uses Meta's official Graph OAuth with least-privilege scopes (pages_show_list and related). Tokens are AES-256-GCM encrypted and isolated per workspace by row-level security. They are never displayed in full, and you can revoke them in one click from EduVerse Settings or inside Meta Business settings. Full details are on the Privacy & Data Security page."
   }
 ];
 

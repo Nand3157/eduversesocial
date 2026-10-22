@@ -1,4 +1,4 @@
-import type { AnalyticsSnapshot } from "@/lib/meta-analytics";
+import type { AnalyticsSnapshot, AnalyticsPost } from "@/lib/meta-analytics";
 import { computeBestTimes, type TimedPost } from "@/lib/best-time";
 
 const DEMO_SIGNALS: TimedPost[] = [
@@ -17,44 +17,76 @@ const DEMO_SIGNALS: TimedPost[] = [
 ];
 
 const DEMO_BEST_TIMES = computeBestTimes(DEMO_SIGNALS, { timezone: "UTC", topN: 3 });
+const TOP_WINDOW = DEMO_BEST_TIMES.windows[0];
+
+/** Every visible date comes from its own timestamp, so copy can never drift from data. */
+function dayLabel(iso: string) {
+  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(iso));
+}
+
+const DEMO_ACCOUNTS: AnalyticsSnapshot["accounts"] = [
+  {
+    id: "demo_ig_001",
+    name: "EduVerse Demo — Instagram",
+    platform: "instagram",
+    handle: "@eduverse.demo",
+    avatarUrl: undefined,
+    connectedAt: new Date().toISOString(),
+    status: "active",
+  },
+  {
+    id: "demo_fb_001",
+    name: "EduVerse Demo — Facebook Page",
+    platform: "facebook",
+    handle: "EduVerse Demo Page",
+    avatarUrl: undefined,
+    connectedAt: new Date().toISOString(),
+    status: "active",
+  },
+  {
+    id: "demo_th_001",
+    name: "EduVerse Demo — Threads",
+    platform: "threads",
+    handle: "@eduverse.demo",
+    avatarUrl: undefined,
+    connectedAt: new Date().toISOString(),
+    status: "active",
+  },
+];
+
+const DEMO_POSTING_DATA: AnalyticsSnapshot["postingData"] = [
+  { label: "Instagram", value: 22 },
+  { label: "Facebook", value: 16 },
+  { label: "Threads", value: 9 },
+];
+
+/** Authored in descending engagement order: row 0 is the top performer the copy cites. */
+const DEMO_POST_ROWS = [
+  { platform: "Instagram Business", post: "Behind the scenes: How we design carousel hooks that stop the scroll →", likes: "4.2K", comments: "312", shares: "89", reach: "28.4K", timestamp: "2026-08-07T13:20:00Z", mediaType: "CAROUSEL", accountLabel: "@eduverse.demo" },
+  { platform: "Facebook Pages", post: "New study: Posts at 9am + 7pm drive 2.1× more saves for education creators", likes: "2.8K", comments: "204", shares: "156", reach: "19.1K", timestamp: "2026-08-06T01:30:00Z", mediaType: "TEXT", accountLabel: "EduVerse Demo Page" },
+  { platform: "Threads", post: "Your audience isn't ignoring you — they're scrolling past. Here's the fix in 3 lines.", likes: "1.9K", comments: "178", shares: "67", reach: "14.3K", timestamp: "2026-08-05T04:00:00Z", mediaType: "TEXT", accountLabel: "@eduverse.demo" },
+  { platform: "Instagram Business", post: "POV: You finally know *exactly* what to post next Monday", likes: "3.6K", comments: "248", shares: "102", reach: "22.7K", timestamp: "2026-08-04T13:15:00Z", mediaType: "CAROUSEL", accountLabel: "@eduverse.demo" },
+  { platform: "Facebook Pages", post: "Live teardown: Why this reel outperformed the last 20 by 3×", likes: "1.4K", comments: "96", shares: "43", reach: "11.2K", timestamp: "2026-08-02T02:00:00Z", mediaType: "VIDEO", accountLabel: "EduVerse Demo Page" },
+];
+
+const DEMO_RECENT_POSTS: AnalyticsPost[] = DEMO_POST_ROWS.map((row) => ({
+  ...row,
+  date: dayLabel(row.timestamp),
+  status: "Simulated"
+}));
+
+const TOP_POST = DEMO_RECENT_POSTS[0]!;
+const TOTAL_POSTS = DEMO_POSTING_DATA.reduce((sum, row) => sum + row.value, 0);
 
 export const DEMO_SNAPSHOT: AnalyticsSnapshot = {
   success: true,
   live: true,
   cached: false,
-  accounts: [
-    {
-      id: "demo_ig_001",
-      name: "EduVerse Demo — Instagram",
-      platform: "instagram",
-      handle: "@eduverse.demo",
-      avatarUrl: undefined,
-      connectedAt: new Date().toISOString(),
-      status: "active",
-    },
-    {
-      id: "demo_fb_001",
-      name: "EduVerse Demo — Facebook Page",
-      platform: "facebook",
-      handle: "EduVerse Demo Page",
-      avatarUrl: undefined,
-      connectedAt: new Date().toISOString(),
-      status: "active",
-    },
-    {
-      id: "demo_th_001",
-      name: "EduVerse Demo — Threads",
-      platform: "threads",
-      handle: "@eduverse.demo",
-      avatarUrl: undefined,
-      connectedAt: new Date().toISOString(),
-      status: "active",
-    },
-  ],
+  accounts: DEMO_ACCOUNTS,
   metrics: [
     { label: "Views (28d)", value: 142_890, suffix: "", detail: "Simulated · based on sample Meta Graph data" },
     { label: "Engagement (28d)", value: 18_420, suffix: "", detail: "Simulated · likes + comments + shares" },
-    { label: "Published posts", value: 47, suffix: "", detail: "Simulated · Instagram + Facebook + Threads" },
+    { label: "Published posts", value: TOTAL_POSTS, suffix: "", detail: "Simulated · Instagram + Facebook + Threads" },
     { label: "Engagement rate", value: 12.9, suffix: "%", detail: "Simulated · engaged / reach" },
   ],
   engagementData: [
@@ -78,11 +110,7 @@ export const DEMO_SNAPSHOT: AnalyticsSnapshot = {
     { name: "Facebook Pages", value: 31 },
     { name: "Threads", value: 17 },
   ],
-  postingData: [
-    { label: "Instagram", value: 22 },
-    { label: "Facebook", value: 16 },
-    { label: "Threads", value: 9 },
-  ],
+  postingData: DEMO_POSTING_DATA,
   growthData: [
     { label: "EduVerse IG", followers: 34200 },
     { label: "EduVerse FB", followers: 18750 },
@@ -97,98 +125,25 @@ export const DEMO_SNAPSHOT: AnalyticsSnapshot = {
     { label: "Aug 5", score: 0.72 },
     { label: "Aug 7", score: 0.78 },
   ],
-  recentPosts: [
-    {
-      platform: "Instagram Business",
-      post: "Behind the scenes: How we design carousel hooks that stop the scroll →",
-      date: "Aug 7",
-      likes: "4.2K",
-      comments: "312",
-      shares: "89",
-      reach: "28.4K",
-      status: "Live",
-      timestamp: "2026-08-05T13:20:00Z",
-      mediaType: "CAROUSEL",
-      accountLabel: "@eduverse.demo"
-    },
-    {
-      platform: "Facebook Pages",
-      post: "New study: Posts at 9am + 7pm drive 2.1× more saves for education creators",
-      date: "Aug 6",
-      likes: "2.8K",
-      comments: "204",
-      shares: "156",
-      reach: "19.1K",
-      status: "Live",
-      timestamp: "2026-07-23T01:30:00Z",
-      mediaType: "TEXT",
-      accountLabel: "EduVerse Demo Page"
-    },
-    {
-      platform: "Threads",
-      post: "Your audience isn't ignoring you — they're scrolling past. Here's the fix in 3 lines.",
-      date: "Aug 5",
-      likes: "1.9K",
-      comments: "178",
-      shares: "67",
-      reach: "14.3K",
-      status: "Live",
-      timestamp: "2026-07-26T04:00:00Z",
-      mediaType: "TEXT",
-      accountLabel: "@eduverse.demo"
-    },
-    {
-      platform: "Instagram Business",
-      post: "POV: You finally know *exactly* what to post next Monday",
-      date: "Aug 4",
-      likes: "3.6K",
-      comments: "248",
-      shares: "102",
-      reach: "22.7K",
-      status: "Live",
-      timestamp: "2026-07-24T13:15:00Z",
-      mediaType: "CAROUSEL",
-      accountLabel: "@eduverse.demo"
-    },
-    {
-      platform: "Facebook Pages",
-      post: "Live teardown: Why this reel outperformed the last 20 by 3×",
-      date: "Aug 2",
-      likes: "1.4K",
-      comments: "96",
-      shares: "43",
-      reach: "11.2K",
-      status: "Live",
-      timestamp: "2026-08-02T02:00:00Z",
-      mediaType: "VIDEO",
-      accountLabel: "EduVerse Demo Page"
-    },
-  ],
+  recentPosts: DEMO_RECENT_POSTS,
   timingSignals: DEMO_SIGNALS,
   bestTimes: DEMO_BEST_TIMES,
   memoryItems: [
-    "3 connected Meta surfaces returned by Graph API (simulated sample).",
-    "47 posts from the last 28 days are available for analysis (simulated).",
-    "Highest recent interaction volume: 4.2K likes, 312 comments, and 89 shares.",
-    "Optimal window detected: 09:00–10:30 and 19:00–20:30 IST (simulated).",
+    `${DEMO_ACCOUNTS.length} connected Meta surfaces returned by Graph API (simulated sample).`,
+    `${TOTAL_POSTS} posts from the last 28 days are available for analysis (simulated).`,
+    `Highest recent interaction volume: ${TOP_POST.likes} likes, ${TOP_POST.comments} comments, and ${TOP_POST.shares} shares.`,
+    `Optimal window detected: ${new Intl.ListFormat("en", { style: "long", type: "conjunction" }).format(DEMO_BEST_TIMES.windows.map((window) => window.label))} ${DEMO_BEST_TIMES.timezone} across ${DEMO_BEST_TIMES.sampleSize} timed posts (simulated).`,
   ],
   recommendations: [
     [
       "Repurpose your top carousel hook as a 15-sec Reel",
-      "Based on Aug 7",
-      "This post led the sample with 4.2K likes and a 12.9% engagement rate. In a live workspace EduVerse would generate the brief, caption, and dispatch via Meta Graph publish.",
+      `Based on ${TOP_POST.date}`,
+      `This post led the sample with ${TOP_POST.likes} likes and ${TOP_POST.reach} reach. In a live workspace EduVerse would generate the brief, caption, and dispatch via Meta Graph publish.`,
     ],
     [
-      "Post on Wed 1–2 PM (UTC) — simulated best window",
-      "Best window · high confidence · 12 timed posts (simulated)",
-      "Simulated sample: early-afternoon UTC slots averaged the highest engagement for Instagram carousels. In a live workspace this window is recomputed from your real timestamps."
+      `Post on ${TOP_WINDOW?.label ?? "your best window"} (${DEMO_BEST_TIMES.timezone}) — simulated best window`,
+      `Best window · ${DEMO_BEST_TIMES.confidence} confidence · ${DEMO_BEST_TIMES.sampleSize} timed posts (simulated)`,
+      `Simulated sample: ${TOP_WINDOW?.label ?? "the top"} slots averaged ${TOP_WINDOW?.avgEngagement ?? 0} engagements across ${TOP_WINDOW?.postCount ?? 0} posts. In a live workspace this window is recomputed from your real timestamps.`,
     ]
   ],
 };
-
-export const DEMO_HIGHLIGHTS = {
-  reach: "142.9K views",
-  engaged: "18.4K engaged",
-  posts: 47,
-  topPost: "4.2K likes · Behind the scenes carousel",
-} as const;

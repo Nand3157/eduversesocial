@@ -95,14 +95,13 @@ export default function SettingsPage() {
   const [notifications, setNotifications] = useState({
     weeklyReports: true,
     audienceSpikes: true,
-    aiDigest: true,
-    milestones: false
+    aiDigest: true
   });
   const [notificationsLoadedFor, setNotificationsLoadedFor] = useState("");
 
   useEffect(() => {
     queueMicrotask(() => {
-      let saved = { weeklyReports: true, audienceSpikes: true, aiDigest: true, milestones: false };
+      let saved = { weeklyReports: true, audienceSpikes: true, aiDigest: true };
       try {
         const parsed: unknown = JSON.parse(localStorage.getItem(notificationStorageKey) ?? "null");
         if (parsed && typeof parsed === "object") saved = { ...saved, ...parsed as Partial<typeof saved> };
@@ -526,8 +525,9 @@ export default function SettingsPage() {
             <div className="min-w-0 flex-1">
               <p className="font-semibold">Notifications</p>
               <p className="mt-1 text-sm leading-6 text-mutedText">
-                {notifications.weeklyReports ? "Weekly reports" : "Alerts"} and audience updates are{" "}
-                {notifications.weeklyReports || notifications.audienceSpikes ? "enabled" : "disabled"}.
+                {notifications.weeklyReports || notifications.audienceSpikes || notifications.aiDigest
+                  ? "Preferences saved in this browser. Email and alert delivery is not connected yet."
+                  : "All notification preferences are off."}
               </p>
               <Button className="mt-4" onClick={() => setIsNotificationsOpen(true)} size="sm" variant="secondary">
                 Preferences
@@ -749,7 +749,7 @@ export default function SettingsPage() {
       <Modal onOpenChange={setIsNotificationsOpen} open={isNotificationsOpen}>
         <ModalContent>
           <ModalTitle>Notification Preferences</ModalTitle>
-          <ModalDescription>Control when and how EduVerse alerts you.</ModalDescription>
+          <ModalDescription>Choose what you want to hear about. These choices are saved in this browser; email and alert delivery is not connected yet, so nothing is sent.</ModalDescription>
           <div className="mt-4 space-y-4">
             <label className="flex items-center justify-between cursor-pointer">
               <div>

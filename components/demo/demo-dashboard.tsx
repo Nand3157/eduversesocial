@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight, BadgeCheck, BarChart3, Check, ChevronDown, Eye, Heart, LineChartIcon, MessageSquare, Sparkles, Users } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { ChartViewport } from "@/components/ui/chart-viewport";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -199,7 +200,7 @@ export function DemoDashboard() {
             <div className="p-3 sm:p-4 flex-1 flex flex-col min-h-[280px]">
               <p className="mb-2 mono text-[11px] text-faintText">Simulated 14-day sample from Meta Graph API.</p>
               <div role="img" aria-label="Area chart: engagement over the last 14 simulated days." className="flex-1 min-h-[220px]">
-                <ResponsiveContainer width="100%" height="100%">
+                <ChartViewport><ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={snap.engagementData}>
                     <defs>
                       <linearGradient id="demo-engagement" x1="0" x2="0" y1="0" y2="1">
@@ -214,7 +215,7 @@ export function DemoDashboard() {
                     <Area dataKey="engagement" fill="url(#demo-engagement)" stroke="var(--accent)" strokeWidth={2.5} type="monotone" {...chartAnim} />
                     <Line dataKey="comments" dot={false} stroke="var(--ok)" strokeWidth={2} type="monotone" {...chartAnim} />
                   </AreaChart>
-                </ResponsiveContainer>
+                </ResponsiveContainer></ChartViewport>
               </div>
             </div>
           </div>
@@ -230,7 +231,7 @@ export function DemoDashboard() {
             <p className="mono text-[11px] leading-relaxed text-faintText">Share of engagement across networks.</p>
             <div className="mt-3 flex flex-1 flex-col items-center gap-5 sm:flex-row sm:items-center lg:flex-col xl:flex-row xl:items-center">
               <div role="img" aria-label="Pie chart: share of engagement by network." className="h-[176px] w-[176px] shrink-0 sm:h-[164px] sm:w-[164px] lg:h-[180px] lg:w-[180px] xl:h-[168px] xl:w-[168px]">
-                <ResponsiveContainer width="100%" height="100%">
+                <ChartViewport><ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie data={snap.platformBreakdown} dataKey="value" innerRadius={46} outerRadius={70} paddingAngle={4} cx="50%" cy="50%" isAnimationActive={!reduceMotion}>
                       {snap.platformBreakdown.map((entry, i) => (
@@ -239,7 +240,7 @@ export function DemoDashboard() {
                     </Pie>
                     <Tooltip contentStyle={tooltipStyle} />
                   </PieChart>
-                </ResponsiveContainer>
+                </ResponsiveContainer></ChartViewport>
               </div>
               <div className="grid w-full min-w-0 flex-1 gap-2.5">
                 {snap.platformBreakdown.map((p, i) => (
@@ -260,7 +261,7 @@ export function DemoDashboard() {
       <div className="grid gap-3 md:hidden">
         <MobileExpandable kicker="SAMPLE DATA" title="Engagement over time" subtitle="14-day trend · +12.9%" icon={<LineChartIcon className="h-4 w-4" />} defaultOpen>
           <div role="img" aria-label="Area chart: engagement over the last 14 simulated days." className="h-[220px]">
-            <ResponsiveContainer width="100%" height="100%">
+            <ChartViewport><ResponsiveContainer width="100%" height="100%">
               <AreaChart data={snap.engagementData}>
                 <defs>
                   <linearGradient id="demo-engagement-mobile" x1="0" x2="0" y1="0" y2="1">
@@ -275,7 +276,7 @@ export function DemoDashboard() {
                 <Area dataKey="engagement" fill="url(#demo-engagement-mobile)" stroke="var(--accent)" strokeWidth={2.5} type="monotone" {...chartAnim} />
                 <Line dataKey="comments" dot={false} stroke="var(--ok)" strokeWidth={2} type="monotone" {...chartAnim} />
               </AreaChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></ChartViewport>
           </div>
           <p className="mt-2 text-center mono text-[10px] tracking-[0.06em] text-faintText">Simulated 14-day sample · drag to inspect</p>
         </MobileExpandable>
@@ -283,7 +284,7 @@ export function DemoDashboard() {
         <MobileExpandable kicker="SAMPLE DATA" title="Audience by platform" subtitle="Instagram 52% · Facebook 31% · Threads 17%" icon={<Users className="h-4 w-4" />}>
           <div className="flex flex-col items-center gap-4">
             <div role="img" aria-label="Pie chart: share of engagement by network." className="h-[180px] w-[180px] shrink-0">
-              <ResponsiveContainer width="100%" height="100%">
+              <ChartViewport><ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie data={snap.platformBreakdown} dataKey="value" innerRadius={48} outerRadius={72} paddingAngle={4} cx="50%" cy="50%" isAnimationActive={!reduceMotion}>
                     {snap.platformBreakdown.map((entry, i) => (
@@ -292,7 +293,7 @@ export function DemoDashboard() {
                   </Pie>
                   <Tooltip contentStyle={tooltipStyle} />
                 </PieChart>
-              </ResponsiveContainer>
+              </ResponsiveContainer></ChartViewport>
             </div>
             <div className="grid w-full gap-2.5">
               {snap.platformBreakdown.map((p, i) => (
@@ -318,7 +319,7 @@ export function DemoDashboard() {
           </CardHeader>
           <CardContent>
             <div role="img" aria-label="Bar chart: simulated posting frequency per day." className="h-[220px]">
-              <ResponsiveContainer width="100%" height="100%">
+              <ChartViewport><ResponsiveContainer width="100%" height="100%">
                 <BarChart data={snap.postingData}>
                   <CartesianGrid stroke="var(--line)" strokeOpacity={0.5} vertical={false} />
                   <XAxis dataKey="label" axisLine={false} tickLine={false} tick={axisTick} />
@@ -326,7 +327,7 @@ export function DemoDashboard() {
                   <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "var(--accent-soft)" }} />
                   <Bar dataKey="value" fill="var(--accent)" radius={[6, 6, 2, 2]} {...chartAnim} />
                 </BarChart>
-              </ResponsiveContainer>
+              </ResponsiveContainer></ChartViewport>
             </div>
           </CardContent>
         </Card>
@@ -337,7 +338,7 @@ export function DemoDashboard() {
           </CardHeader>
           <CardContent>
             <div role="img" aria-label="Line chart: simulated audience growth over time." className="h-[220px]">
-              <ResponsiveContainer width="100%" height="100%">
+              <ChartViewport><ResponsiveContainer width="100%" height="100%">
                 <LineChart data={snap.growthData}>
                   <CartesianGrid stroke="var(--line)" strokeOpacity={0.5} vertical={false} />
                   <XAxis dataKey="label" axisLine={false} tickLine={false} tick={axisTick} />
@@ -345,7 +346,7 @@ export function DemoDashboard() {
                   <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: "var(--line)" }} />
                   <Line dataKey="followers" dot={{ r: 4, fill: "var(--ok)", strokeWidth: 0 }} stroke="var(--ok)" strokeWidth={2.5} type="monotone" {...chartAnim} />
                 </LineChart>
-              </ResponsiveContainer>
+              </ResponsiveContainer></ChartViewport>
             </div>
           </CardContent>
         </Card>
@@ -356,7 +357,7 @@ export function DemoDashboard() {
           </CardHeader>
           <CardContent>
             <div role="img" aria-label="Area chart: simulated comment sentiment trend." className="h-[220px]">
-              <ResponsiveContainer width="100%" height="100%">
+              <ChartViewport><ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={snap.sentimentData}>
                   <defs>
                     <linearGradient id="demo-sentiment" x1="0" x2="0" y1="0" y2="1">
@@ -369,7 +370,7 @@ export function DemoDashboard() {
                   <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: "var(--line)" }} />
                   <Area dataKey="score" fill="url(#demo-sentiment)" stroke="var(--ok)" strokeWidth={2.5} type="monotone" {...chartAnim} />
                 </AreaChart>
-              </ResponsiveContainer>
+              </ResponsiveContainer></ChartViewport>
             </div>
           </CardContent>
         </Card>
@@ -377,7 +378,7 @@ export function DemoDashboard() {
       <div className="grid gap-3 md:hidden">
         <MobileExpandable kicker="SAMPLE DATA" title="Posting frequency" subtitle="22 Instagram · 16 Facebook · 9 Threads" icon={<BarChart3 className="h-4 w-4" />}>
           <div role="img" aria-label="Bar chart: simulated posting frequency per day." className="h-[200px]">
-            <ResponsiveContainer width="100%" height="100%">
+            <ChartViewport><ResponsiveContainer width="100%" height="100%">
               <BarChart data={snap.postingData}>
                 <CartesianGrid stroke="var(--line)" strokeOpacity={0.5} vertical={false} />
                 <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "var(--faint)", fontSize: 11 }} />
@@ -385,12 +386,12 @@ export function DemoDashboard() {
                 <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "var(--accent-soft)" }} />
                 <Bar dataKey="value" fill="var(--accent)" radius={[8, 8, 2, 2]} {...chartAnim} />
               </BarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></ChartViewport>
           </div>
         </MobileExpandable>
         <MobileExpandable kicker="SAMPLE DATA" title="Audience size" subtitle="34.2K Instagram · 18.7K Facebook" icon={<Users className="h-4 w-4" />}>
           <div role="img" aria-label="Line chart: simulated audience growth over time." className="h-[200px]">
-            <ResponsiveContainer width="100%" height="100%">
+            <ChartViewport><ResponsiveContainer width="100%" height="100%">
               <LineChart data={snap.growthData}>
                 <CartesianGrid stroke="var(--line)" strokeOpacity={0.5} vertical={false} />
                 <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "var(--faint)", fontSize: 11 }} />
@@ -398,12 +399,12 @@ export function DemoDashboard() {
                 <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: "var(--line)" }} />
                 <Line dataKey="followers" dot={{ r: 4, fill: "var(--ok)", strokeWidth: 0 }} stroke="var(--ok)" strokeWidth={2.5} type="monotone" {...chartAnim} />
               </LineChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></ChartViewport>
           </div>
         </MobileExpandable>
         <MobileExpandable kicker="SAMPLE DATA" title="Comment sentiment" subtitle="Average 0.71 · peak 0.78" icon={<MessageSquare className="h-4 w-4" />}>
           <div role="img" aria-label="Area chart: simulated comment sentiment trend." className="h-[200px]">
-            <ResponsiveContainer width="100%" height="100%">
+            <ChartViewport><ResponsiveContainer width="100%" height="100%">
               <AreaChart data={snap.sentimentData}>
                 <defs>
                   <linearGradient id="demo-sentiment-mobile" x1="0" x2="0" y1="0" y2="1">
@@ -416,7 +417,7 @@ export function DemoDashboard() {
                 <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: "var(--line)" }} />
                 <Area dataKey="score" fill="url(#demo-sentiment-mobile)" stroke="var(--ok)" strokeWidth={2.5} type="monotone" {...chartAnim} />
               </AreaChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></ChartViewport>
           </div>
         </MobileExpandable>
       </div>
@@ -537,7 +538,7 @@ export function DemoDashboard() {
                       <td className="px-3 py-3 tabular-nums">{post.shares}</td>
                       <td className="px-3 py-3 tabular-nums">{post.reach}</td>
                       <td className="rounded-r-xl px-3 py-3">
-                        <Badge variant="success">{post.status}</Badge>
+                        <Badge variant="outline">{post.status}</Badge>
                       </td>
                     </tr>
                   ))}
@@ -571,7 +572,7 @@ export function DemoDashboard() {
                   <span className="rounded-xl bg-card border border-borderSoft px-2 py-2 text-center"><span className="block mono text-[10px] text-faintText">LIKES</span><span className="block text-xs font-semibold tabular-nums text-ink">{post.likes}</span></span>
                   <span className="rounded-xl bg-card border border-borderSoft px-2 py-2 text-center"><span className="block mono text-[10px] text-faintText">COMMENTS</span><span className="block text-xs font-semibold tabular-nums text-ink">{post.comments}</span></span>
                   <span className="rounded-xl bg-card border border-borderSoft px-2 py-2 text-center"><span className="block mono text-[10px] text-faintText">SHARES</span><span className="block text-xs font-semibold tabular-nums text-ink">{post.shares}</span></span>
-                  <span className="rounded-xl bg-success/10 border border-success/20 px-2 py-2 text-center"><span className="block mono text-[10px] text-success">STATUS</span><span className="block text-xs font-semibold text-success">{post.status}</span></span>
+                  <span className="rounded-xl border border-borderSoft bg-card px-2 py-2 text-center"><span className="block mono text-[10px] text-faintText">STATUS</span><span className="block text-xs font-semibold text-ink">{post.status}</span></span>
                 </div>
               </div>
             ))}
@@ -628,11 +629,11 @@ export function DemoPreviewMini() {
         ))}
       </div>
       <div aria-hidden="true" className="mt-3 h-[88px]">
-        <ResponsiveContainer width="100%" height="100%">
+        <ChartViewport><ResponsiveContainer width="100%" height="100%">
           <AreaChart data={snap.engagementData.slice(-7)}>
             <Area dataKey="engagement" stroke="var(--accent)" fill="var(--accent)" fillOpacity={0.12} strokeWidth={2} type="monotone" isAnimationActive={false} />
           </AreaChart>
-        </ResponsiveContainer>
+        </ResponsiveContainer></ChartViewport>
       </div>
       <div className="mt-3 flex items-center justify-between text-[11px] text-mutedText">
         <span className="inline-flex items-center gap-1.5"><span aria-hidden="true" className="h-2 w-2 rounded-full bg-success animate-pulse" /> No login required</span>

@@ -31,7 +31,7 @@ import { cn } from "@/lib/utils";
 import { useDashboardStore } from "@/lib/stores/dashboard-store";
 import { MetaConnectModal } from "@/components/meta/meta-connect-modal";
 import { MetaPublisherModal } from "@/components/meta/meta-publisher-modal";
-import { AnalyticsProvider } from "@/components/dashboard/analytics-context";
+import { AnalyticsProvider, useAnalytics } from "@/components/dashboard/analytics-context";
 import { AnalyticsErrorBanner } from "@/components/dashboard/analytics-error-banner";
 import { GlassHeader } from "@/components/layout/glass-header";
 import { DashboardMobileDock } from "@/components/ui/mobile-bottom-nav";
@@ -54,6 +54,34 @@ const reviewNavEntry = ["Reviews", "/dashboard/reviews", Star] as const;
 const subscribeNothing = () => () => undefined;
 const getMounted = () => true;
 const getServerMounted = () => false;
+
+/**
+ * Connection copy for the sidebar. It has to come from the analytics context:
+ * the shell used to print "connect Meta" prompts even while a live account was
+ * feeding the dashboard it sits next to.
+ */
+function SidebarConnectionNote({ className, emptyOnly = false }: { className?: string; emptyOnly?: boolean }) {
+  const { data, loading, error } = useAnalytics();
+  const accounts = data?.accounts ?? [];
+  // A stored account is not the same as a working one: a revoked token or
+  // missing Page permission keeps the row while Meta returns nothing.
+  const healthy = accounts.filter((account) => account.status === "active").length;
+  if (emptyOnly && (accounts.length > 0 || loading || (error && !data?.success))) return null;
+
+  const message = accounts.length > 0 && healthy === 0
+    ? `${accounts.length} Meta account${accounts.length === 1 ? "" : "s"} connected, but Meta is not returning data. Reconnect from Settings.`
+    : healthy > 0
+      ? `${healthy} Meta account${healthy === 1 ? "" : "s"} connected. Live analytics and recommendations are on.`
+      : error && !data?.success
+        ? "Meta data is unavailable right now. Retry from any dashboard page."
+        : loading
+          ? "Checking your Meta connection…"
+          : emptyOnly
+            ? "Live analytics and recommendations appear after you connect an account."
+            : "Connect Meta to see live audience data and recommendations.";
+
+  return <p className={cn(emptyOnly && "rounded-[12px] border border-borderSoft bg-surface-muted p-3", className)}>{message}</p>;
+}
 
 export function AppShell({ children, email, profile, initialAnalytics }: { children: React.ReactNode; email?: string; profile?: { display_name?: string | null; role?: string | null; bio?: string | null } | null; initialAnalytics?: AnalyticsSnapshot | null }) {
   const pathname = usePathname();
@@ -129,7 +157,7 @@ export function AppShell({ children, email, profile, initialAnalytics }: { child
         {!collapsed && (
           <div className="px-3 py-2.5">
             <p className="mono text-[10px] tracking-[0.12em] text-faintText">AUDIENCE MEMORY</p>
-            <p className="mt-1 text-xs leading-4 text-mutedText">Connect Meta to see live audience data and recommendations.</p>
+            <SidebarConnectionNote className="mt-1 text-xs leading-4 text-mutedText" />
           </div>
         )}
       </div>
@@ -178,9 +206,7 @@ export function AppShell({ children, email, profile, initialAnalytics }: { child
             <button onClick={() => setConnectModalOpen(true)} className="flex w-full items-center justify-between rounded-full bg-primary px-3.5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary-strong">
               <span className="flex items-center gap-2"><Sparkles aria-hidden="true" className="h-3.5 w-3.5" /> Connect Meta</span>
             </button>
-            <div className="rounded-[12px] border border-borderSoft bg-surface-muted p-3">
-              <p className="text-xs leading-4 text-mutedText">Live analytics and recommendations appear after you connect an account.</p>
-            </div>
+            <SidebarConnectionNote emptyOnly className="text-xs leading-4 text-mutedText" />
           </div>
         ) : (
           <div className="grid place-items-center gap-2">

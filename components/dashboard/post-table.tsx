@@ -6,16 +6,18 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAnalytics } from "@/components/dashboard/analytics-context";
+import type { AnalyticsPost } from "@/lib/meta-analytics";
 import { useDashboardStore } from "@/lib/stores/dashboard-store";
 import { accountStorageKey } from "@/lib/account-storage";
 
-const statusVariant: Record<string, "primary" | "success" | "warning" | "default"> = {
+const statusVariant: Record<string, "primary" | "success" | "warning" | "default" | "outline"> = {
   "High intent": "primary",
   Trending: "success",
   Learning: "warning",
   Viral: "success",
   Live: "success",
-  Draft: "default"
+  Draft: "default",
+  Simulated: "outline"
 };
 
 type CsvRow = { platform: string; content: string; date: string };
@@ -77,7 +79,7 @@ export function PostTable({ csvRows }: { csvRows?: CsvRow[] }) {
 
   const filtered = useMemo(() => {
     const recentPosts = data?.recentPosts ?? [];
-    const csvPosts = localCsvRows.map((r) => ({
+    const csvPosts: AnalyticsPost[] = localCsvRows.map((r) => ({
       platform: r.platform === "instagram" ? "Instagram Business" : r.platform === "threads" ? "Threads" : "Facebook Pages",
       post: r.content,
       date: r.date,
@@ -85,7 +87,7 @@ export function PostTable({ csvRows }: { csvRows?: CsvRow[] }) {
       comments: "—",
       shares: "—",
       reach: "—",
-      status: "Draft" as const,
+      status: "Draft",
     }));
     const allPosts = [...csvPosts, ...recentPosts];
     // Expand compact counts ("42.8K" → 42_800) so mixed numeric and

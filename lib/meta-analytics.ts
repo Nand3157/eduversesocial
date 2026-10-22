@@ -19,7 +19,8 @@ export type AnalyticsPost = {
   comments: string;
   shares: string;
   reach: string;
-  status: "Live";
+  /** "Live" is a real published post; "Draft" is a local CSV row; "Simulated" is sample data. */
+  status: "Live" | "Draft" | "Simulated";
   /** ISO timestamp from Meta when available — powers best-time predictions. */
   timestamp?: string;
   permalink?: string;
@@ -139,6 +140,23 @@ function expandCompact(value: string) {
   if (value.includes("M")) return numeric * 1_000_000;
   if (value.includes("K")) return numeric * 1_000;
   return numeric || 0;
+}
+
+/**
+ * Prose about a post may only cite counters Meta actually returned. "—"
+ * marks an unavailable counter, and interpolating it produced sentences like
+ * "led the sample with — likes", which were then stored as memory and
+ * notifications. Returns null when nothing is known.
+ */
+function postMetricSummary(post: AnalyticsPost): string | null {
+  const parts = [
+    [post.likes, "like"],
+    [post.comments, "comment"],
+    [post.shares, "share"]
+  ]
+    .filter(([value]) => value !== "—")
+    .map(([value, label]) => `${value} ${label}${value === "1" ? "" : "s"}`);
+  return parts.length ? new Intl.ListFormat("en", { style: "long", type: "conjunction" }).format(parts) : null;
 }
 
 /**
@@ -610,6 +628,7 @@ export async function fetchMetaAnalytics(token?: string, bypassCache = false): P
       const score = (post: AnalyticsPost) => expandCompact(post.likes) + expandCompact(post.comments) + expandCompact(post.shares);
       return score(b) - score(a);
     })[0];
+    const topPostSummary = topPost ? postMetricSummary(topPost) : null;
 
     // Timing signals for best-time predictions: one entry per post that
     // carries a usable timestamp, tagged by account + platform + content type.
@@ -691,14 +710,14 @@ const followers = [
       memoryItems: [
         accounts.length ? `${accounts.length} connected Meta account${accounts.length === 1 ? "" : "s"} returned by Graph API.` : "Meta returned no linked accounts for this token.",
         posts.length ? `The latest ${posts.length} returned post${posts.length === 1 ? "" : "s"} are available for analysis.` : "Meta returned no recent posts for the connected accounts.",
-        topPost ? `Highest recent interaction volume: ${topPost.likes} likes, ${topPost.comments} comments, and ${topPost.shares} shares.` : "Interaction history will appear when Meta returns post data.",
+        topPostSummary ? `Highest recent interaction volume: ${topPostSummary}.` : "Interaction history will appear when Meta returns post data.",
         bestTimeMemory
       ],
       recommendations: [
-        ...(topPost ? [[
+        ...(topPost && topPostSummary ? [[
           "Review and repurpose the strongest recent Meta post",
           `Based on ${topPost.date}`,
-          `This post led the returned sample with ${topPost.likes} likes, ${topPost.comments} comments, and ${topPost.shares} shares. Use its topic and format as the next experiment.`
+          `This post led the returned sample with ${topPostSummary}. Use its topic and format as the next experiment.`
         ] as [string, string, string]] : []),
         ...bestTimeRecs
       ],
@@ -714,9 +733,9 @@ const followers = [
           confidence: 1,
           source
         }] : []),
-        ...(topPost ? [{
+        ...(topPost && topPostSummary ? [{
           category: "top_post_engagement",
-          content: `Top recent post: ${topPost.likes} likes, ${topPost.comments} comments, and ${topPost.shares} shares (${topPost.accountLabel ?? topPost.platform}).`,
+          content: `Top recent post: ${topPostSummary} (${topPost.accountLabel ?? topPost.platform}).`,
           confidence: 0.8,
           source: { ...source, platform: topPost.platform, account: topPost.accountLabel, post_date: topPost.date }
         }] : []),
