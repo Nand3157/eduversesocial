@@ -136,7 +136,6 @@ Hard constraints (non-negotiable):
       contents: [{ role: "user", parts: [...parts, { text: prompt }] }],
       config: {
         systemInstruction: "You are a senior social media copywriter. You write powerful scroll-stopping hook sentences, numbered, and never fabricate facts or metrics.",
-        temperature: 0.85,
         maxOutputTokens: 400,
         thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
         responseMimeType: "application/json",

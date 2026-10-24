@@ -39,9 +39,12 @@ async function* geminiStream(messages: ChatMessage[], workspaceContext: string) 
   }
   const client = new GoogleGenAI({ apiKey });
 
-  const contents = messages.map((message) => {
+  const recentMessages = messages.slice(-12);
+  let latestImageIndex = -1;
+  recentMessages.forEach((message, index) => { if (message.image) latestImageIndex = index; });
+  const contents = recentMessages.map((message, index) => {
     const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [{ text: message.content }];
-    if (message.image && message.image.startsWith("data:")) {
+    if (index === latestImageIndex && message.image?.startsWith("data:")) {
       const match = message.image.match(/^data:([^;]+);base64,(.*)$/);
       if (match) {
         parts.push({
@@ -60,7 +63,6 @@ async function* geminiStream(messages: ChatMessage[], workspaceContext: string) 
 
   const config = {
     systemInstruction: `${EDUVERSE_SYSTEM_PROMPT}\n\n${getWorkspaceContext()}\n\n${workspaceContext}`,
-    temperature: 0.4,
     maxOutputTokens: 4096,
     thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }
   };
