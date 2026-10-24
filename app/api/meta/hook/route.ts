@@ -12,7 +12,7 @@ const hookSchema = z.object({
   platform: z.enum(["instagram", "facebook", "threads"]),
   mediaType: z.enum(["CAROUSEL", "IMAGE", "VIDEO", "TEXT"]),
   caption: z.string().trim().max(2200).optional(),
-  mediaUrls: z.array(z.string().url().max(400)).max(10).optional(),
+  mediaUrls: z.array(z.string().url().max(2048)).max(10).optional(),
   images: z.array(z.string().startsWith("data:").max(4_000_000)).max(4).optional(),
   accountName: z.string().trim().max(120).optional(),
   accountHandle: z.string().trim().max(120).optional(),
@@ -74,7 +74,7 @@ function singleSentence(text: string): string {
 
 export async function POST(request: Request) {
   const parsed = hookSchema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) return Response.json({ success: false, errorCode: "META_INVALID_MEDIA", message: "Invalid hook request." }, { status: 400 });
+  if (!parsed.success) return Response.json({ success: false, errorCode: "META_INVALID_MEDIA", message: parsed.error.issues[0]?.message ?? "Invalid hook request." }, { status: 400 });
 
   const supabase = await createClient();
   if (!supabase) return Response.json({ success: false, errorCode: "META_AUTH_ERROR", message: "Sign in required." }, { status: 401 });
@@ -138,7 +138,8 @@ Hard constraints (non-negotiable):
       config: {
         systemInstruction: "You are a senior social media copywriter. You write powerful scroll-stopping hook sentences, numbered, and never fabricate facts or metrics.",
         temperature: 0.85,
-        maxOutputTokens: 400
+        maxOutputTokens: 400,
+        thinkingConfig: { thinkingLevel: "low" }
       }
     });
     const text = result.text?.trim();

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
-import { Bot, ChevronDown, CloudOff, ImageIcon, Mic, Send, Sparkles, Cpu, Globe, Loader2, Square, Volume2, VolumeX, X } from "lucide-react";
+import { Bot, ChevronDown, CloudOff, ImageIcon, Mic, Send, Sparkles, Cpu, Globe, Loader2, Square, Trash2, Volume2, VolumeX, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,9 +19,66 @@ type Message = {
   content: string;
   image?: string;
   provider?: string;
+  id?: string;
+  created_at?: string;
 };
 
 type Conversation = { id: string; title: string; updated_at: string };
+type CachedChatPage = { id: string; messages: Message[]; hasMore: boolean };
+type ChatSessionCache = { activeId?: string; conversations: Conversation[]; pages: CachedChatPage[] };
+
+const CHAT_CACHE_LIMIT = 5;
+
+function readChatSessionCache(key: string): ChatSessionCache {
+  try {
+    const value = JSON.parse(window.sessionStorage.getItem(key) ?? "null");
+    if (!value || typeof value !== "object") return { conversations: [], pages: [] };
+    return {
+      activeId: typeof value.activeId === "string" ? value.activeId : undefined,
+      conversations: Array.isArray(value.conversations) ? value.conversations.slice(0, CHAT_CACHE_LIMIT) : [],
+      pages: Array.isArray(value.pages) ? value.pages.slice(0, CHAT_CACHE_LIMIT) : []
+    };
+  } catch {
+    return { conversations: [], pages: [] };
+  }
+}
+
+function writeChatSessionCache(key: string, cache: ChatSessionCache) {
+  try {
+    window.sessionStorage.setItem(key, JSON.stringify(cache));
+  } catch {
+    // The cache is optional; chat history remains available from the server.
+  }
+}
+
+function cacheConversationList(key: string, conversations: Conversation[]) {
+  const cache = readChatSessionCache(key);
+  writeChatSessionCache(key, { ...cache, conversations: conversations.slice(0, CHAT_CACHE_LIMIT) });
+}
+
+function cacheChatPage(key: string, id: string, messages: Message[], hasMore: boolean) {
+  const cache = readChatSessionCache(key);
+  const page = {
+    id,
+    messages: messages.slice(-20).map((message) => ({ role: message.role, content: message.content, id: message.id, created_at: message.created_at, provider: message.provider })),
+    hasMore
+  };
+  writeChatSessionCache(key, {
+    ...cache,
+    activeId: id,
+    pages: [page, ...cache.pages.filter((item) => item.id !== id)].slice(0, CHAT_CACHE_LIMIT)
+  });
+}
+
+function removeCachedChat(key: string, id: string) {
+  const cache = readChatSessionCache(key);
+  writeChatSessionCache(key, {
+    ...cache,
+    activeId: cache.activeId === id ? undefined : cache.activeId,
+    conversations: cache.conversations.filter((item) => item.id !== id),
+    pages: cache.pages.filter((item) => item.id !== id)
+  });
+}
 
 // Identity of the latest assistant message for voice-mode bookkeeping: index
 // plus cheap content fingerprint, so a re-render of the same reply never
@@ -214,37 +271,63 @@ function ConversationItems({
   activeId,
   conversations,
   loading,
-  onSelect
+  busy,
+  deletingId,
+  error,
+  onSelect,
+  onDelete
 }: {
   activeId?: string;
   conversations: Conversation[];
   loading: boolean;
+  busy: boolean;
+  deletingId: string | null;
+  error: string | null;
   onSelect: (id: string) => void;
+  onDelete: (conversation: Conversation) => void;
 }) {
   if (loading) return <p className="mt-2 text-xs leading-5 text-mutedText">Loading…</p>;
   if (conversations.length === 0) {
-    return <p className="mt-2 text-xs leading-5 text-mutedText">Your latest conversation is restored automatically.</p>;
+    return <>
+      {error && <p role="alert" className="mt-2 text-xs leading-5 text-danger">{error}</p>}
+      <p className="mt-2 text-xs leading-5 text-mutedText">Your latest conversation is restored automatically.</p>
+    </>;
   }
   return (
-    <ul className="mt-2 space-y-1">
-      {conversations.map((conversation) => {
-        const active = conversation.id === activeId;
-        return (
-          <li key={conversation.id}>
-            <button
-              onClick={() => onSelect(conversation.id)}
-              aria-current={active ? "true" : undefined}
-              className={`w-full touch-manipulation rounded-lg px-2.5 py-2 text-left text-xs transition focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none ${
-                active ? "bg-ink text-background" : "text-mutedText hover:bg-card hover:text-ink"
-              }`}
-            >
-              <span className="block truncate font-medium">{conversation.title || "New conversation"}</span>
-              <span className={`mt-0.5 block text-[10px] ${active ? "text-background/60" : "text-faintText"}`}>{timeAgo(conversation.updated_at)}</span>
-            </button>
-          </li>
-        );
-      })}
-    </ul>
+    <>
+      {error && <p role="alert" className="mt-2 text-xs leading-5 text-danger">{error}</p>}
+      <ul className="mt-2 space-y-1">
+        {conversations.map((conversation) => {
+          const active = conversation.id === activeId;
+          return (
+            <li key={conversation.id} className="flex items-stretch gap-1">
+              <button
+                type="button"
+                onClick={() => onSelect(conversation.id)}
+                aria-current={active ? "true" : undefined}
+                disabled={deletingId !== null || loading}
+                className={`min-w-0 flex-1 touch-manipulation rounded-lg px-2.5 py-2 text-left text-xs transition focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 ${
+                  active ? "bg-ink text-background" : "text-mutedText hover:bg-card hover:text-ink"
+                }`}
+              >
+                <span className="block truncate font-medium">{conversation.title || "New conversation"}</span>
+                <span className={`mt-0.5 block text-[10px] ${active ? "text-background/60" : "text-faintText"}`}>{timeAgo(conversation.updated_at)}</span>
+              </button>
+              <button
+                type="button"
+                aria-label={`Delete ${conversation.title || "conversation"}`}
+                title="Delete conversation"
+                disabled={deletingId !== null || loading || busy}
+                onClick={() => onDelete(conversation)}
+                className="grid w-9 shrink-0 place-items-center rounded-lg text-mutedText transition hover:bg-danger/10 hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/40 disabled:pointer-events-none disabled:opacity-50"
+              >
+                {deletingId === conversation.id ? <Loader2 aria-hidden="true" className="h-3.5 w-3.5 animate-spin" /> : <Trash2 aria-hidden="true" className="h-3.5 w-3.5" />}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </>
   );
 }
 
@@ -253,7 +336,11 @@ export function ChatInterface() {
   const { data: analytics } = useAnalytics();
   const userEmail = useDashboardStore((state) => state.userEmail);
   const voiceModeStorageKey = accountStorageKey("eduverse:voice-mode", userEmail);
+  const chatCacheKey = accountStorageKey("eduverse:chat-history", userEmail);
   const [messages, setMessages] = useState<Message[]>([welcome]);
+  const [hasOlderMessages, setHasOlderMessages] = useState(false);
+  const [loadingOlderMessages, setLoadingOlderMessages] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string>();
   const [input, setInput] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -264,6 +351,8 @@ export function ChatInterface() {
   const [imageError, setImageError] = useState<string | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loadingConversation, setLoadingConversation] = useState(false);
+  const [deletingConversationId, setDeletingConversationId] = useState<string | null>(null);
+  const [conversationError, setConversationError] = useState<string | null>(null);
   // Mobile-only disclosure for the conversation list (the desktop aside is lg+).
   const [conversationsOpen, setConversationsOpen] = useState(false);
   // Server reports "saving is down" via X-Chat-Persistence: unavailable —
@@ -377,40 +466,68 @@ export function ChatInterface() {
   // every chunk (O(n^2) work for long replies).
   const answerRef = useRef("");
   const streamTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const preserveHistoryScrollRef = useRef(false);
 
   const refreshConversations = () => {
     fetch("/api/chat?list=1", { cache: "no-store" })
       .then(async (r) => (r.ok ? r.json() : null))
       .then((data) => {
-        if (data?.conversations) setConversations(data.conversations as Conversation[]);
+        if (data?.conversations) {
+          setConversations(data.conversations as Conversation[]);
+          cacheConversationList(chatCacheKey, data.conversations as Conversation[]);
+        }
       })
       .catch(() => undefined);
   };
 
   useEffect(() => {
+    const generation = viewGenerationRef.current;
+    const cached = readChatSessionCache(chatCacheKey);
+    if (cached.conversations.length) setConversations(cached.conversations);
+    const cachedPage = cached.pages.find((page) => page.id === cached.activeId);
+    if (cachedPage) {
+      setConversationId(cachedPage.id);
+      setMessages(cachedPage.messages);
+      setHasOlderMessages(cachedPage.hasMore);
+    }
     fetch("/api/chat")
       .then(async (r) => (r.ok ? r.json() : null))
       .then((data) => {
-        if (data?.conversations) setConversations(data.conversations as Conversation[]);
+        if (viewGenerationRef.current !== generation) return;
+        if (data?.conversations) {
+          setConversations(data.conversations as Conversation[]);
+          cacheConversationList(chatCacheKey, data.conversations as Conversation[]);
+        }
         if (data?.conversationId && data.messages?.length) {
           setConversationId(data.conversationId);
           setMessages(data.messages as Message[]);
+          setHasOlderMessages(Boolean(data.hasMore));
+          cacheChatPage(chatCacheKey, data.conversationId, data.messages as Message[], Boolean(data.hasMore));
         }
       })
       .catch(() => undefined);
-  }, []);
+  }, [chatCacheKey]);
 
   const openConversation = async (id: string) => {
     if (loadingConversation || id === conversationId) return;
     setLoadingConversation(true);
-    viewGenerationRef.current += 1;
+    const generation = ++viewGenerationRef.current;
+    const cached = readChatSessionCache(chatCacheKey).pages.find((page) => page.id === id);
+    if (cached) {
+      setConversationId(id);
+      setMessages(cached.messages);
+      setHasOlderMessages(cached.hasMore);
+    }
     try {
       const response = await fetch(`/api/chat?conversationId=${encodeURIComponent(id)}`, { cache: "no-store" });
       const data = await response.json();
-      if (response.ok && data?.messages) {
+      if (viewGenerationRef.current === generation && response.ok && data?.messages) {
         tts.stop();
         setConversationId(id);
         setMessages(data.messages as Message[]);
+        setHasOlderMessages(Boolean(data.hasMore));
+        setHistoryError(null);
+        cacheChatPage(chatCacheKey, id, data.messages as Message[], Boolean(data.hasMore));
         setInput("");
         setImagePreview(null);
         setPersistenceWarning(false);
@@ -422,11 +539,47 @@ export function ChatInterface() {
     }
   };
 
+  const deleteConversation = async (conversation: Conversation) => {
+    const title = conversation.title || "this conversation";
+    if (!window.confirm(`Delete “${title}”? Its messages will also be deleted.`)) return;
+    setDeletingConversationId(conversation.id);
+    setConversationError(null);
+    try {
+      const response = await fetch(`/api/chat?conversationId=${encodeURIComponent(conversation.id)}`, { method: "DELETE" });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(data?.error ?? "Could not delete this conversation. Try again.");
+      const remaining = conversations.filter((item) => item.id !== conversation.id);
+      setConversations(remaining);
+      removeCachedChat(chatCacheKey, conversation.id);
+      if (conversation.id === conversationId) {
+        if (remaining[0]) {
+          setConversationId(undefined);
+          setMessages([welcome]);
+          setHasOlderMessages(false);
+          setHistoryError(null);
+          setInput("");
+          setImagePreview(null);
+          setPersistenceWarning(false);
+          tts.stop();
+          await openConversation(remaining[0].id);
+        } else startNewConversation();
+      }
+    } catch (error) {
+      setConversationError(error instanceof Error ? error.message : "Could not delete this conversation. Try again.");
+    } finally {
+      setDeletingConversationId(null);
+    }
+  };
+
   const startNewConversation = () => {
     viewGenerationRef.current += 1;
     tts.stop();
     setConversationId(undefined);
     setMessages([welcome]);
+    setHasOlderMessages(false);
+    setHistoryError(null);
+    const cache = readChatSessionCache(chatCacheKey);
+    writeChatSessionCache(chatCacheKey, { ...cache, activeId: undefined });
     setInput("");
     setImagePreview(null);
     setConversationsOpen(false);
@@ -446,7 +599,41 @@ export function ChatInterface() {
   // Autoscroll only when the reader is already near the bottom — scrolling to
   // the newest message must never yank someone reading earlier history.
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const loadOlderMessages = async () => {
+    const firstMessage = messages.find((message) => message.created_at);
+    if (!conversationId || !firstMessage?.created_at || loadingOlderMessages || loadingConversation || !hasOlderMessages) return;
+    const generation = viewGenerationRef.current;
+    const container = scrollContainerRef.current;
+    const previousHeight = container?.scrollHeight ?? 0;
+    const previousTop = container?.scrollTop ?? 0;
+    setLoadingOlderMessages(true);
+    setHistoryError(null);
+    try {
+      const query = new URLSearchParams({ conversationId, before: firstMessage.created_at });
+      const response = await fetch(`/api/chat?${query}`, { cache: "no-store" });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(data?.error ?? "Could not load earlier messages.");
+      if (viewGenerationRef.current !== generation) return;
+      const olderMessages = Array.isArray(data?.messages) ? data.messages as Message[] : [];
+      preserveHistoryScrollRef.current = true;
+      setMessages((current) => [...olderMessages, ...current]);
+      setHasOlderMessages(Boolean(data?.hasMore));
+      cacheChatPage(chatCacheKey, conversationId, [...olderMessages, ...messages], Boolean(data?.hasMore));
+      requestAnimationFrame(() => {
+        if (container) container.scrollTop = container.scrollHeight - previousHeight + previousTop;
+      });
+    } catch (error) {
+      setHistoryError(error instanceof Error ? error.message : "Could not load earlier messages.");
+    } finally {
+      setLoadingOlderMessages(false);
+    }
+  };
   useEffect(() => {
+    if (preserveHistoryScrollRef.current) {
+      preserveHistoryScrollRef.current = false;
+      prevMessageCountRef.current = messages.length;
+      return;
+    }
     const isNewMessage = messages.length !== prevMessageCountRef.current;
     prevMessageCountRef.current = messages.length;
     const container = scrollContainerRef.current;
@@ -517,18 +704,21 @@ export function ChatInterface() {
     };
 
     const nextMessages = [...messages, userMessage];
+    const requestMessages = nextMessages.slice(-20);
     setMessages([...nextMessages, { role: "assistant", content: "" }]);
     setInput("");
     setImagePreview(null);
     setThinking(true);
     // Any conversation switch from here on invalidates this stream's writes.
     const generation = viewGenerationRef.current;
+    const requestTimeout = AbortSignal.timeout(90_000);
 
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversationId, messages: nextMessages })
+        body: JSON.stringify({ conversationId, messages: requestMessages }),
+        signal: requestTimeout
       });
 
       if (!response.ok || !response.body) {
@@ -540,7 +730,8 @@ export function ChatInterface() {
       const modelHeader = response.headers.get("X-AI-Model");
       if (providerHeader === "gemini" || modelHeader) setActiveProvider(modelHeader ?? "Gemini");
 
-      setConversationId(response.headers.get("X-Conversation-ID") ?? conversationId);
+      const activeConversationId = response.headers.get("X-Conversation-ID") ?? conversationId;
+      setConversationId(activeConversationId);
       // Persistence failures are visible: the server kept answering the AI
       // stream but could not save the turn (workspace/DB unavailable).
       setPersistenceWarning(response.headers.get("X-Chat-Persistence") === "unavailable");
@@ -579,8 +770,13 @@ export function ChatInterface() {
       renderStream();
 
       if (!answerRef.current) throw new Error("The AI engine returned an empty reply. Rephrase your question and try again.");
+      if (activeConversationId) {
+        cacheChatPage(chatCacheKey, activeConversationId, [...nextMessages, { role: "assistant", content: answerRef.current, provider: providerHeader ?? "ai" }], hasOlderMessages);
+      }
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to generate a response.";
+      const message = requestTimeout.aborted
+        ? "This request took too long. Please try again."
+        : error instanceof Error ? error.message : "Unable to generate a response.";
       if (viewGenerationRef.current === generation) {
         setMessages([
           ...nextMessages,
@@ -621,10 +817,14 @@ export function ChatInterface() {
               activeId={conversationId}
               conversations={conversations}
               loading={loadingConversation}
+              busy={thinking}
+              deletingId={deletingConversationId}
+              error={conversationError}
               onSelect={(id) => {
                 setConversationsOpen(false);
                 void openConversation(id);
               }}
+              onDelete={(conversation) => void deleteConversation(conversation)}
             />
           </div>
         )}
@@ -642,7 +842,16 @@ export function ChatInterface() {
         </Button>          <p className="mt-7 text-xs font-semibold uppercase tracking-wider text-mutedText">
             Saved conversations
           </p>
-        <ConversationItems activeId={conversationId} conversations={conversations} loading={loadingConversation} onSelect={(id) => void openConversation(id)} />
+        <ConversationItems
+          activeId={conversationId}
+          conversations={conversations}
+          loading={loadingConversation}
+          busy={thinking}
+          deletingId={deletingConversationId}
+          error={conversationError}
+          onSelect={(id) => void openConversation(id)}
+          onDelete={(conversation) => void deleteConversation(conversation)}
+        />
 
         <div className="mt-6 rounded-xl border border-borderSoft bg-card p-3">
           <div className="flex items-center gap-2 text-xs font-medium text-primary">
@@ -713,6 +922,19 @@ export function ChatInterface() {
 
         {/* Messages */}
         <div ref={scrollContainerRef} role="log" aria-live="polite" aria-label="Conversation messages" className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain p-5">
+          {hasOlderMessages && (
+            <div className="flex flex-col items-center gap-2">
+              <button
+                type="button"
+                onClick={() => void loadOlderMessages()}
+                disabled={loadingOlderMessages || loadingConversation}
+                className="min-h-[36px] touch-manipulation rounded-full border border-borderSoft px-3 py-1.5 text-xs font-medium text-mutedText transition hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-50"
+              >
+                {loadingOlderMessages ? <><Loader2 aria-hidden="true" className="mr-1.5 inline h-3 w-3 animate-spin" />Loading earlier messages…</> : "Load earlier messages"}
+              </button>
+              {historyError && <p role="alert" className="text-xs text-danger">{historyError}</p>}
+            </div>
+          )}
           <AnimatePresence initial={false}>
             {messages.map((message, index) => (
               <motion.div

@@ -195,7 +195,6 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess, initialCaption,
           mediaType,
           caption,
           mediaUrls: allMediaUrls(),
-          images: uploadedMedia.slice(0, MAX_UPLOADS).map((media) => media.preview),
           accountName: selectedAccount?.name,
           accountHandle: selectedAccount?.handle,
           variations: 3

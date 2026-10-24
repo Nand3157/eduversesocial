@@ -19,10 +19,10 @@ const messageSchema = z.object({
 });
 const requestSchema = z.object({ conversationId: z.string().uuid().optional(), messages: z.array(messageSchema).min(1).max(20) });
 type ChatMessage = z.infer<typeof messageSchema>;
+const MESSAGE_PAGE_SIZE = 20;
 const GEMINI_MODEL = getGeminiModel();
-// chat_messages.content_check caps a row at 20 000 characters. maxOutputTokens
-// is 4096, which is ~16k characters of prose, so replies are clamped rather
-// than risking a constraint violation that would drop the answer from history.
+// chat_messages.content_check caps a row at 20 000 characters. 4096 tokens is
+// roughly 16k characters of prose, so replies are clamped before persistence.
 const MAX_PERSISTED_CHARACTERS = 20_000;
 
 type Provider = "gemini";
@@ -61,7 +61,8 @@ async function* geminiStream(messages: ChatMessage[], workspaceContext: string) 
   const config = {
     systemInstruction: `${EDUVERSE_SYSTEM_PROMPT}\n\n${getWorkspaceContext()}\n\n${workspaceContext}`,
     temperature: 0.4,
-    maxOutputTokens: 4096
+    maxOutputTokens: 4096,
+    thinkingConfig: { thinkingLevel: "low" }
   };
 
   const stream = await client.models.generateContentStream({ model: GEMINI_MODEL, contents, config });
@@ -81,6 +82,8 @@ async function getWorkspaceId(supabase: NonNullable<Awaited<ReturnType<typeof cr
 // pipeline (several DB round trips plus up to a full Graph fan-out) for every
 // single message. Keyed by user id to avoid leaking context across sessions.
 const WORKSPACE_CONTEXT_TTL_MS = 5 * 60_000;
+const WORKSPACE_CONTEXT_TIMEOUT_MS = 8_000;
+const UNAVAILABLE_WORKSPACE_CONTEXT = "LIVE META ANALYTICS: unavailable. Do not make workspace-specific claims.";
 const workspaceContextCache = new Map<string, { at: number; value: string }>();
 
 async function getLiveWorkspaceContext(userId?: string) {
@@ -91,7 +94,7 @@ async function getLiveWorkspaceContext(userId?: string) {
   const build = async () => {
     try {
       const analytics = await fetchMetaAnalytics();
-      if (!analytics.live) return "LIVE META ANALYTICS: unavailable. Do not make workspace-specific claims.";
+      if (!analytics.live) return UNAVAILABLE_WORKSPACE_CONTEXT;
       return `LIVE META ANALYTICS SNAPSHOT:\n${JSON.stringify({
         accounts: analytics.accounts.map((account) => ({ name: account.name, platform: account.platform, handle: account.handle, followers: account.followers })),
         metrics: analytics.metrics,
@@ -109,11 +112,18 @@ async function getLiveWorkspaceContext(userId?: string) {
         error: analytics.error
       })}`;
     } catch {
-      return "LIVE META ANALYTICS: unavailable. Do not make workspace-specific claims.";
+      return UNAVAILABLE_WORKSPACE_CONTEXT;
     }
   };
-  const value = await build();
-  if (userId) {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  const value = await Promise.race([
+    build(),
+    new Promise<string>((resolve) => {
+      timeout = setTimeout(() => resolve(UNAVAILABLE_WORKSPACE_CONTEXT), WORKSPACE_CONTEXT_TIMEOUT_MS);
+    })
+  ]);
+  if (timeout) clearTimeout(timeout);
+  if (userId && value !== UNAVAILABLE_WORKSPACE_CONTEXT) {
     if (workspaceContextCache.size > 100) {
       for (const [key, entry] of workspaceContextCache) {
         if (Date.now() - entry.at >= WORKSPACE_CONTEXT_TTL_MS) workspaceContextCache.delete(key);
@@ -136,33 +146,80 @@ async function getOrCreateConversation(supabase: NonNullable<Awaited<ReturnType<
 
 export async function GET(request: Request) {
   try {
+    const url = new URL(request.url);
+    const conversationId = url.searchParams.get("conversationId");
+    const before = url.searchParams.get("before");
     const supabase = await createClient();
     if (!supabase) return Response.json({ conversations: [], messages: [] });
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return Response.json({ error: "Unauthorized." }, { status: 401 });
+
+    // Opening a saved chat only needs its message page. RLS on chat_messages
+    // scopes this query to conversations in the signed-in user's workspace.
+    if (conversationId) {
+      if (!z.string().uuid().safeParse(conversationId).success) return Response.json({ error: "Conversation not found." }, { status: 404 });
+      if (before && Number.isNaN(Date.parse(before))) return Response.json({ error: "Invalid message cursor." }, { status: 400 });
+      let messageQuery = supabase.from("chat_messages").select("id,role,content,image,created_at").eq("conversation_id", conversationId);
+      if (before) messageQuery = messageQuery.lt("created_at", before);
+      const { data: page, error: messagesError } = await messageQuery
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false })
+        .limit(MESSAGE_PAGE_SIZE + 1);
+      if (messagesError) throw messagesError;
+      if (!before && !page?.length) return Response.json({ error: "Conversation not found." }, { status: 404 });
+      const hasMore = (page?.length ?? 0) > MESSAGE_PAGE_SIZE;
+      const messages = (page ?? []).slice(0, MESSAGE_PAGE_SIZE).reverse();
+      return Response.json({ conversationId, messages, hasMore }, { headers: { "Cache-Control": "no-store" } });
+    }
+
     const workspaceId = await getWorkspaceId(supabase, user.id);
     if (!workspaceId) return Response.json({ conversations: [], messages: [] });
     const { data: conversations, error: conversationsError } = await supabase.from("chat_conversations").select("id,title,updated_at").eq("workspace_id", workspaceId).order("updated_at", { ascending: false }).limit(20);
     if (conversationsError) throw conversationsError;
     if (!conversations?.length) return Response.json({ conversations: [], messages: [] }, { headers: { "Cache-Control": "no-store" } });
 
-    const url = new URL(request.url);
     // list=1 returns only the conversation list (used to refresh the sidebar).
     if (url.searchParams.get("list") === "1") {
       return Response.json({ conversations }, { headers: { "Cache-Control": "no-store" } });
     }
 
-    // conversationId=<uuid> loads that specific conversation (verified to belong to this workspace).
-    const conversationId = url.searchParams.get("conversationId");
-    const target = conversationId ? conversations.find((conversation) => conversation.id === conversationId) : conversations[0];
-    if (!target) return Response.json({ error: "Conversation not found." }, { status: 404 });
-    const { data: messages, error: messagesError } = await supabase.from("chat_messages").select("role,content,image").eq("conversation_id", target.id).order("created_at", { ascending: true }).limit(50);
+    const target = conversations[0];
+    const { data: page, error: messagesError } = await supabase.from("chat_messages").select("id,role,content,image,created_at").eq("conversation_id", target.id).order("created_at", { ascending: false }).order("id", { ascending: false }).limit(MESSAGE_PAGE_SIZE + 1);
     if (messagesError) throw messagesError;
-    return Response.json({ conversations, conversationId: target.id, messages: messages ?? [] }, { headers: { "Cache-Control": "no-store" } });
+    const hasMore = (page?.length ?? 0) > MESSAGE_PAGE_SIZE;
+    const messages = (page ?? []).slice(0, MESSAGE_PAGE_SIZE).reverse();
+    return Response.json({ conversations, conversationId: target.id, messages, hasMore }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     logger.error("chat_history_load_failed", { reason: error instanceof Error ? error.message : "unknown" });
     return Response.json({ error: "Chat history is temporarily unavailable." }, { status: 503, headers: { "Cache-Control": "no-store" } });
   }
+}
+
+export async function DELETE(request: Request) {
+  const conversationId = new URL(request.url).searchParams.get("conversationId");
+  if (!conversationId || !z.string().uuid().safeParse(conversationId).success) {
+    return Response.json({ error: "A valid conversation ID is required." }, { status: 400 });
+  }
+  const supabase = await createClient();
+  if (!supabase) return Response.json({ error: "Service unavailable." }, { status: 503 });
+  const { data: { user } } = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
+  if (!user) return Response.json({ error: "Unauthorized." }, { status: 401 });
+  const workspaceId = await getWorkspaceId(supabase, user.id);
+  if (!workspaceId) return Response.json({ error: "Conversation not found." }, { status: 404 });
+
+  const { data, error } = await supabase
+    .from("chat_conversations")
+    .delete()
+    .eq("id", conversationId)
+    .eq("workspace_id", workspaceId)
+    .select("id")
+    .maybeSingle();
+  if (error) {
+    logger.error("chat_conversation_delete_failed", { reason: error.message });
+    return Response.json({ error: "Could not delete this conversation. Try again." }, { status: 500 });
+  }
+  if (!data) return Response.json({ error: "Conversation not found." }, { status: 404 });
+  return Response.json({ success: true });
 }
 
 export async function POST(request: Request) {
