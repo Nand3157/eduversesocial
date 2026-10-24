@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 import { z } from "zod";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
@@ -139,7 +139,7 @@ Hard constraints (non-negotiable):
         systemInstruction: "You are a senior social media copywriter. You write powerful scroll-stopping hook sentences, numbered, and never fabricate facts or metrics.",
         temperature: 0.85,
         maxOutputTokens: 400,
-        thinkingConfig: { thinkingLevel: "low" }
+        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }
       }
     });
     const text = result.text?.trim();

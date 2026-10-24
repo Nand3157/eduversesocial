@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 import { z } from "zod";
 import { getWorkspaceContext, EDUVERSE_SYSTEM_PROMPT, isSelfHarmMessage, SELF_HARM_SAFE_RESPONSE } from "@/lib/ai/eduverse-prompt";
 import { fetchMetaAnalytics } from "@/lib/meta-analytics";
@@ -62,7 +62,7 @@ async function* geminiStream(messages: ChatMessage[], workspaceContext: string) 
     systemInstruction: `${EDUVERSE_SYSTEM_PROMPT}\n\n${getWorkspaceContext()}\n\n${workspaceContext}`,
     temperature: 0.4,
     maxOutputTokens: 4096,
-    thinkingConfig: { thinkingLevel: "low" }
+    thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }
   };
 
   const stream = await client.models.generateContentStream({ model: GEMINI_MODEL, contents, config });
