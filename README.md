@@ -6,6 +6,14 @@ Live site: [eduversesocial.vercel.app](https://eduversesocial.vercel.app)
 Try it first: [read-only demo](https://eduversesocial.vercel.app/demo)  
 Developer guide: [eduversesocial.vercel.app/developers](https://eduversesocial.vercel.app/developers)
 
+## Watch the 21-second version
+
+[![EduVerse launch video: "Your audience leaves signals. Keep the pattern."](docs/media/eduverse-launch-poster.jpg)](docs/media/eduverse-launch.mp4)
+
+The memory loop end to end — connect Instagram, Facebook and Threads, read the signal, keep the reason — ending on a recommendation that shows its own receipts. Live-only data, no invented metrics.
+
+Music: "Happy Beats / Business Moves, Vol. 12" by [Sascha Ende](https://ende.app), CC BY 4.0.
+
 ## What is here
 
 - A free account with Supabase Auth and workspace-level row security.
@@ -14,6 +22,7 @@ Developer guide: [eduversesocial.vercel.app/developers](https://eduversesocial.v
 - A memory view that keeps the context behind important posts.
 - Recommendations grounded in the connected workspace data.
 - Gemini chat that says when live data is unavailable instead of inventing numbers.
+- Voice chat: speak a question and have Gemini transcribe it, with replies that can be read aloud.
 - Publishing and scheduling with encrypted tokens, idempotency, retries, and a Vercel Cron worker.
 - A read-only demo with clearly labelled sample data. It never asks for Meta access.
 
