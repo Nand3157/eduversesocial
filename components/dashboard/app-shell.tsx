@@ -32,6 +32,7 @@ import { useDashboardStore } from "@/lib/stores/dashboard-store";
 import { MetaConnectModal } from "@/components/meta/meta-connect-modal";
 import { MetaPublisherModal } from "@/components/meta/meta-publisher-modal";
 import { AnalyticsProvider, useAnalytics } from "@/components/dashboard/analytics-context";
+import { AnalyticsAccountSelector } from "@/components/dashboard/analytics-account-selector";
 import { AnalyticsErrorBanner } from "@/components/dashboard/analytics-error-banner";
 import { GlassHeader } from "@/components/layout/glass-header";
 import { DashboardMobileDock } from "@/components/ui/mobile-bottom-nav";
@@ -100,32 +101,6 @@ function SidebarMetaAction({ collapsed, onClick }: { collapsed: boolean; onClick
     >
       {collapsed ? <Icon aria-hidden="true" className="h-4 w-4" /> : <span className="flex items-center gap-2"><Icon aria-hidden="true" className="h-3.5 w-3.5" /> {label}</span>}
     </button>
-  );
-}
-
-function AnalyticsAccountSelector() {
-  const { accounts, selectedAccountId, selectAccount, loading } = useAnalytics();
-  if (accounts.length < 2) return null;
-
-  return (
-    <label className="flex min-w-0 items-center gap-2 rounded-full border border-borderSoft bg-surface px-3 py-1.5 text-xs text-mutedText shadow-sm">
-      <span className="shrink-0">Account</span>
-      <select
-        aria-label="Filter analytics by Meta account"
-        value={selectedAccountId}
-        onChange={(event) => selectAccount(event.currentTarget.value)}
-        aria-busy={loading}
-        className="min-w-0 max-w-[160px] cursor-pointer truncate bg-transparent font-medium text-ink outline-none sm:max-w-[220px]"
-      >
-        <option value="">All accounts</option>
-        {accounts.map((account) => (
-          <option key={`${account.platform}-${account.id}`} value={account.id}>
-            {account.name} · {account.platform === "facebook" ? "Facebook" : account.platform === "instagram" ? "Instagram" : "Threads"}
-          </option>
-        ))}
-      </select>
-      {loading && <span className="sr-only" role="status">Loading selected account analytics</span>}
-    </label>
   );
 }
 

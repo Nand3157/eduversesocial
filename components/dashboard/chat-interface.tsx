@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SPRING_SOFT } from "@/components/motion-variants";
 import { useAnalytics } from "@/components/dashboard/analytics-context";
+import { AnalyticsAccountSelector } from "@/components/dashboard/analytics-account-selector";
 import { useVoiceRecorder } from "@/components/dashboard/use-voice-recorder";
 import { useTts } from "@/components/dashboard/use-tts";
 import { VOICE_LANGUAGES } from "@/lib/ai/voice-input";
@@ -942,7 +943,10 @@ export function ChatInterface() {
               </span>
               <div>
                 <h1 className="font-heading text-lg font-medium text-ink">EduVerse Assistant</h1>
-                <p className="text-xs text-success">{activeProvider} · memory-aware</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-xs text-success">{activeProvider} · memory-aware</p>
+                  <AnalyticsAccountSelector />
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-2">

@@ -463,7 +463,15 @@ export async function fetchMetaAnalytics(token?: string, bypassCache = false, au
   const cacheAccountId = selectedAccountId ? null : stored.find((row) => row.status === "active" && row.encrypted_token)?.id ?? null;
   if (!bypassCache) {
     const cached = await readAnalyticsCache(supabase!, cacheAccountId);
-    if (cached) return withStoredMemory({ ...cached, cached: true }, savedMemory);
+    if (cached) {
+      // The aggregate snapshot is stored under the first account's cache key.
+      // A newly connected account must invalidate that old workspace snapshot.
+      const currentAccountIds = stored.map((row) => row.external_id ?? row.id).sort();
+      const cachedAccountIds = cached.accounts.map((account) => account.id).sort();
+      const accountSetMatches = currentAccountIds.length === cachedAccountIds.length
+        && currentAccountIds.every((id, index) => id === cachedAccountIds[index]);
+      if (accountSetMatches) return withStoredMemory({ ...cached, cached: true }, savedMemory);
+    }
   }
   if (cacheOnly) {
     return withStoredMemory({ ...emptyAnalytics("Live analytics are not cached yet."), accounts: selectedAccount ? [selectedAccount].flatMap(accountFromStored) : stored.flatMap(accountFromStored) }, savedMemory);

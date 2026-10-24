@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Send, Wand2, X, CheckCircle2, AlertCircle, Loader2, ImagePlus, Trash2, CalendarClock } from "lucide-react";
+import { Send, Wand2, X, CheckCircle2, AlertCircle, Loader2, ImagePlus, Trash2, CalendarClock, CalendarDays, ChevronLeft, ChevronRight, Clock3 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import * as Dialog from "@radix-ui/react-dialog";
 import type { MetaAccount } from "@/lib/meta-api";
@@ -33,6 +33,128 @@ function toDatetimeLocalValue(iso: string): string {
   if (Number.isNaN(d.getTime())) return "";
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function toLocalDateTimeInput(date: Date): string {
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function ScheduleDateTimePicker({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const pickerRef = useRef<HTMLDivElement>(null);
+  const parsed = value ? new Date(value) : null;
+  const selectedDate = parsed && !Number.isNaN(parsed.getTime()) ? parsed : null;
+  const [viewMonth, setViewMonth] = useState(() => {
+    const initial = selectedDate ?? new Date();
+    return new Date(initial.getFullYear(), initial.getMonth(), 1);
+  });
+
+  const firstWeekday = new Date(viewMonth.getFullYear(), viewMonth.getMonth(), 1).getDay();
+  const daysInMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 0).getDate();
+  const cells = Array.from({ length: Math.ceil((firstWeekday + daysInMonth) / 7) * 7 }, (_, index) => {
+    const day = index - firstWeekday + 1;
+    return day > 0 && day <= daysInMonth ? new Date(viewMonth.getFullYear(), viewMonth.getMonth(), day) : null;
+  });
+  const monthLabel = viewMonth.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+
+  useEffect(() => {
+    if (open) pickerRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [open]);
+
+  const chooseDay = (date: Date) => {
+    const time = selectedDate ?? new Date();
+    const next = new Date(date.getFullYear(), date.getMonth(), date.getDate(), time.getHours(), time.getMinutes());
+    if (!selectedDate) {
+      if (next.toDateString() !== new Date().toDateString()) next.setHours(9, 0, 0, 0);
+      else next.setMinutes(Math.ceil(next.getMinutes() / 15) * 15, 0, 0);
+    }
+    onChange(toLocalDateTimeInput(next));
+  };
+
+  const updateTime = (part: "hour" | "minute", raw: string) => {
+    const nextText = raw.replace(/\D/g, "").slice(0, 2);
+    if (!selectedDate || !nextText) return;
+    const numeric = Number(nextText);
+    if (numeric > (part === "hour" ? 23 : 59)) return;
+    const next = new Date(selectedDate);
+    if (part === "hour") next.setHours(numeric);
+    else next.setMinutes(numeric);
+    onChange(toLocalDateTimeInput(next));
+  };
+
+  const today = new Date();
+  const isToday = (date: Date) => date.toDateString() === today.toDateString();
+  const isSelected = (date: Date) => selectedDate?.toDateString() === date.toDateString();
+
+  return (
+    <div>
+      <p id="publisher-schedule-label" className="mb-2 block text-xs font-medium text-mutedText">Scheduled time (optional)</p>
+      <button
+        id="publisher-schedule"
+        type="button"
+        aria-labelledby="publisher-schedule-label publisher-schedule-value"
+        aria-expanded={open}
+        aria-controls="publisher-schedule-picker"
+        onClick={() => {
+          if (!open && selectedDate) setViewMonth(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1));
+          setOpen((current) => !current);
+        }}
+        className={`${FIELD_CLASS} flex min-h-10 items-center justify-between gap-3 px-3 text-left focus-visible:ring-primary/40`}
+      >
+        <span className="flex min-w-0 items-center gap-2.5">
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-accent-soft text-primary"><CalendarDays aria-hidden="true" className="h-3.5 w-3.5" /></span>
+          <span id="publisher-schedule-value" className={selectedDate ? "truncate text-ink" : "truncate text-faintText"}>
+            {selectedDate
+              ? `${selectedDate.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })} · ${String(selectedDate.getHours()).padStart(2, "0")}:${String(selectedDate.getMinutes()).padStart(2, "0")}`
+              : "Choose date and time"}
+          </span>
+        </span>
+        <ChevronRight aria-hidden="true" className={`h-4 w-4 shrink-0 text-faintText transition-transform ${open ? "rotate-90 text-primary" : ""}`} />
+      </button>
+
+      {open && (
+        <div ref={pickerRef} id="publisher-schedule-picker" className="mt-2 rounded-xl border border-borderSoft bg-surface p-3 shadow-sm">
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-xs font-semibold text-ink">Choose a date</p>
+            <div className="flex items-center gap-1">
+              <button type="button" aria-label="Previous month" onClick={() => setViewMonth((month) => new Date(month.getFullYear(), month.getMonth() - 1, 1))} className="grid h-8 w-8 place-items-center rounded-lg text-mutedText transition hover:bg-card hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"><ChevronLeft aria-hidden="true" className="h-4 w-4" /></button>
+              <span aria-live="polite" className="min-w-[108px] text-center text-xs font-semibold text-ink">{monthLabel}</span>
+              <button type="button" aria-label="Next month" onClick={() => setViewMonth((month) => new Date(month.getFullYear(), month.getMonth() + 1, 1))} className="grid h-8 w-8 place-items-center rounded-lg text-mutedText transition hover:bg-card hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"><ChevronRight aria-hidden="true" className="h-4 w-4" /></button>
+            </div>
+          </div>
+
+          <div aria-label={monthLabel} className="grid grid-cols-7 gap-1 text-center">
+            {(["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"] as const).map((day) => <span key={day} aria-hidden="true" className="py-1 text-[10px] font-semibold text-faintText">{day}</span>)}
+            {cells.map((date, index) => date ? (
+              <button
+                key={date.toISOString()}
+                type="button"
+                aria-label={date.toLocaleDateString(undefined, { dateStyle: "full" })}
+                aria-pressed={isSelected(date)}
+                onClick={() => chooseDay(date)}
+                className={`h-8 rounded-lg text-xs tabular-nums transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${isSelected(date) ? "bg-primary font-semibold text-primary-foreground shadow-sm" : isToday(date) ? "border border-primary/35 bg-accent-soft font-semibold text-primary" : "text-ink hover:bg-card"}`}
+              >{date.getDate()}</button>
+            ) : <span key={`blank-${index}`} aria-hidden="true" className="h-8" />)}
+          </div>
+
+          <div className="mt-3 flex items-center justify-between border-t border-borderSoft pt-3">
+            <span className="flex items-center gap-1.5 text-[11px] font-medium text-mutedText"><Clock3 aria-hidden="true" className="h-3.5 w-3.5" /> Local time</span>
+            <div className="flex items-center gap-1.5">
+              <input aria-label="Hour" inputMode="numeric" maxLength={2} placeholder="HH" value={selectedDate ? String(selectedDate.getHours()).padStart(2, "0") : ""} disabled={!selectedDate} onChange={(event) => updateTime("hour", event.target.value)} className="h-9 w-12 rounded-lg border border-borderSoft bg-card text-center text-sm font-semibold tabular-nums text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-45" />
+              <span aria-hidden="true" className="text-sm font-semibold text-mutedText">:</span>
+              <input aria-label="Minute" inputMode="numeric" maxLength={2} placeholder="MM" value={selectedDate ? String(selectedDate.getMinutes()).padStart(2, "0") : ""} disabled={!selectedDate} onChange={(event) => updateTime("minute", event.target.value)} className="h-9 w-12 rounded-lg border border-borderSoft bg-card text-center text-sm font-semibold tabular-nums text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-45" />
+              <button type="button" disabled={!selectedDate} onClick={() => setOpen(false)} className="ml-1 rounded-lg bg-primary px-3 py-2 text-[11px] font-semibold text-primary-foreground transition hover:bg-primary-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-50">Done</button>
+            </div>
+          </div>
+          <div className="mt-2 flex justify-between">
+            <button type="button" onClick={() => { setViewMonth(new Date(today.getFullYear(), today.getMonth(), 1)); chooseDay(today); }} className="rounded-md px-2 py-1 text-[11px] font-medium text-primary transition hover:bg-accent-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">Today</button>
+            {selectedDate && <button type="button" onClick={() => { onChange(""); setOpen(false); }} className="rounded-md px-2 py-1 text-[11px] font-medium text-mutedText transition hover:bg-card hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">Clear date</button>}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function MetaPublisherModal({ isOpen, onClose, onSuccess, initialCaption, initialPlatform, initialScheduleTime }: MetaPublisherModalProps) {
@@ -376,16 +498,7 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess, initialCaption,
                 </select>
               </div>
               <div>
-                <label htmlFor="publisher-schedule" className="mb-2 block text-xs font-medium text-mutedText">Scheduled time (optional)</label>
-                <input
-                  id="publisher-schedule"
-                  name="scheduledTime"
-                  type="datetime-local"
-                  autoComplete="off"
-                  value={scheduleDate}
-                  onChange={(e) => setScheduleDate(e.target.value)}
-                  className={`${FIELD_CLASS} p-2`}
-                />
+                <ScheduleDateTimePicker value={scheduleDate} onChange={setScheduleDate} />
                 {bestSuggestion && !scheduleDate && (
                   <button
                     type="button"
