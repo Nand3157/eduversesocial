@@ -32,7 +32,7 @@ export const FAQS: ReadonlyArray<{ question: string; answer: string }> = [
   {
     question: "How does EduVerse work?",
     answer:
-      "Three steps: (1) Create a free account or preview the read-only sandbox demo first — no login needed. (2) Connect Facebook Pages plus Instagram Business, or Threads, through Meta's official OAuth consent screen; tokens are exchanged server-side, AES-256-GCM encrypted, and scoped to your workspace. (3) EduVerse indexes the returned posts and engagement callbacks into audience memory and surfaces recommendations, charts, and a publishing scheduler grounded in that live data."
+      "Three steps: (1) Create a free account or preview the read-only sandbox demo first — no login needed. (2) Connect Facebook Pages with linked Instagram accounts, Instagram Business or Creator accounts directly, or Threads through Meta's official OAuth consent screen; tokens are exchanged server-side, AES-256-GCM encrypted, and scoped to your workspace. (3) EduVerse indexes the returned posts and engagement callbacks into audience memory and surfaces recommendations, charts, and a publishing scheduler grounded in that live data."
   },
   {
     question: "Who is EduVerse for?",

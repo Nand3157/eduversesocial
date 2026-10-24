@@ -122,6 +122,8 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-tap-highlight-c
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--muted) 45%, transparent); border-radius: 999px; border: 2px solid var(--background); }
 ::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--muted) 70%, transparent); }
+.chat-prompt-strip { scrollbar-width: none; }
+.chat-prompt-strip::-webkit-scrollbar { display: none; }
 
 /* ΓÇö Primitives for Edit Bay world ΓÇö */
 .sprocket-track {

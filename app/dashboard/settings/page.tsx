@@ -201,6 +201,18 @@ export default function SettingsPage() {
         not_authenticated: "Threads connection failed: you must be signed in.",
         workspace_missing: "Threads connection failed: no workspace found for your account.",
         connection_failed: "Threads connection failed. Please try again."
+      }],
+      [searchParams.get("instagram"), {
+        connected: "Instagram Business or Creator account connected.",
+        denied: "Instagram connection cancelled.",
+        state_invalid: "Instagram connection failed: security state mismatch. Try again.",
+        code_invalid: "Instagram connection failed: the authorization code could not be exchanged.",
+        token_exchange_failed: "Instagram authorized the app, but token exchange failed. Check the Instagram Login credentials and redirect URI.",
+        oauth_failed: "Instagram Login app credentials are not configured.",
+        profile_unavailable: "Instagram connected, but Meta did not return a usable professional profile.",
+        not_authenticated: "Instagram connection failed: you must be signed in.",
+        workspace_missing: "Instagram connection failed: no workspace found for your account.",
+        connection_failed: "Instagram connection failed. Check the Meta app configuration and try again."
       }]
     ];
     let message: string | null = null;
@@ -461,7 +473,7 @@ export default function SettingsPage() {
                     ? "Your connection status could not be checked."
                     : connectedList.length > 0
                   ? `${connectedList.join(", ")} loaded from Meta Graph API.`
-                  : "No Facebook Page or linked Instagram Business account connected."}
+                  : "No Facebook Page, Instagram Business or Creator account, or Threads account connected."}
               </p>
               <p className="mt-2 flex items-center gap-1.5 text-[11px] leading-relaxed text-mutedText">
                 <ShieldCheck className="h-3 w-3 text-success" /> Tokens AES-256-GCM encrypted ·{" "}

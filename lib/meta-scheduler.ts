@@ -4,6 +4,8 @@ import { publishToPlatform } from "@/lib/social-publisher";
 import { MetaError } from "@/lib/meta-errors";
 import { mapLimit } from "@/lib/async";
 import type { MetaPostPayload } from "@/lib/meta-api";
+import { refreshInstagramLoginToken } from "@/lib/instagram-login";
+import { encrypt } from "@/lib/crypto";
 
 /** Bounded parallelism so a burst of due posts does not overwhelm Meta's rate limits. */
 const PUBLISH_CONCURRENCY = 3;
@@ -26,7 +28,7 @@ type ClaimedPost = {
   media: string[] | null;
   account_id: string;
   attempts: number;
-  social_accounts: { external_id: string; encrypted_token: string; token_expires_at?: string | null } | Array<{ external_id: string; encrypted_token: string; token_expires_at?: string | null }>;
+  social_accounts: { id: string; external_id: string; encrypted_token: string; token_expires_at?: string | null; scopes?: string[] | null } | Array<{ id: string; external_id: string; encrypted_token: string; token_expires_at?: string | null; scopes?: string[] | null }>;
 };
 
 /**
@@ -52,7 +54,7 @@ export async function processDueMetaPosts(supabase: SupabaseClient, limit = 20) 
 
   const { data: posts } = await supabase
     .from("scheduled_posts")
-    .select("id,platform,content,media,account_id,attempts,social_accounts!inner(external_id,encrypted_token,token_expires_at)")
+    .select("id,platform,content,media,account_id,attempts,social_accounts!inner(id,external_id,encrypted_token,token_expires_at,scopes)")
     .eq("status", "SCHEDULED")
     .eq("approval_status", "approved")
     .lte("scheduled_at", new Date().toISOString())
@@ -80,7 +82,6 @@ export async function processDueMetaPosts(supabase: SupabaseClient, limit = 20) 
     const attemptNumber = row.attempts + 1;
     try {
       if (!account?.encrypted_token) throw new MetaError("META_ACCOUNT_ERROR", "No token stored for this account.");
-      if (account.token_expires_at && new Date(account.token_expires_at) <= new Date()) throw new MetaError("META_AUTH_ERROR", "Meta token expired.");
       // A corrupt or legacy-format token will never decrypt, so fail the post
       // immediately instead of burning the retry budget on it.
       let token: string;
@@ -89,6 +90,16 @@ export async function processDueMetaPosts(supabase: SupabaseClient, limit = 20) 
       } catch {
         throw new MetaError("META_ACCOUNT_ERROR", "Stored Meta token is corrupted. Reconnect the account.");
       }
+      let tokenExpiresAt = account.token_expires_at;
+      if (row.platform === "instagram" && account.scopes?.includes("instagram_business_basic")) {
+        const refreshed = await refreshInstagramLoginToken(token, tokenExpiresAt).catch(() => null);
+        if (refreshed) {
+          token = refreshed.token;
+          tokenExpiresAt = refreshed.expiresAt;
+          await supabase.from("social_accounts").update({ encrypted_token: encrypt(token), token_expires_at: tokenExpiresAt }).eq("id", account.id);
+        }
+      }
+      if (tokenExpiresAt && new Date(tokenExpiresAt) <= new Date()) throw new MetaError("META_AUTH_ERROR", "Meta token expired.");
       const media = Array.isArray(row.media) ? row.media : [];
       const payload: MetaPostPayload = {
         platform: row.platform,
@@ -97,7 +108,7 @@ export async function processDueMetaPosts(supabase: SupabaseClient, limit = 20) 
         mediaUrls: media,
         targetAccountId: account.external_id
       };
-      const result = await publishToPlatform(payload, token);
+      const result = await publishToPlatform(payload, token, { instagramLogin: row.platform === "instagram" && account.scopes?.includes("instagram_business_basic") });
       if (!result.success) throw new MetaError("META_API_ERROR", result.message);
       // The status guard keeps every terminal transition owned by the worker
       // that holds the PUBLISHING claim. Without it, a retry/failure write from

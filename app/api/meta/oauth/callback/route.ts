@@ -52,8 +52,13 @@ export async function GET(request: Request) {
       permissionRequired ||= accessStatus === "permission_required";
       const { data: pageRow, error: pageSaveError } = await supabase.from("social_accounts").upsert({ workspace_id: member.workspace_id, platform: "facebook", handle: page.name, external_id: page.id, display_name: page.name, encrypted_token: encrypt(page.access_token), token_expires_at: null, scopes: grantedScopes, status: accessStatus }, { onConflict: "workspace_id,platform,external_id" }).select("id").single();
       if (pageSaveError || !pageRow) throw pageSaveError ?? new Error("Meta Page account could not be saved.");
-      if (page.instagram_business_account) {
-        const { error: instagramSaveError } = await supabase.from("social_accounts").upsert({ workspace_id: member.workspace_id, platform: "instagram", handle: page.instagram_business_account.username || page.instagram_business_account.id, external_id: page.instagram_business_account.id, display_name: page.instagram_business_account.name || page.instagram_business_account.username || page.name, username: page.instagram_business_account.username, avatar_url: page.instagram_business_account.profile_picture_url, parent_account_id: pageRow.id, encrypted_token: encrypt(page.access_token), token_expires_at: null, scopes: grantedScopes, status: accessStatus }, { onConflict: "workspace_id,platform,external_id" });
+      const linkedInstagramPage = page.instagram_business_account ? null : await facebook.instagramBusinessAccount(page.id).catch(() => null);
+      const linkedInstagram = page.instagram_business_account ?? linkedInstagramPage?.instagram_business_account;
+      if (linkedInstagram) {
+        const instagramProfile = await facebook.instagramProfile(linkedInstagram.id, page.access_token).catch(() => ({ id: linkedInstagram.id, username: undefined, name: undefined, profile_picture_url: undefined }));
+        const username = instagramProfile.username;
+        const displayName = instagramProfile.name || username || page.name;
+        const { error: instagramSaveError } = await supabase.from("social_accounts").upsert({ workspace_id: member.workspace_id, platform: "instagram", handle: username || linkedInstagram.id, external_id: linkedInstagram.id, display_name: displayName, username, avatar_url: instagramProfile.profile_picture_url, parent_account_id: pageRow.id, encrypted_token: encrypt(page.access_token), token_expires_at: null, scopes: grantedScopes, status: accessStatus }, { onConflict: "workspace_id,platform,external_id" });
         if (instagramSaveError) throw instagramSaveError;
       }
     }

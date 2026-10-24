@@ -22,7 +22,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ success: false, live: false, error: "Daily analytics limit reached (300/day). Try again tomorrow." }, { status: 429 });
   }
 
-  const bypassCache = new URL(request.url).searchParams.get("refresh") === "1";
-  const snapshot = await fetchMetaAnalytics(undefined, bypassCache, user.id);
+  const params = new URL(request.url).searchParams;
+  const bypassCache = params.get("refresh") === "1";
+  const accountId = params.get("accountId") || undefined;
+  const snapshot = await fetchMetaAnalytics(undefined, bypassCache, user.id, undefined, false, accountId);
   return NextResponse.json(snapshot, { status: 200, headers: { "Cache-Control": "no-store" } });
 }

@@ -33,9 +33,12 @@ function graphErrorMessage(response: Response, error?: GraphError["error"]) {
 }
 
 /** Wrapper around Facebook / Threads Graph API requests with consistent error normalization. */
-export async function graphRequest<T>(base: "facebook" | "threads", path: string, token: string, init: RequestInit = {}): Promise<T> {
-  const origin = base === "threads" ? "https://graph.threads.net" : "https://graph.facebook.com";
-  const url = new URL(`${origin}/${base === "threads" ? "v1.0" : GRAPH_VERSION}/${path.replace(/^\//, "")}`);
+export type GraphBase = "facebook" | "instagram" | "threads";
+
+export async function graphRequest<T>(base: GraphBase, path: string, token: string, init: RequestInit = {}): Promise<T> {
+  const origin = base === "threads" ? "https://graph.threads.net" : base === "instagram" ? "https://graph.instagram.com" : "https://graph.facebook.com";
+  const version = base === "threads" ? "v1.0" : GRAPH_VERSION;
+  const url = new URL(`${origin}/${version}/${path.replace(/^\//, "")}`);
   const headers = new Headers(init.headers);
   headers.set("Authorization", `Bearer ${token}`);
   headers.set("Accept", "application/json");
@@ -79,9 +82,21 @@ export class MetaFacebookService {
   pages() {
     return graphRequest<{ data: Array<{ id: string; name: string; access_token: string; tasks?: string[]; instagram_business_account?: { id: string; username?: string; name?: string; profile_picture_url?: string; followers_count?: number } }> }>(
       "facebook",
-      "me/accounts?fields=id,name,access_token,tasks,instagram_business_account{id,username,name,profile_picture_url,followers_count}",
+      "me/accounts?fields=id,name,access_token,tasks,instagram_business_account",
       this.token,
       { method: "GET" }
+    );
+  }
+
+  instagramBusinessAccount(pageId: string) {
+    return graphRequest<{ instagram_business_account?: { id: string } }>("facebook", `${pageId}?fields=instagram_business_account`, this.token);
+  }
+
+  instagramProfile(accountId: string, pageToken: string) {
+    return graphRequest<{ id: string; username?: string; name?: string; profile_picture_url?: string }>(
+      "facebook",
+      `${accountId}?fields=id,username,name,profile_picture_url`,
+      pageToken
     );
   }
 
@@ -129,12 +144,14 @@ export class MetaFacebookService {
 }
 
 export class MetaInstagramService {
-  constructor(private token: string) {}
+  constructor(private token: string, private instagramLogin = false) {}
+
+  private get graphBase(): GraphBase { return this.instagramLogin ? "instagram" : "facebook"; }
 
   profile(id: string) {
     return graphRequest<{ id: string; username?: string; name?: string; profile_picture_url?: string; followers_count?: number }>(
-      "facebook",
-      `${id}?fields=id,username,name,profile_picture_url,followers_count`,
+      this.graphBase,
+      `${id}?fields=id,user_id,username,name,profile_picture_url,followers_count`,
       this.token
     );
   }
@@ -156,7 +173,7 @@ export class MetaInstagramService {
       for (const url of mediaUrls) {
         const childParams = new URLSearchParams({ image_url: url });
         childParams.set("is_carousel_item", "true");
-        const child = await graphRequest<{ id: string }>("facebook", `${accountId}/media`, this.token, { method: "POST", body: childParams });
+        const child = await graphRequest<{ id: string }>(this.graphBase, `${accountId}/media`, this.token, { method: "POST", body: childParams });
         children.push(child.id);
       }
       // Meta requires every child container to finish processing before the
@@ -166,7 +183,7 @@ export class MetaInstagramService {
         await this.waitForContainer(childId, 60_000);
       }
       const carouselParams = new URLSearchParams({ media_type: "CAROUSEL", children: children.join(","), caption: input.caption });
-      const carousel = await graphRequest<{ id: string }>("facebook", `${accountId}/media`, this.token, { method: "POST", body: carouselParams });
+      const carousel = await graphRequest<{ id: string }>(this.graphBase, `${accountId}/media`, this.token, { method: "POST", body: carouselParams });
       creationId = carousel.id;
     } else {
       const isReel = input.mediaType === "VIDEO";
@@ -178,7 +195,7 @@ export class MetaInstagramService {
         params.set("media_type", "IMAGE");
         params.set("image_url", mediaUrls[0]);
       }
-      const container = await graphRequest<{ id: string }>("facebook", `${accountId}/media`, this.token, { method: "POST", body: params });
+      const container = await graphRequest<{ id: string }>(this.graphBase, `${accountId}/media`, this.token, { method: "POST", body: params });
       creationId = container.id;
     }
 
@@ -186,7 +203,7 @@ export class MetaInstagramService {
       await this.waitForContainer(creationId, input.mediaType === "VIDEO" ? 5 * 60_000 : 60_000);
     }
 
-    const published = await graphRequest<{ id: string }>("facebook", `${accountId}/media_publish`, this.token, {
+    const published = await graphRequest<{ id: string }>(this.graphBase, `${accountId}/media_publish`, this.token, {
       method: "POST",
       body: new URLSearchParams({ creation_id: creationId })
     });
@@ -198,7 +215,7 @@ export class MetaInstagramService {
     const started = Date.now();
     while (Date.now() - started < maxMs) {
       const result = await graphRequest<{ status_code?: string; status?: string; error?: { message?: string } }>(
-        "facebook",
+        this.graphBase,
         `${containerId}?fields=status_code,status,error`,
         this.token
       );
@@ -211,12 +228,12 @@ export class MetaInstagramService {
   }
 
   permalink(mediaId: string) {
-    return graphRequest<{ permalink?: string }>("facebook", `${mediaId}?fields=permalink`, this.token).then((data) => data.permalink);
+    return graphRequest<{ permalink?: string }>(this.graphBase, `${mediaId}?fields=permalink`, this.token).then((data) => data.permalink);
   }
 
   insights(accountId: string, metrics: string, period = "day", datePreset = "last_28d") {
     return graphRequest<{ data: Array<{ name: string; values?: Array<{ value?: number | Record<string, number>; end_time?: string }> }> }>(
-      "facebook",
+      this.graphBase,
       `${accountId}/insights?metric=${encodeURIComponent(metrics)}&period=${period}&date_preset=${datePreset}`,
       this.token
     );
@@ -224,7 +241,7 @@ export class MetaInstagramService {
 
   media(accountId: string) {
     return graphRequest<{ data: Array<{ id: string; caption?: string; media_type?: string; timestamp?: string; permalink?: string; like_count?: number; comments_count?: number }> }>(
-      "facebook",
+      this.graphBase,
       `${accountId}/media?fields=id,caption,media_type,timestamp,permalink,like_count,comments_count`,
       this.token
     );

@@ -61,8 +61,7 @@ const getServerMounted = () => false;
  * feeding the dashboard it sits next to.
  */
 function SidebarConnectionNote({ className, emptyOnly = false }: { className?: string; emptyOnly?: boolean }) {
-  const { data, loading, error } = useAnalytics();
-  const accounts = data?.accounts ?? [];
+  const { accounts, data, loading, error } = useAnalytics();
   // A stored account is not the same as a working one: a revoked token or
   // missing Page permission keeps the row while Meta returns nothing.
   const healthy = accounts.filter((account) => account.status === "active").length;
@@ -81,6 +80,53 @@ function SidebarConnectionNote({ className, emptyOnly = false }: { className?: s
             : "Connect Meta to see live audience data and recommendations.";
 
   return <p className={cn(emptyOnly && "rounded-[12px] border border-borderSoft bg-surface-muted p-3", className)}>{message}</p>;
+}
+
+function SidebarMetaAction({ collapsed, onClick }: { collapsed: boolean; onClick: () => void }) {
+  const { accounts, data, loading } = useAnalytics();
+  const hasAccounts = accounts.length > 0;
+  const label = hasAccounts ? "Manage Meta accounts" : loading && !data ? "Checking Meta…" : "Connect Meta";
+  const Icon = hasAccounts ? Settings : Sparkles;
+
+  return (
+    <button
+      onClick={onClick}
+      aria-label={label}
+      title={collapsed ? label : undefined}
+      className={cn(
+        "bg-primary text-primary-foreground shadow-sm transition hover:bg-primary-strong",
+        collapsed ? "grid h-9 w-9 place-items-center rounded-full" : "flex w-full items-center justify-between rounded-full px-3.5 py-2.5 text-sm font-semibold"
+      )}
+    >
+      {collapsed ? <Icon aria-hidden="true" className="h-4 w-4" /> : <span className="flex items-center gap-2"><Icon aria-hidden="true" className="h-3.5 w-3.5" /> {label}</span>}
+    </button>
+  );
+}
+
+function AnalyticsAccountSelector() {
+  const { accounts, selectedAccountId, selectAccount, loading } = useAnalytics();
+  if (accounts.length < 2) return null;
+
+  return (
+    <label className="flex min-w-0 items-center gap-2 rounded-full border border-borderSoft bg-surface px-3 py-1.5 text-xs text-mutedText shadow-sm">
+      <span className="shrink-0">Account</span>
+      <select
+        aria-label="Filter analytics by Meta account"
+        value={selectedAccountId}
+        onChange={(event) => selectAccount(event.currentTarget.value)}
+        aria-busy={loading}
+        className="min-w-0 max-w-[160px] cursor-pointer truncate bg-transparent font-medium text-ink outline-none sm:max-w-[220px]"
+      >
+        <option value="">All accounts</option>
+        {accounts.map((account) => (
+          <option key={`${account.platform}-${account.id}`} value={account.id}>
+            {account.name} · {account.platform === "facebook" ? "Facebook" : account.platform === "instagram" ? "Instagram" : "Threads"}
+          </option>
+        ))}
+      </select>
+      {loading && <span className="sr-only" role="status">Loading selected account analytics</span>}
+    </label>
+  );
 }
 
 export function AppShell({ children, email, profile, initialAnalytics }: { children: React.ReactNode; email?: string; profile?: { display_name?: string | null; role?: string | null; bio?: string | null } | null; initialAnalytics?: AnalyticsSnapshot | null }) {
@@ -203,14 +249,12 @@ export function AppShell({ children, email, profile, initialAnalytics }: { child
       <div className="shrink-0 border-t border-borderSoft bg-surface p-3">
         {!collapsed ? (
           <div className="space-y-3">
-            <button onClick={() => setConnectModalOpen(true)} className="flex w-full items-center justify-between rounded-full bg-primary px-3.5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary-strong">
-              <span className="flex items-center gap-2"><Sparkles aria-hidden="true" className="h-3.5 w-3.5" /> Connect Meta</span>
-            </button>
+            <SidebarMetaAction collapsed={false} onClick={() => setConnectModalOpen(true)} />
             <SidebarConnectionNote emptyOnly className="text-xs leading-4 text-mutedText" />
           </div>
         ) : (
           <div className="grid place-items-center gap-2">
-            <button onClick={() => setConnectModalOpen(true)} aria-label="Connect Meta accounts" className="grid h-9 w-9 place-items-center rounded-full bg-primary text-primary-foreground shadow-sm hover:bg-primary-strong"><Sparkles aria-hidden="true" className="h-4 w-4" /></button>
+            <SidebarMetaAction collapsed onClick={() => setConnectModalOpen(true)} />
           </div>
         )}
       </div>
@@ -250,6 +294,7 @@ export function AppShell({ children, email, profile, initialAnalytics }: { child
             </div>
 
             <div className="ml-auto flex items-center gap-2">
+              <AnalyticsAccountSelector />
               <button onClick={() => setPublisherModalOpen(true)} className="hidden items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold tracking-tight text-primary-foreground shadow-sm hover:bg-primary-strong sm:inline-flex">
                 <Send aria-hidden="true" className="h-3.5 w-3.5" /> Schedule post
               </button>

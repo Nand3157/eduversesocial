@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/providers/theme-toggle";
 import { SITE } from "@/lib/agentic/site";
 import { GlassHeader } from "@/components/layout/glass-header";
+import { getGeminiModel } from "@/lib/ai/model";
 
 export const metadata: Metadata = {
   title: "Privacy Policy & Data Security",
@@ -85,7 +86,7 @@ export default function PrivacyPage() {
                 </li>
                 <li>
                   <strong className="text-ink">We use AI</strong> — every chat message and a live analytics snapshot is sent to Google
-                  Gemini ({process.env.GEMINI_MODEL || "gemini-3.5-flash"}) to generate answers. No training on your data without consent.
+                  Gemini ({getGeminiModel()}) to generate answers. No training on your data without consent.
                 </li>
                 <li>
                   <strong className="text-ink">We share data with third parties only when needed:</strong> Supabase (database/auth/storage),
@@ -185,8 +186,7 @@ export default function PrivacyPage() {
 
             <Section icon={Eye} title="What we access & why" id="access">
               <p>
-                When you click <strong className="font-semibold text-ink">Connect Facebook & Instagram</strong> or{" "}
-                <strong className="font-semibold text-ink">Connect Threads</strong>, you are sent to Meta&apos;s consent screen. Meta shows
+                When you connect Facebook and linked Instagram accounts, connect Instagram directly, or connect Threads, you are sent to Meta&apos;s consent screen. Meta shows
                 exactly which permissions EduVerse is requesting — you must approve before any token is issued.
               </p>
               <div className="grid gap-3">
@@ -209,6 +209,17 @@ export default function PrivacyPage() {
                       (reach, engagement, saves) and user-generated Page content such as comments, and — only if you click Publish —
                       create scheduled or immediate posts on your behalf.
                     </p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">Instagram Login (direct)</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0 text-xs leading-6 text-mutedText">
+                    Scopes: <code className="rounded bg-surface px-1.5 py-0.5">instagram_business_basic</code>{" "}
+                    <code className="rounded bg-surface px-1.5 py-0.5">instagram_business_content_publish</code>{" "}
+                    <code className="rounded bg-surface px-1.5 py-0.5">instagram_business_manage_insights</code>
+                    <p className="mt-2">Used to: connect a professional Instagram Business or Creator account directly, read its profile, media and insights, and publish posts you approve. A Facebook Page is not required.</p>
                   </CardContent>
                 </Card>
                 <Card>
@@ -277,7 +288,7 @@ export default function PrivacyPage() {
                 <strong className="font-semibold text-ink">We use AI</strong> (artificial intelligence) to provide the EduVerse Assistant in
                 Dashboard &gt; Chat and related content suggestions. Our provider is <strong className="font-semibold text-ink">Google</strong>{" "}
                 via the <code className="rounded bg-surface px-1 py-0.5">@google/genai</code> SDK, model{" "}
-                <code className="rounded bg-surface px-1 py-0.5">{process.env.GEMINI_MODEL || "gemini-3.5-flash"}</code> (configurable via{" "}
+                <code className="rounded bg-surface px-1 py-0.5">{getGeminiModel()}</code> (configurable via{" "}
                 <code className="rounded bg-surface px-1 py-0.5">GEMINI_MODEL</code>).
               </p>
               <ul className="list-disc space-y-2 pl-5">

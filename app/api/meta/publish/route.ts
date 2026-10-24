@@ -7,6 +7,8 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 import type { MetaPostPayload } from "@/lib/meta-api";
 import { matchesRecurringSlot } from "@/lib/recurring-slots";
+import { refreshInstagramLoginToken } from "@/lib/instagram-login";
+import { encrypt } from "@/lib/crypto";
 
 const schema = z.object({
   platform: z.enum(["instagram", "facebook", "threads"]),
@@ -63,7 +65,7 @@ export async function POST(request: Request) {
   const finalCaption = input.hashtags?.length ? `${input.caption.trim()} ${input.hashtags.join(" ")}`.slice(0, 2200) : input.caption;
   const { data: account } = await supabase
     .from("social_accounts")
-    .select("id,external_id,platform,encrypted_token,token_expires_at,status")
+    .select("id,external_id,platform,encrypted_token,token_expires_at,status,scopes")
     .eq("workspace_id", member.workspace_id)
     .eq("platform", input.platform)
     .eq("external_id", input.targetAccountId)
@@ -112,7 +114,16 @@ export async function POST(request: Request) {
   }
 
   try {
-    const token = decrypt(account.encrypted_token);
+    let token = decrypt(account.encrypted_token);
+    let tokenExpiresAt = account.token_expires_at;
+    if (input.platform === "instagram" && account.scopes?.includes("instagram_business_basic")) {
+      const refreshed = await refreshInstagramLoginToken(token, tokenExpiresAt).catch(() => null);
+      if (refreshed) {
+        token = refreshed.token;
+        tokenExpiresAt = refreshed.expiresAt;
+        await supabase.from("social_accounts").update({ encrypted_token: encrypt(token), token_expires_at: tokenExpiresAt }).eq("id", account.id);
+      }
+    }
     const payload: MetaPostPayload = {
       platform: input.platform,
       mediaType: input.mediaType,
@@ -120,7 +131,7 @@ export async function POST(request: Request) {
       mediaUrls: input.mediaUrls || [],
       targetAccountId: account.external_id
     };
-    const result = await publishToPlatform(payload, token);
+    const result = await publishToPlatform(payload, token, { instagramLogin: input.platform === "instagram" && account.scopes?.includes("instagram_business_basic") });
     return NextResponse.json(result);
   } catch (error) {
     const safe = safePublishResponse(error, input.platform);

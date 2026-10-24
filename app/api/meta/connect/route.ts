@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
+import { INSTAGRAM_APP_ID, INSTAGRAM_APP_SECRET, INSTAGRAM_REDIRECT_URI } from "@/lib/meta-config";
 
 const EXPIRING_SOON_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -13,7 +14,7 @@ export async function GET() {
   if (!user) return NextResponse.json({ success: false, errorCode: "META_AUTH_ERROR", message: "Sign in required.", accounts: [] }, { status: 401 });
   if (!(await checkRateLimit(`connect:get:${user.id}`, 30, 60_000)).allowed) return NextResponse.json({ success: false, errorCode: "META_RATE_LIMIT", message: "Too many requests. Try again shortly.", accounts: [] }, { status: 429 });
   const { data: member } = await supabase.from("workspace_members").select("workspace_id").eq("user_id", user.id).limit(1).maybeSingle();
-  if (!member) return NextResponse.json({ success: true, accounts: [] });
+  if (!member) return NextResponse.json({ success: true, accounts: [], instagramLoginConfigured: Boolean(INSTAGRAM_APP_ID && INSTAGRAM_APP_SECRET && INSTAGRAM_REDIRECT_URI) });
 
   const { data: rows } = await supabase
     .from("social_accounts")
@@ -40,7 +41,7 @@ export async function GET() {
       status
     };
   });
-  return NextResponse.json({ success: true, live: true, accounts });
+  return NextResponse.json({ success: true, live: true, accounts, instagramLoginConfigured: Boolean(INSTAGRAM_APP_ID && INSTAGRAM_APP_SECRET && INSTAGRAM_REDIRECT_URI) });
 }
 
 // Disconnect targets exactly one account: either a specific external account

@@ -23,12 +23,13 @@ const STATUS_META: Record<MetaAccount["status"], { label: string; className: str
 
 export function MetaConnectModal({ isOpen, onClose, onConnected }: MetaConnectModalProps) {
   const router = useRouter();
-  const [connecting, setConnecting] = useState<"facebook" | "threads" | null>(null);
+  const [connecting, setConnecting] = useState<"facebook" | "instagram" | "threads" | null>(null);
   const [loadingAccounts, setLoadingAccounts] = useState(false);
   const [connectedList, setConnectedList] = useState<MetaAccount[]>([]);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [authRequired, setAuthRequired] = useState(false);
+  const [instagramLoginConfigured, setInstagramLoginConfigured] = useState(false);
 
   const loadAccounts = useCallback(async () => {
     setLoadingAccounts(true);
@@ -44,6 +45,7 @@ export function MetaConnectModal({ isOpen, onClose, onConnected }: MetaConnectMo
         return;
       }
       setConnectedList(data.accounts ?? []);
+      setInstagramLoginConfigured(Boolean(data.instagramLoginConfigured));
       if (!response.ok && data.error) setErrorMessage(data.error);
     } catch {
       setErrorMessage("Could not reach the Meta connection service. Check your network and try again.");
@@ -65,7 +67,7 @@ export function MetaConnectModal({ isOpen, onClose, onConnected }: MetaConnectMo
     };
   }, [isOpen, loadAccounts]);
 
-  const startConnect = (kind: "facebook" | "threads") => {
+  const startConnect = (kind: "facebook" | "instagram" | "threads") => {
     if (authRequired) {
       router.push("/login?next=/dashboard/settings");
       return;
@@ -74,7 +76,7 @@ export function MetaConnectModal({ isOpen, onClose, onConnected }: MetaConnectMo
     setSuccessMessage(null);
     setErrorMessage(null);
     try {
-      window.location.assign(kind === "threads" ? "/api/meta/threads" : "/api/meta/oauth");
+      window.location.assign(kind === "threads" ? "/api/meta/threads" : kind === "instagram" ? "/api/meta/instagram" : "/api/meta/oauth");
     } catch {
       setErrorMessage("Could not reach the Meta connection service. Check your network and try again.");
       setConnecting(null);
@@ -98,6 +100,8 @@ export function MetaConnectModal({ isOpen, onClose, onConnected }: MetaConnectMo
   };
 
   const connectedCount = connectedList.filter((account) => account.status === "active" || account.status === "token_expiring").length;
+  const hasFacebookPage = connectedList.some((account) => account.platform === "facebook");
+  const hasInstagramAccount = connectedList.some((account) => account.platform === "instagram");
 
   return (
     <Dialog.Root open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
@@ -110,8 +114,8 @@ export function MetaConnectModal({ isOpen, onClose, onConnected }: MetaConnectMo
                 <ShieldCheck className="h-5 w-5" />
               </span>
               <div>
-                <Dialog.Title className="font-heading text-lg font-medium text-ink">Connect Meta accounts</Dialog.Title>
-                <Dialog.Description className="text-xs text-mutedText">Instagram Business, Facebook Pages and Threads</Dialog.Description>
+                <Dialog.Title className="font-heading text-lg font-medium text-ink">{connectedList.length ? "Manage Meta accounts" : "Connect Meta accounts"}</Dialog.Title>
+                <Dialog.Description className="text-xs text-mutedText">Review connected accounts or connect Instagram Business, Facebook Pages and Threads</Dialog.Description>
               </div>
             </div>
             <Dialog.Close aria-label="Close Meta connection dialog" className="rounded-lg p-2 text-mutedText transition hover:bg-surface hover:text-ink">
@@ -145,7 +149,7 @@ export function MetaConnectModal({ isOpen, onClose, onConnected }: MetaConnectMo
               )}
             </div>
 
-            <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid gap-2 sm:grid-cols-3">
               <button
                 onClick={() => startConnect("facebook")}
                 disabled={connecting !== null || authRequired}
@@ -153,7 +157,16 @@ export function MetaConnectModal({ isOpen, onClose, onConnected }: MetaConnectMo
                 title={authRequired ? "Sign in required" : undefined}
               >
                 {connecting === "facebook" ? <RefreshCw aria-hidden="true" className="h-3.5 w-3.5 animate-spin" /> : <Check aria-hidden="true" className="h-3.5 w-3.5" />}
-                {connecting === "facebook" ? "Opening Meta…" : "Connect Facebook & Instagram"}
+                {connecting === "facebook" ? "Opening Meta…" : "Connect Facebook + linked Instagram"}
+              </button>
+              <button
+                onClick={() => startConnect("instagram")}
+                disabled={connecting !== null || authRequired || !instagramLoginConfigured}
+                className="inline-flex touch-manipulation items-center justify-center gap-2 rounded-xl border border-primary/35 bg-accent-soft px-4 py-2.5 text-xs font-semibold text-primary transition-[background-color] hover:bg-accent-soft/70 disabled:pointer-events-none disabled:opacity-50"
+                title={!instagramLoginConfigured ? "Configure Instagram Login credentials on the server first" : authRequired ? "Sign in required" : undefined}
+              >
+                {connecting === "instagram" ? <RefreshCw aria-hidden="true" className="h-3.5 w-3.5 animate-spin" /> : <Check aria-hidden="true" className="h-3.5 w-3.5" />}
+                {connecting === "instagram" ? "Opening Instagram…" : "Connect Instagram directly"}
               </button>
               <button
                 onClick={() => startConnect("threads")}
@@ -169,8 +182,7 @@ export function MetaConnectModal({ isOpen, onClose, onConnected }: MetaConnectMo
             <div className="flex items-start gap-2 rounded-xl border border-success/20 bg-success/10 px-3.5 py-3">
               <Lock aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" />
               <p className="text-[11px] leading-relaxed text-ink">
-                OAuth opens on <strong className="font-semibold text-ink">Meta&apos;s consent screen</strong> — we request only{" "}
-                <code className="rounded bg-surface border border-borderSoft px-1 py-0.5 text-[10px] text-ink">pages_show_list</code> + related scopes. Tokens are{" "}
+                OAuth opens on <strong className="font-semibold text-ink">Meta&apos;s consent screen</strong>. Facebook Login discovers Pages and linked Instagram accounts; Instagram Login connects a professional Instagram account directly without a Page. Tokens are{" "}
                 <strong className="font-semibold text-ink">AES-256-GCM encrypted</strong> and scoped to your workspace via RLS.
                 <a href="/privacy" target="_blank" rel="noopener noreferrer" className="ml-1 font-semibold text-success hover:underline">
                   Privacy & Data Security →
@@ -196,6 +208,12 @@ export function MetaConnectModal({ isOpen, onClose, onConnected }: MetaConnectMo
 
             <div>
               <h4 className="mb-3 text-xs font-semibold text-mutedText">Accounts returned by Meta ({connectedCount} connected)</h4>
+              {!loadingAccounts && hasFacebookPage && !hasInstagramAccount && (
+                <p className="mb-3 rounded-xl border border-[var(--warn)] bg-[var(--warn-soft)] p-3 text-xs leading-relaxed text-warning-ink">
+                  No Instagram profile was returned through Facebook Login. Use <strong>Connect Instagram directly</strong> for a Business or Creator profile, even if it is not attached to a Facebook Page.
+                </p>
+              )}
+              {!instagramLoginConfigured && <p className="mb-3 text-[11px] leading-relaxed text-mutedText">Direct Instagram Login needs Instagram App ID, App Secret, and redirect URI configured on the server. Facebook and linked Instagram connections remain available.</p>}
               <div aria-live="polite" aria-busy={loadingAccounts}>
                 {loadingAccounts ? (
                   <div className="flex items-center justify-center gap-2 rounded-xl border border-borderSoft bg-surface p-6 text-xs text-mutedText">
@@ -203,7 +221,7 @@ export function MetaConnectModal({ isOpen, onClose, onConnected }: MetaConnectMo
                   </div>
                 ) : connectedList.length === 0 ? (
                   <div className="rounded-xl border border-dashed border-borderSoft bg-surface p-6 text-center text-xs leading-relaxed text-mutedText">
-                    No linked accounts yet. Connect Facebook &amp; Instagram or Threads above.
+                    No linked accounts yet. Connect Facebook, Instagram, or Threads above.
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -225,7 +243,7 @@ export function MetaConnectModal({ isOpen, onClose, onConnected }: MetaConnectMo
                               {status.label}
                             </span>
                             {account.status === "expired" || account.status === "permission_required" ? (
-                              <button onClick={() => startConnect(account.platform === "threads" ? "threads" : "facebook")} disabled={connecting !== null} className="inline-flex touch-manipulation min-h-[28px] items-center gap-1 rounded-lg border border-borderSoft bg-card px-2 py-1 text-[10px] font-semibold text-primary transition-[background-color] hover:bg-surfaceMuted disabled:pointer-events-none disabled:opacity-50">
+                              <button onClick={() => startConnect(account.platform)} disabled={connecting !== null || account.platform === "instagram" && !instagramLoginConfigured} className="inline-flex touch-manipulation min-h-[28px] items-center gap-1 rounded-lg border border-borderSoft bg-card px-2 py-1 text-[10px] font-semibold text-primary transition-[background-color] hover:bg-surfaceMuted disabled:pointer-events-none disabled:opacity-50">
                                 <RefreshCw aria-hidden="true" className="h-3 w-3" /> Reconnect
                               </button>
                             ) : (

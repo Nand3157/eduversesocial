@@ -731,7 +731,37 @@ export function ChatInterface() {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversationId, messages: modelMessages }),
+        body: JSON.stringify({
+          conversationId,
+          messages: modelMessages,
+          workspaceSnapshot: analytics?.live ? {
+            accounts: analytics.accounts.slice(0, 10).map(({ name, platform, handle, followers }) => ({ name, platform, handle, followers })),
+            metrics: analytics.metrics.slice(0, 8).map(({ label, value, suffix }) => ({ label, value, suffix })),
+            recentPosts: analytics.recentPosts.slice(0, 5).map(({ platform, accountLabel, date, post, likes, comments, shares, reach, mediaType }) => ({
+              platform,
+              accountLabel,
+              date,
+              post: post.slice(0, 300),
+              likes,
+              comments,
+              shares,
+              reach,
+              mediaType
+            })),
+            memory: analytics.memoryItems.slice(0, 4).map((item) => item.slice(0, 200)),
+            bestTimes: analytics.bestTimes ? {
+              timezone: analytics.bestTimes.timezone,
+              sampleSize: analytics.bestTimes.sampleSize,
+              confidence: analytics.bestTimes.confidence,
+              windows: analytics.bestTimes.windows.slice(0, 3).map(({ label, score, avgEngagement, postCount }) => ({ label, score, avgEngagement, postCount })),
+              byAccount: analytics.bestTimes.byAccount.slice(0, 4).map(({ accountLabel, platform, window }) => ({
+                accountLabel,
+                platform,
+                window: { label: window.label, score: window.score, avgEngagement: window.avgEngagement, postCount: window.postCount }
+              }))
+            } : null
+          } : undefined
+        }),
         signal: requestTimeout
       });
 
@@ -845,29 +875,32 @@ export function ChatInterface() {
       </div>
 
       {/* Sidebar - ice to match Atlas, with separation */}
-      <aside className="hidden overflow-y-auto border-r border-borderSoft bg-surface p-4 lg:block">
+      <aside className="hidden min-h-0 flex-col overflow-hidden border-r border-borderSoft bg-surface p-4 lg:flex">
         <Button
-          className="w-full bg-ink text-background hover:bg-ink/90"
+          className="w-full shrink-0 bg-ink text-background hover:bg-ink/90"
           onClick={startNewConversation}
           size="sm"
         >
           <Sparkles aria-hidden="true" className="h-4 w-4" />
           New conversation
-        </Button>          <p className="mt-7 text-xs font-semibold uppercase tracking-wider text-mutedText">
-            Saved conversations
-          </p>
-        <ConversationItems
-          activeId={conversationId}
-          conversations={conversations}
-          loading={loadingConversation}
-          busy={thinking}
-          deletingId={deletingConversationId}
-          error={conversationError}
-          onSelect={(id) => void openConversation(id)}
-          onDelete={(conversation) => void deleteConversation(conversation)}
-        />
+        </Button>
+        <p className="mt-7 shrink-0 text-xs font-semibold uppercase tracking-wider text-mutedText">
+          Saved conversations
+        </p>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
+          <ConversationItems
+            activeId={conversationId}
+            conversations={conversations}
+            loading={loadingConversation}
+            busy={thinking}
+            deletingId={deletingConversationId}
+            error={conversationError}
+            onSelect={(id) => void openConversation(id)}
+            onDelete={(conversation) => void deleteConversation(conversation)}
+          />
+        </div>
 
-        <div className="mt-6 rounded-xl border border-borderSoft bg-card p-3">
+        <div className="mt-4 shrink-0 rounded-xl border border-borderSoft bg-card p-3">
           <div className="flex items-center gap-2 text-xs font-medium text-primary">
             <Cpu aria-hidden="true" className="h-3.5 w-3.5" />
             Active AI engine
@@ -875,7 +908,7 @@ export function ChatInterface() {
           <p className="mt-1 text-xs text-mutedText">{activeProvider}</p>
         </div>
 
-        <div className="mt-5 rounded-xl border border-borderSoft bg-card p-3">
+        <div className="mt-4 shrink-0 rounded-xl border border-borderSoft bg-card p-3">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-mutedText">Tips</p>
           <ul className="mt-2 space-y-1.5 text-xs text-mutedText">
             <li>
@@ -1046,14 +1079,18 @@ export function ChatInterface() {
               Saving is temporarily unavailable — replies still work, but this conversation won&apos;t appear in your history.
             </p>
           )}
-          <div className="mb-3 flex flex-wrap gap-2">
+          <div
+            role="group"
+            aria-label="Suggested prompts"
+            className="chat-prompt-strip mb-2 flex flex-nowrap gap-2 overflow-x-auto overscroll-x-contain pb-1"
+          >
             {prompts.map((prompt) => (
               <motion.button
                 key={prompt}
                 whileHover={{ y: -2 }}
                 whileTap={{ scale: 0.95 }}
                 transition={SPRING_SOFT}
-                className="rounded-full border border-borderSoft px-3 py-1.5 text-xs text-mutedText transition-colors duration-150 hover:border-primary hover:text-primary"
+                className="shrink-0 whitespace-nowrap rounded-full border border-borderSoft px-3 py-1.5 text-xs text-mutedText transition-colors duration-150 hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                 onClick={() => {
                   setInput(prompt);
                   textareaRef.current?.focus();
@@ -1169,8 +1206,8 @@ export function ChatInterface() {
               ref={textareaRef}
               id="chat-message"
               rows={1}
-              className="max-h-40 flex-1 resize-none rounded-2xl border border-borderSoft bg-surface px-4 py-3 text-sm text-ink outline-none transition-[border-color,box-shadow] placeholder:text-faintText focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/40"
-              placeholder="Ask about your audience… (Shift+Enter for newline)"
+              className="max-h-40 min-w-0 flex-1 resize-none rounded-2xl border border-borderSoft bg-surface px-4 py-3 text-sm text-ink outline-none transition-[border-color,box-shadow] placeholder:text-faintText focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/40"
+              placeholder="Ask about your audience…"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}

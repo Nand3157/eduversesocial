@@ -1,6 +1,6 @@
 export const DEFAULT_GEMINI_MODEL = "gemini-3.8-flash";
 
-/** Redirect the deprecated 3.5 alias so existing deployment env vars upgrade safely. */
+/** Redirect the retired full Flash model while keeping the distinct Flash-Lite model selectable. */
 export function getGeminiModel(configured = process.env.GEMINI_MODEL) {
   if (!configured || configured === "gemini-3.5-flash") return DEFAULT_GEMINI_MODEL;
   return configured;

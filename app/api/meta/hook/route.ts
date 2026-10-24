@@ -4,6 +4,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { assertHttpsMedia } from "@/lib/meta-api";
 import { logger } from "@/lib/logger";
+import { getGeminiModel } from "@/lib/ai/model";
 
 export const runtime = "nodejs";
 
@@ -19,7 +20,7 @@ const hookSchema = z.object({
   tone: z.enum(["professional", "witty", "bold"]).optional()
 });
 
-const GEMINI_MODEL = process.env.GEMINI_HOOK_MODEL || "gemini-3.5-flash-lite";
+const GEMINI_MODEL = getGeminiModel(process.env.GEMINI_HOOK_MODEL || "gemini-3.5-flash-lite");
 const MAX_LINK_IMAGE_BYTES = 4 * 1024 * 1024;
 const MAX_LINK_TEXT_BYTES = 16 * 1024;
 
@@ -102,10 +103,9 @@ async function readLinkAsPart(url: string): Promise<ContentPart> {
   }
 }
 
-/** Keeps only the first line so the hook is a single sentence even if the model disobeys. */
-function singleSentence(text: string): string {
-  const line = text.split(/\r?\n/).map((part) => part.trim()).filter(Boolean)[0] ?? text.trim();
-  return line;
+/** Join model line wraps without dropping the rest of a sentence. */
+function normalizeHook(text: string): string {
+  return text.replace(/\s+/g, " ").trim().replace(/^(?:(?:\d{1,2}[.)])|[-*•])\s+/, "");
 }
 
 export async function POST(request: Request) {
@@ -178,9 +178,10 @@ Hard constraints (non-negotiable):
       model: GEMINI_MODEL,
       contents: [{ role: "user", parts: [...parts, ...selectedLinkedImages, { text: prompt }] }],
       config: {
-        systemInstruction: "You are a senior social media copywriter. You write powerful scroll-stopping hook sentences, numbered, and never fabricate facts or metrics.",
-        maxOutputTokens: 400,
-        thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
+        systemInstruction: "You are a senior social media copywriter. You write powerful scroll-stopping hook sentences as plain text without numbering, and never fabricate facts or metrics.",
+        maxOutputTokens: 256,
+        abortSignal: AbortSignal.timeout(25_000),
+        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
         responseMimeType: "application/json",
         responseJsonSchema: {
           type: "object",
@@ -199,13 +200,16 @@ Hard constraints (non-negotiable):
     try { output = JSON.parse(text); } catch { throw new Error("INCOMPLETE_RESPONSE"); }
     const parsedOutput = z.object({ hooks: z.array(z.string().trim().min(1)).length(variations), hashtags: z.array(z.string().trim()).min(4).max(6) }).safeParse(output);
     if (!parsedOutput.success) throw new Error("INCOMPLETE_RESPONSE");
-    const captions = parsedOutput.data.hooks.map(singleSentence);
+    const captions = parsedOutput.data.hooks.map(normalizeHook);
     if (captions.some((hook) => !/[.!?…]$/.test(hook))) throw new Error("INCOMPLETE_RESPONSE");
     const hashtags = [...new Set(parsedOutput.data.hashtags.filter((tag) => /^#[\p{L}\p{N}_]{1,29}$/u.test(tag)).map((tag) => tag.toLocaleLowerCase()))].slice(0, 8);
     if (hashtags.length < 4) throw new Error("INCOMPLETE_RESPONSE");
     return Response.json({ success: true, caption: captions[0], captions, hashtags });
   } catch (error) {
     logger.error("hook_generation_failed", { reason: error instanceof Error ? error.message : "unknown" });
+    if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) {
+      return Response.json({ success: false, errorCode: "META_TIMEOUT_ERROR", message: "Hook generation timed out. Try again with fewer media items." }, { status: 504 });
+    }
     if (error instanceof Error && error.message === "INCOMPLETE_RESPONSE") {
       return Response.json({ success: false, errorCode: "META_INCOMPLETE_RESPONSE", message: "Gemini returned incomplete hooks. Try generating again." }, { status: 502 });
     }

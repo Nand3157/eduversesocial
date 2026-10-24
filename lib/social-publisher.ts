@@ -25,7 +25,7 @@ export type PublishResult = PublishSuccess | PublishFailure;
  * callers never see raw Graph responses.
  */
 export interface PlatformPublisher {
-  publish(input: MetaPostPayload, token: string): Promise<{ id: string; permalink?: string }>;
+  publish(input: MetaPostPayload, token: string, options?: { instagramLogin?: boolean }): Promise<{ id: string; permalink?: string }>;
 }
 
 export class FacebookPublisher implements PlatformPublisher {
@@ -40,8 +40,8 @@ export class FacebookPublisher implements PlatformPublisher {
 }
 
 export class InstagramPublisher implements PlatformPublisher {
-  async publish(input: MetaPostPayload, token: string) {
-    const service = new MetaInstagramService(token);
+  async publish(input: MetaPostPayload, token: string, options?: { instagramLogin?: boolean }) {
+    const service = new MetaInstagramService(token, options?.instagramLogin);
     return service.publish(input.targetAccountId!, input);
   }
 }
@@ -68,11 +68,11 @@ const publishers: Record<Platform, PlatformPublisher> = {
  * Unified publishing entry point. The frontend never talks to Meta directly —
  * it only sees the normalized success/failure shape below.
  */
-export async function publishToPlatform(input: MetaPostPayload, token: string): Promise<PublishResult> {
+export async function publishToPlatform(input: MetaPostPayload, token: string, options?: { instagramLogin?: boolean }): Promise<PublishResult> {
   const platform = input.platform;
   const publisher = publishers[platform];
   if (!publisher) return { success: false, platform, errorCode: "META_UNKNOWN_ERROR", message: `Unsupported platform: ${platform}` } as PublishFailure;
-  const result = await publisher.publish(input, token);
+  const result = await publisher.publish(input, token, options);
   if (!result?.id) throw new MetaError("META_API_ERROR", "Meta did not confirm publication.");
   return {
     success: true,

@@ -198,7 +198,8 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess, initialCaption,
           accountName: selectedAccount?.name,
           accountHandle: selectedAccount?.handle,
           variations: 3
-        })
+        }),
+        signal: AbortSignal.timeout(32_000)
       });
       const data = await res.json();
       if (res.ok) {
@@ -224,8 +225,10 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess, initialCaption,
       } else {
         setHookError(data.message || "Could not generate a hook. Try again in a moment.");
       }
-    } catch {
-      setHookError("Could not reach the hook generator. Check your network and try again.");
+    } catch (error) {
+      setHookError(error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")
+        ? "Hook generation took too long. Try again with fewer media items."
+        : "Could not reach the hook generator. Check your network and try again.");
     } finally {
       setGeneratingHook(false);
     }
@@ -326,7 +329,7 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess, initialCaption,
           <button type="button" onClick={() => setAccountsRetry((attempt) => attempt + 1)} className="rounded-lg border border-borderSoft px-3 py-1.5 font-semibold text-ink transition hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">Try again</button>
         </div>
       ) : connectedAccounts.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-borderSoft bg-surface p-4 text-xs leading-relaxed text-mutedText">No connected Meta channels were found. Connect a Facebook Page or linked Instagram Business account in Settings.</div>
+        <div className="rounded-xl border border-dashed border-borderSoft bg-surface p-4 text-xs leading-relaxed text-mutedText">No connected Meta channels were found. Connect a Facebook Page, an Instagram Business or Creator account, or Threads in Settings.</div>
       ) : <div className="grid gap-2 sm:grid-cols-2">
                 {connectedAccounts.map((account) => {
                   const id = account.platform as "instagram" | "facebook" | "threads";

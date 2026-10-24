@@ -7,6 +7,9 @@ export const META_GRAPH_VERSION = process.env.META_GRAPH_VERSION || "v26.0";
 export const META_APP_ID = process.env.META_APP_ID;
 export const META_APP_SECRET = process.env.META_APP_SECRET;
 export const META_REDIRECT_URI = process.env.META_REDIRECT_URI;
+export const INSTAGRAM_APP_ID = process.env.INSTAGRAM_APP_ID;
+export const INSTAGRAM_APP_SECRET = process.env.INSTAGRAM_APP_SECRET;
+export const INSTAGRAM_REDIRECT_URI = process.env.INSTAGRAM_REDIRECT_URI;
 export const THREADS_APP_ID = process.env.THREADS_APP_ID;
 export const THREADS_APP_SECRET = process.env.THREADS_APP_SECRET;
 export const THREADS_REDIRECT_URI = process.env.THREADS_REDIRECT_URI;
@@ -48,3 +51,10 @@ export const META_REQUIRED_PERMISSIONS = [
  *  - threads_manage_insights : read Threads user and media insights
  */
 export const THREADS_REQUIRED_PERMISSIONS = ["threads_basic", "threads_content_publish", "threads_manage_insights"] as const;
+
+/** Instagram Login scopes (independent of Facebook Login and Page linkage). */
+export const INSTAGRAM_LOGIN_PERMISSIONS = [
+  "instagram_business_basic",
+  "instagram_business_content_publish",
+  "instagram_business_manage_insights"
+] as const;
