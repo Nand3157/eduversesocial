@@ -704,7 +704,21 @@ export function ChatInterface() {
     };
 
     const nextMessages = [...messages, userMessage];
-    const requestMessages = nextMessages.slice(-20);
+    const requestMessages = nextMessages.slice(-12);
+    // The API sends at most the latest image in its model context.
+    // Drop older image data here so base64 attachments are not retransmitted
+    // with every follow-up message.
+    let latestImageIndex = -1;
+    requestMessages.forEach((message, index) => {
+      if (message.image) latestImageIndex = index;
+    });
+    const modelMessages = requestMessages.map((message, index) => ({
+      role: message.role,
+      // Keep the current question intact while clipping oversized history;
+      // the full transcript stays in the UI and database.
+      content: index === requestMessages.length - 1 ? message.content : message.content.slice(0, 2400),
+      ...(index === latestImageIndex && message.image ? { image: message.image } : {})
+    }));
     setMessages([...nextMessages, { role: "assistant", content: "" }]);
     setInput("");
     setImagePreview(null);
@@ -717,7 +731,7 @@ export function ChatInterface() {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversationId, messages: requestMessages }),
+        body: JSON.stringify({ conversationId, messages: modelMessages }),
         signal: requestTimeout
       });
 

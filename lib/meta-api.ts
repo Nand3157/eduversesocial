@@ -39,7 +39,7 @@ export async function graphRequest<T>(base: "facebook" | "threads", path: string
   const headers = new Headers(init.headers);
   headers.set("Authorization", `Bearer ${token}`);
   headers.set("Accept", "application/json");
-  const response = await fetch(url, { ...init, headers, cache: "no-store", signal: AbortSignal.timeout(25_000) });
+  const response = await fetch(url, { ...init, headers, cache: "no-store", signal: init.signal ?? AbortSignal.timeout(25_000) });
   const body = (await response.json().catch(() => ({}))) as T & GraphError;
   if (!response.ok || body.error) {
     const code = body.error?.code;
@@ -232,13 +232,14 @@ export class MetaInstagramService {
 }
 
 export class ThreadsService {
-  constructor(private token: string) {}
+  constructor(private token: string, private signal?: AbortSignal) {}
 
   profile() {
     return graphRequest<{ id: string; username?: string; name?: string; threads_profile_picture_url?: string }>(
       "threads",
       "me?fields=id,username,name,threads_profile_picture_url",
-      this.token
+      this.token,
+      { signal: this.signal }
     );
   }
 
@@ -298,7 +299,8 @@ export class ThreadsService {
     return graphRequest<{ data: Array<{ id: string; text?: string; timestamp?: string; permalink?: string; media_type?: string }> }>(
       "threads",
       "me/threads?fields=id,text,timestamp,permalink,media_type",
-      this.token
+      this.token,
+      { signal: this.signal }
     );
   }
 
@@ -307,7 +309,8 @@ export class ThreadsService {
     return graphRequest<{ data: Array<{ name: string; values?: Array<{ value?: number | Record<string, number>; end_time?: string }> }> }>(
       "threads",
       `${threadId}/insights?metric=${encodeURIComponent(metrics)}`,
-      this.token
+      this.token,
+      { signal: this.signal }
     );
   }
 
@@ -316,7 +319,8 @@ export class ThreadsService {
     return graphRequest<{ data: Array<{ name: string; values?: Array<{ value?: number | Record<string, number>; end_time?: string }> }> }>(
       "threads",
       `me/threads_insights?metric=${encodeURIComponent(metrics)}`,
-      this.token
+      this.token,
+      { signal: this.signal }
     );
   }
 }

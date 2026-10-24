@@ -17,15 +17,32 @@ const messageSchema = z.object({
   // spend or DB storage.
   image: z.string().startsWith("data:").max(4_000_000).optional()
 });
-const requestSchema = z.object({ conversationId: z.string().uuid().optional(), messages: z.array(messageSchema).min(1).max(20) });
+const requestSchema = z.object({ conversationId: z.string().uuid().optional(), messages: z.array(messageSchema).min(1).max(12) }).superRefine(({ messages }, ctx) => {
+  if (messages.at(-1)?.role !== "user") {
+    ctx.addIssue({ code: "custom", message: "The latest chat message must be from the user." });
+  }
+  if (messages.filter((message) => message.image).length > 1) {
+    ctx.addIssue({ code: "custom", message: "Only one image can be sent with a chat request." });
+  }
+});
 type ChatMessage = z.infer<typeof messageSchema>;
 const MESSAGE_PAGE_SIZE = 20;
 const GEMINI_MODEL = getGeminiModel();
+const FAST_GEMINI_MODEL = process.env.GEMINI_FAST_MODEL || "gemini-3.5-flash-lite";
 // chat_messages.content_check caps a row at 20 000 characters. 4096 tokens is
 // roughly 16k characters of prose, so replies are clamped before persistence.
 const MAX_PERSISTED_CHARACTERS = 20_000;
 
 type Provider = "gemini";
+
+function latestUserMessage(messages: ChatMessage[]) {
+  return [...messages].reverse().find((message) => message.role === "user");
+}
+
+function needsDeeperThinking(messages: ChatMessage[]) {
+  const latest = latestUserMessage(messages);
+  return Boolean(latest?.image || (latest && /\b(why|analy[sz]e|analysis|analytics?|insights?|audience|engagement|reach|impressions?|followers?|perform(?:ance)?|compare|comparison|strategy|strategic|recommend(?:ation)?|forecast|trend|best[ -]?time|posting window|explain|evaluate|calculate|metrics|growth|campaign|roadmap|carousel|reels?|step[ -]?by[ -]?step)\b/i.test(latest.content)));
+}
 
 async function* withFirstChunk(first: IteratorResult<string>, stream: AsyncGenerator<string>) {
   if (!first.done) yield first.value;
@@ -39,11 +56,11 @@ async function* geminiStream(messages: ChatMessage[], workspaceContext: string) 
   }
   const client = new GoogleGenAI({ apiKey });
 
-  const recentMessages = messages.slice(-12);
+  const recentMessages = messages;
   let latestImageIndex = -1;
   recentMessages.forEach((message, index) => { if (message.image) latestImageIndex = index; });
   const contents = recentMessages.map((message, index) => {
-    const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [{ text: message.content }];
+    const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [{ text: index === recentMessages.length - 1 ? message.content : message.content.slice(0, 2400) }];
     if (index === latestImageIndex && message.image?.startsWith("data:")) {
       const match = message.image.match(/^data:([^;]+);base64,(.*)$/);
       if (match) {
@@ -61,13 +78,14 @@ async function* geminiStream(messages: ChatMessage[], workspaceContext: string) 
     };
   });
 
+  const needsReasoning = needsDeeperThinking(messages);
   const config = {
     systemInstruction: `${EDUVERSE_SYSTEM_PROMPT}\n\n${getWorkspaceContext()}\n\n${workspaceContext}`,
     maxOutputTokens: 4096,
-    thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }
+    thinkingConfig: { thinkingLevel: needsReasoning ? ThinkingLevel.LOW : ThinkingLevel.MINIMAL }
   };
 
-  const stream = await client.models.generateContentStream({ model: GEMINI_MODEL, contents, config });
+  const stream = await client.models.generateContentStream({ model: needsReasoning ? GEMINI_MODEL : FAST_GEMINI_MODEL, contents, config });
   for await (const chunk of stream) yield chunk.text ?? "";
 }
 
@@ -86,22 +104,42 @@ async function getWorkspaceId(supabase: NonNullable<Awaited<ReturnType<typeof cr
 const WORKSPACE_CONTEXT_TTL_MS = 5 * 60_000;
 const WORKSPACE_CONTEXT_TIMEOUT_MS = 8_000;
 const UNAVAILABLE_WORKSPACE_CONTEXT = "LIVE META ANALYTICS: unavailable. Do not make workspace-specific claims.";
+const SKIPPED_WORKSPACE_CONTEXT = "LIVE META ANALYTICS: not loaded for this request. Do not make workspace-specific claims.";
 const workspaceContextCache = new Map<string, { at: number; value: string }>();
+const workspaceContextPending = new Map<string, Promise<string>>();
+
+function needsMetaContext(messages: ChatMessage[]) {
+  const latest = latestUserMessage(messages);
+  return Boolean(latest && /\b(analytics?|insights?|audience|followers?|reach|impressions?|engagement|best[ -]?times?|posting window|instagram|facebook|threads|meta account|connected account|performance|metrics|growth|reels?|carousel)\b/i.test(latest.content));
+}
 
 async function getLiveWorkspaceContext(userId?: string) {
   if (userId) {
     const cached = workspaceContextCache.get(userId);
     if (cached && Date.now() - cached.at < WORKSPACE_CONTEXT_TTL_MS) return cached.value;
+    const pending = workspaceContextPending.get(userId);
+    if (pending) return pending;
   }
+  const controller = new AbortController();
   const build = async () => {
     try {
-      const analytics = await fetchMetaAnalytics();
+      const analytics = await fetchMetaAnalytics(undefined, false, userId, controller.signal);
       if (!analytics.live) return UNAVAILABLE_WORKSPACE_CONTEXT;
       return `LIVE META ANALYTICS SNAPSHOT:\n${JSON.stringify({
         accounts: analytics.accounts.map((account) => ({ name: account.name, platform: account.platform, handle: account.handle, followers: account.followers })),
         metrics: analytics.metrics,
-        recentPosts: analytics.recentPosts,
-        memory: analytics.memoryItems,
+        recentPosts: analytics.recentPosts.slice(0, 8).map((post) => ({
+          platform: post.platform,
+          accountLabel: post.accountLabel,
+          date: post.date,
+          post: post.post.slice(0, 500),
+          likes: post.likes,
+          comments: post.comments,
+          shares: post.shares,
+          reach: post.reach,
+          mediaType: post.mediaType
+        })),
+        memory: analytics.memoryItems.slice(0, 8).map((item) => item.slice(0, 300)),
         bestTimes: analytics.bestTimes
           ? {
               timezone: analytics.bestTimes.timezone,
@@ -118,12 +156,22 @@ async function getLiveWorkspaceContext(userId?: string) {
     }
   };
   let timeout: ReturnType<typeof setTimeout> | undefined;
-  const value = await Promise.race([
+  const pending = Promise.race([
     build(),
     new Promise<string>((resolve) => {
-      timeout = setTimeout(() => resolve(UNAVAILABLE_WORKSPACE_CONTEXT), WORKSPACE_CONTEXT_TIMEOUT_MS);
+      timeout = setTimeout(() => {
+        controller.abort();
+        resolve(UNAVAILABLE_WORKSPACE_CONTEXT);
+      }, WORKSPACE_CONTEXT_TIMEOUT_MS);
     })
   ]);
+  if (userId) workspaceContextPending.set(userId, pending);
+  let value: string;
+  try {
+    value = await pending;
+  } finally {
+    if (userId && workspaceContextPending.get(userId) === pending) workspaceContextPending.delete(userId);
+  }
   if (timeout) clearTimeout(timeout);
   if (userId && value !== UNAVAILABLE_WORKSPACE_CONTEXT) {
     if (workspaceContextCache.size > 100) {
@@ -234,12 +282,20 @@ export async function POST(request: Request) {
   // Email verification gate matches proxy.ts/dashboard/layout.tsx
   if (!user.email_confirmed_at) return Response.json({ error: "Verify your email to use chat." }, { status: 403 });
   const rateKey = user.id;
-  if (!(await checkRateLimit(`chat:${rateKey}`, 20, 60_000)).allowed) return Response.json({ error: "Too many requests. Please try again in a minute." }, { status: 429 });
-  if (!(await checkRateLimit(`chat:daily:${rateKey}`, 200, 24 * 60 * 60 * 1000)).allowed) return Response.json({ error: "Daily chat limit reached (200/day). Try again tomorrow." }, { status: 429 });
+  const [minuteLimit, dailyLimit] = await Promise.all([
+    checkRateLimit(`chat:${rateKey}`, 20, 60_000),
+    checkRateLimit(`chat:daily:${rateKey}`, 200, 24 * 60 * 60 * 1000)
+  ]);
+  if (!minuteLimit.allowed) return Response.json({ error: "Too many requests. Please try again in a minute." }, { status: 429 });
+  if (!dailyLimit.allowed) return Response.json({ error: "Daily chat limit reached (200/day). Try again tomorrow." }, { status: 429 });
 
   let conversationId: string | undefined;
   let persistenceUnavailable = false;
   const latest = parsed.data.messages.at(-1)!;
+  const isSelfHarm = isSelfHarmMessage(latest.content);
+  const workspaceContextPromise = !isSelfHarm && needsMetaContext(parsed.data.messages)
+    ? getLiveWorkspaceContext(user.id)
+    : Promise.resolve(SKIPPED_WORKSPACE_CONTEXT);
 
   {
     const workspaceId = await getWorkspaceId(supabase, user.id);
@@ -257,7 +313,7 @@ export async function POST(request: Request) {
 
   // Self-harm safe completion: if latest user message signals distress, return
   // a supportive, resource-rich response without calling the LLM. Logs for audit.
-  if (isSelfHarmMessage(latest.content)) {
+  if (isSelfHarm) {
     logger.warn("chat_self_harm_safe_response", { userId: user.id });
     const encoder = new TextEncoder();
     const safeAnswer = SELF_HARM_SAFE_RESPONSE;
@@ -291,7 +347,7 @@ export async function POST(request: Request) {
     });
   }
 
-  const workspaceContext = await getLiveWorkspaceContext(user.id);
+  const workspaceContext = await workspaceContextPromise;
   let stream: AsyncGenerator<string>;
   const provider: Provider = "gemini";
   try {

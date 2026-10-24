@@ -6,13 +6,7 @@ import type { AnalyticsSnapshot } from "@/lib/meta-analytics";
 type AnalyticsContextValue = { data: AnalyticsSnapshot | null; loading: boolean; error: boolean; refresh: () => void };
 const AnalyticsContext = createContext<AnalyticsContextValue>({ data: null, loading: true, error: false, refresh: () => undefined });
 
-/**
- * Server-first provider. The dashboard layout fetches the snapshot in a
- * Server Component and passes it as `initialData`, so the first paint already
- * has live analytics instead of skeleton → client fetch → API route → the
- * same server function. Explicit refreshes (and the
- * `eduverse:analytics-refresh` event) still revalidate through the API route.
- */
+/** Loads analytics after the dashboard shell renders; refreshes use the same API route. */
 export function AnalyticsProvider({ children, initialData }: { children: React.ReactNode; initialData?: AnalyticsSnapshot | null }) {
   const [data, setData] = useState<AnalyticsSnapshot | null>(initialData ?? null);
   const [loading, setLoading] = useState(!initialData);

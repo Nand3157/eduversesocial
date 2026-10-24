@@ -4,7 +4,6 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { assertHttpsMedia } from "@/lib/meta-api";
 import { logger } from "@/lib/logger";
-import { getGeminiModel } from "@/lib/ai/model";
 
 export const runtime = "nodejs";
 
@@ -12,7 +11,7 @@ const hookSchema = z.object({
   platform: z.enum(["instagram", "facebook", "threads"]),
   mediaType: z.enum(["CAROUSEL", "IMAGE", "VIDEO", "TEXT"]),
   caption: z.string().trim().max(2200).optional(),
-  mediaUrls: z.array(z.string().url().max(2048)).max(10).optional(),
+  mediaUrls: z.array(z.string().url().max(2048)).max(4).optional(),
   images: z.array(z.string().startsWith("data:").max(4_000_000)).max(4).optional(),
   accountName: z.string().trim().max(120).optional(),
   accountHandle: z.string().trim().max(120).optional(),
@@ -20,7 +19,36 @@ const hookSchema = z.object({
   tone: z.enum(["professional", "witty", "bold"]).optional()
 });
 
-const GEMINI_MODEL = getGeminiModel();
+const GEMINI_MODEL = process.env.GEMINI_HOOK_MODEL || "gemini-3.5-flash-lite";
+const MAX_LINK_IMAGE_BYTES = 4 * 1024 * 1024;
+const MAX_LINK_TEXT_BYTES = 16 * 1024;
+
+async function readLimitedBody(response: Response, limit: number): Promise<Buffer | null> {
+  const contentLength = Number(response.headers.get("content-length"));
+  if (Number.isFinite(contentLength) && contentLength > limit) {
+    await response.body?.cancel().catch(() => undefined);
+    return null;
+  }
+  const reader = response.body?.getReader();
+  if (!reader) return Buffer.alloc(0);
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > limit) {
+        await reader.cancel().catch(() => undefined);
+        return null;
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  return Buffer.concat(chunks, total);
+}
 
 const FORMAT_HINTS: Record<z.infer<typeof hookSchema>["mediaType"], string> = {
   CAROUSEL: "Carousel — tease the swipe: each slide delivers one idea, so the hook must promise a numbered payoff.",
@@ -48,19 +76,27 @@ async function readLinkAsPart(url: string): Promise<ContentPart> {
     const safeUrl = assertHttpsMedia(url);
     const response = await fetch(safeUrl, {
       redirect: "follow",
-      signal: AbortSignal.timeout(10_000),
+      signal: AbortSignal.timeout(4_000),
       headers: { "User-Agent": "EduVerse-HookBot/1.0", Accept: "text/html,application/json,text/plain,image/*,*/*;q=0.5" }
     });
-    if (!response.ok) return { text: `LINK ${safeUrl} (unreachable: HTTP ${response.status})` };
+    if (!response.ok) {
+      await response.body?.cancel().catch(() => undefined);
+      return { text: `LINK ${safeUrl} (unreachable: HTTP ${response.status})` };
+    }
     const contentType = (response.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
-    const buffer = Buffer.from(await response.arrayBuffer());
-    if (contentType.startsWith("image/") && buffer.length > 0 && buffer.length <= 4 * 1024 * 1024) {
+    if (!contentType.startsWith("image/") && !contentType.includes("html") && !contentType.startsWith("text/") && !contentType.includes("json")) {
+      await response.body?.cancel().catch(() => undefined);
+      return { text: `LINK ${safeUrl} (binary ${contentType} — content not readable)` };
+    }
+    const buffer = await readLimitedBody(response, contentType.startsWith("image/") ? MAX_LINK_IMAGE_BYTES : MAX_LINK_TEXT_BYTES);
+    if (!buffer) return { text: `LINK ${safeUrl} (content exceeds the size limit)` };
+    if (contentType.startsWith("image/") && buffer.length > 0) {
       return { inlineData: { mimeType: contentType, data: buffer.toString("base64") } };
     }
     if (contentType.includes("html") || contentType.startsWith("text/") || contentType.includes("json")) {
-      return { text: `LINK ${safeUrl} (${contentType}):\n${buffer.toString("utf8").replace(/\s+/g, " ").trim().slice(0, 4000)}` };
+      return { text: `LINK ${safeUrl} (${contentType}):\n${buffer.toString("utf8").replace(/\s+/g, " ").trim().slice(0, 1600)}` };
     }
-    return { text: `LINK ${safeUrl} (binary ${contentType} — content not readable)` };
+    return { text: `LINK ${safeUrl} (empty image)` };
   } catch {
     return { text: `LINK ${url} (could not be read)` };
   }
@@ -81,10 +117,14 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
   if (!user) return Response.json({ success: false, errorCode: "META_AUTH_ERROR", message: "Sign in required." }, { status: 401 });
 
-  if (!(await checkRateLimit(`hook:${user.id}`, 10, 60_000)).allowed) {
+  const [minuteLimit, dailyLimit] = await Promise.all([
+    checkRateLimit(`hook:${user.id}`, 10, 60_000),
+    checkRateLimit(`hook:daily:${user.id}`, 100, 24 * 60 * 60 * 1000)
+  ]);
+  if (!minuteLimit.allowed) {
     return Response.json({ success: false, errorCode: "META_RATE_LIMIT", message: "Too many requests. Try again shortly." }, { status: 429 });
   }
-  if (!(await checkRateLimit(`hook:daily:${user.id}`, 100, 24 * 60 * 60 * 1000)).allowed) {
+  if (!dailyLimit.allowed) {
     return Response.json({ success: false, errorCode: "META_RATE_LIMIT", message: "Daily hook limit reached (100/day). Try again tomorrow." }, { status: 429 });
   }
 
@@ -104,9 +144,12 @@ export async function POST(request: Request) {
     const match = dataUrl.match(/^data:([^;]+);base64,(.*)$/);
     if (match) parts.push({ inlineData: { mimeType: match[1], data: match[2] } });
   }
-  const linkParts = await Promise.all((mediaUrls ?? []).map(readLinkAsPart));
+  const linkParts = await Promise.all((mediaUrls ?? []).slice(0, 4).map(readLinkAsPart));
   const readableLinks = linkParts.filter((part): part is { text: string } => "text" in part).map((part) => part.text);
-  const imageCount = parts.length + linkParts.length - readableLinks.length;
+  const linkedImages = linkParts.filter((part): part is { inlineData: { mimeType: string; data: string } } => "inlineData" in part);
+  const selectedLinkedImages = linkedImages.slice(0, Math.max(0, 4 - parts.length));
+  if (selectedLinkedImages.length < linkedImages.length) readableLinks.push(`${linkedImages.length - selectedLinkedImages.length} linked image(s) omitted to keep this request small.`);
+  const imageCount = parts.length + selectedLinkedImages.length;
   const mediaSummary = readableLinks.length
     ? `LINKED CONTENT READ FROM THE URLS:\n${readableLinks.join("\n---\n")}`
     : "no readable link content — write from the uploaded images";
@@ -133,11 +176,11 @@ Hard constraints (non-negotiable):
     const client = new GoogleGenAI({ apiKey });
     const result = await client.models.generateContent({
       model: GEMINI_MODEL,
-      contents: [{ role: "user", parts: [...parts, { text: prompt }] }],
+      contents: [{ role: "user", parts: [...parts, ...selectedLinkedImages, { text: prompt }] }],
       config: {
         systemInstruction: "You are a senior social media copywriter. You write powerful scroll-stopping hook sentences, numbered, and never fabricate facts or metrics.",
         maxOutputTokens: 400,
-        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+        thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
         responseMimeType: "application/json",
         responseJsonSchema: {
           type: "object",

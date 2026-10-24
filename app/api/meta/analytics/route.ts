@@ -23,6 +23,6 @@ export async function GET(request: Request) {
   }
 
   const bypassCache = new URL(request.url).searchParams.get("refresh") === "1";
-  const snapshot = await fetchMetaAnalytics(undefined, bypassCache);
+  const snapshot = await fetchMetaAnalytics(undefined, bypassCache, user.id);
   return NextResponse.json(snapshot, { status: 200, headers: { "Cache-Control": "no-store" } });
 }

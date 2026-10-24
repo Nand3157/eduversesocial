@@ -2,7 +2,6 @@ import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 import { z } from "zod";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
-import { getGeminiModel } from "@/lib/ai/model";
 
 export const runtime = "nodejs";
 
@@ -12,6 +11,7 @@ const schema = z.object({
   metrics: z.string().max(300).optional()
 });
 const platforms = ["instagram", "facebook", "threads"] as const;
+const GEMINI_MODEL = process.env.GEMINI_REPURPOSE_MODEL || process.env.GEMINI_FAST_MODEL || "gemini-3.5-flash-lite";
 
 export async function POST(request: Request) {
   const parsed = schema.safeParse(await request.json().catch(() => null));
@@ -27,9 +27,9 @@ export async function POST(request: Request) {
   try {
     const client = new GoogleGenAI({ apiKey });
     const result = await client.models.generateContent({
-      model: getGeminiModel(),
+      model: GEMINI_MODEL,
       contents: `Adapt this proven social post into exactly three platform variants. Preserve its central insight and factual meaning. Do not add claims, statistics, promises, or context not present in the source. Do not mention source performance metrics in the copy. Return only valid JSON with keys instagram, facebook, threads, each a string under 2200 characters. Instagram: warm, vivid, concise, optional modest hashtags. Facebook: clear and community-oriented. Threads: conversational and concise.\n\nSource platform: ${parsed.data.platform ?? "unknown"}\nObserved metrics (context only, never repeat as content): ${parsed.data.metrics ?? "not provided"}\nSource post:\n${parsed.data.source}`,
-      config: { responseMimeType: "application/json", maxOutputTokens: 1200, thinkingConfig: { thinkingLevel: ThinkingLevel.LOW } }
+      config: { responseMimeType: "application/json", maxOutputTokens: 1200, thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL } }
     });
     const raw = JSON.parse(result.text ?? "{}") as Record<string, unknown>;
     const variants = Object.fromEntries(platforms.map((platform) => [platform, typeof raw[platform] === "string" ? raw[platform].trim().slice(0, 2200) : ""]));

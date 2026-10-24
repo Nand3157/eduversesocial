@@ -116,22 +116,22 @@ export async function signIn(_: AuthResult, formData: FormData): Promise<AuthRes
   // brute force even when it comes from rotating IP pools.
   const ip = await clientIp();
   const emailKey = parsed.data.email.toLowerCase();
-  if (!(await checkRateLimit(`login:ip:${ip}`, 10, 5 * 60_000)).allowed ||
-      !(await checkRateLimit(`login:email:${emailKey}`, 5, 15 * 60_000)).allowed) {
+  const [ipLimit, emailLimit] = await Promise.all([
+    checkRateLimit(`login:ip:${ip}`, 10, 5 * 60_000),
+    checkRateLimit(`login:email:${emailKey}`, 5, 15 * 60_000)
+  ]);
+  if (!ipLimit.allowed || !emailLimit.allowed) {
     return { error: RATE_LIMITED };
   }
   const supabase = await createClient();
   if (!supabase) return { error: "Supabase is not configured. Add the environment variables to enable authentication." };
-  const { error } = await supabase.auth.signInWithPassword(parsed.data);
+  const { data, error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error) return { error: error.message };
   // Remember the name entered at login so the dashboard greets the user by it on future logins.
   const name = nameSchema.safeParse(formData.get("name") ?? undefined);
-  if (name.success && name.data) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { error: profileError } = await supabase.from("profiles").upsert({ id: user.id, display_name: name.data }, { onConflict: "id" });
-      if (profileError) console.error("Failed to remember login name:", profileError);
-    }
+  if (name.success && name.data && data.user) {
+    const { error: profileError } = await supabase.from("profiles").upsert({ id: data.user.id, display_name: name.data }, { onConflict: "id" });
+    if (profileError) console.error("Failed to remember login name:", profileError);
   }
   // Only allow same-site relative redirects. `//evil.com` passes a bare
   // startsWith("/") check and browsers resolve it as a scheme-relative URL,
