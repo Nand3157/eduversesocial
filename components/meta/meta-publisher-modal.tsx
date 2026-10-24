@@ -202,6 +202,16 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess, initialCaption,
       });
       const data = await res.json();
       if (res.ok) {
+        const suggestedHashtags = Array.isArray(data.hashtags)
+          ? data.hashtags.filter((tag: unknown): tag is string => typeof tag === "string" && /^#[\p{L}\p{N}_]{1,29}$/u.test(tag))
+          : [];
+        if (suggestedHashtags.length) {
+          setHashtags((current) => {
+            const merged = new Map<string, string>();
+            [...current, ...suggestedHashtags].forEach((tag) => merged.set(tag.toLocaleLowerCase(), tag));
+            return [...merged.values()].slice(0, 8);
+          });
+        }
         if (Array.isArray(data.captions) && data.captions.length) {
           setHookSuggestions(data.captions as string[]);
           setCaption(data.captions[0] as string);
@@ -470,7 +480,7 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess, initialCaption,
                   className="inline-flex touch-manipulation items-center gap-1 py-1 text-[11px] font-semibold text-primary transition hover:text-primary-strong focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
                 >
                   {generatingHook ? <Loader2 aria-hidden="true" className="h-3 w-3 animate-spin" /> : <Wand2 aria-hidden="true" className="h-3 w-3" />}
-                  {generatingHook ? "Generating…" : "AI Hook Generator (3 variations)"}
+                  {generatingHook ? "Generating…" : "AI Hooks + Hashtags"}
                 </button>
               </div>
               <textarea
@@ -484,7 +494,7 @@ export function MetaPublisherModal({ isOpen, onClose, onSuccess, initialCaption,
                 placeholder="Write your caption — AI will create 3 hook variations from it…"
               />
               <div className="mt-1 flex justify-between text-[10px] text-faintText">
-                <span>The hook generator reads your images and links to craft single-sentence hooks.</span>
+                <span>Generate three hooks and relevant hashtags from your caption and media.</span>
                 <span className={caption.length > 2000 ? "text-warning-ink" : ""}>{caption.length}/2200</span>
               </div>
               {hookSuggestions.length > 0 && (

@@ -111,24 +111,23 @@ export async function POST(request: Request) {
     ? `LINKED CONTENT READ FROM THE URLS:\n${readableLinks.join("\n---\n")}`
     : "no readable link content — write from the uploaded images";
 
-  const prompt = `Write exactly ${variations} scroll-stopping hook lines for this post. Each hook is ONE sentence.
+  const prompt = `Write exactly ${variations} complete, distinct scroll-stopping hooks for this post, plus 4–6 relevant hashtags.
 
 TARGET PLATFORM: ${PLATFORM_HINTS[platform]}
 FORMAT: ${FORMAT_HINTS[mediaType]}
 ${toneHint}
-${imageCount > 0 ? `UPLOADED IMAGES ATTACHED TO THIS REQUEST: ${imageCount} image(s) — actually look at their visual content and reference the most striking detail.` : ""}
+${imageCount > 0 ? `UPLOADED IMAGES ATTACHED TO THIS REQUEST: ${imageCount} image(s) — look closely and describe only details clearly visible. Never guess the car's color, model, or features.` : ""}
 MEDIA SOURCES: ${mediaSummary}
 ${accountName ? `ACCOUNT: ${accountName}${accountHandle ? ` (${accountHandle})` : ""}` : ""}
 ${caption ? `DRAFT / TOPIC TO BUILD ON: "${caption}"` : "No draft supplied — invent a compelling angle from the images and links."}
 
 Hard constraints (non-negotiable):
-- Output exactly ${variations} sentences, each on its own line, numbered 1. 2. 3.
-- Each sentence: single sentence only, no second sentence, no CTA, no hashtags, no emoji run.
-- Keep each under 40 words.
+- Each hook must be one complete sentence ending with punctuation, under 30 words, with no CTA, hashtags, or emoji.
+- Make each hook usable as written; never end on a dangling word or unfinished phrase.
 - Match the platform's tone above${tone ? " and the tone override" : ""}.
 - Base hooks on what you actually see in images and read from links.
 - Do not invent statistics, follower counts, or results.
-- Return ONLY the numbered hook lines. No intro, no quotes, no markdown, no bullet points beyond the numbers.`;
+- Return 4–6 specific, relevant hashtags, without spaces; avoid generic tags like #viral.`;
 
   try {
     const client = new GoogleGenAI({ apiKey });
@@ -139,18 +138,35 @@ Hard constraints (non-negotiable):
         systemInstruction: "You are a senior social media copywriter. You write powerful scroll-stopping hook sentences, numbered, and never fabricate facts or metrics.",
         temperature: 0.85,
         maxOutputTokens: 400,
-        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }
+        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+        responseMimeType: "application/json",
+        responseJsonSchema: {
+          type: "object",
+          properties: {
+            hooks: { type: "array", items: { type: "string" }, minItems: variations, maxItems: variations },
+            hashtags: { type: "array", items: { type: "string" }, minItems: 4, maxItems: 6 }
+          },
+          required: ["hooks", "hashtags"],
+          propertyOrdering: ["hooks", "hashtags"]
+        }
       }
     });
     const text = result.text?.trim();
     if (!text) throw new Error("EMPTY_RESPONSE");
-    const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean).map((l) => l.replace(/^\d+[\.\)]\s*/, "").trim()).filter(Boolean);
-    const captions = lines.slice(0, variations).map(singleSentence).filter(Boolean);
-    if (captions.length === 0) throw new Error("EMPTY_RESPONSE");
-    if (captions.length === 1) return Response.json({ success: true, caption: captions[0], captions });
-    return Response.json({ success: true, caption: captions[0], captions });
+    let output: unknown;
+    try { output = JSON.parse(text); } catch { throw new Error("INCOMPLETE_RESPONSE"); }
+    const parsedOutput = z.object({ hooks: z.array(z.string().trim().min(1)).length(variations), hashtags: z.array(z.string().trim()).min(4).max(6) }).safeParse(output);
+    if (!parsedOutput.success) throw new Error("INCOMPLETE_RESPONSE");
+    const captions = parsedOutput.data.hooks.map(singleSentence);
+    if (captions.some((hook) => !/[.!?…]$/.test(hook))) throw new Error("INCOMPLETE_RESPONSE");
+    const hashtags = [...new Set(parsedOutput.data.hashtags.filter((tag) => /^#[\p{L}\p{N}_]{1,29}$/u.test(tag)).map((tag) => tag.toLocaleLowerCase()))].slice(0, 8);
+    if (hashtags.length < 4) throw new Error("INCOMPLETE_RESPONSE");
+    return Response.json({ success: true, caption: captions[0], captions, hashtags });
   } catch (error) {
     logger.error("hook_generation_failed", { reason: error instanceof Error ? error.message : "unknown" });
+    if (error instanceof Error && error.message === "INCOMPLETE_RESPONSE") {
+      return Response.json({ success: false, errorCode: "META_INCOMPLETE_RESPONSE", message: "Gemini returned incomplete hooks. Try generating again." }, { status: 502 });
+    }
     return Response.json({ success: false, errorCode: "META_API_ERROR", message: "The AI hook generator is unavailable. Check server configuration." }, { status: 503 });
   }
 }
