@@ -3,6 +3,37 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { clampSpeechText, stripMarkdownForSpeech } from "@/lib/speech/speech-text";
 
+const TTS_CACHE_TTL_MS = 10 * 60_000;
+const TTS_FALLBACK_CACHE_TTL_MS = 60_000;
+const TTS_CACHE_MAX_ENTRIES = 8;
+
+type CachedPlayback =
+  | { kind: "audio"; blob: Blob; expiresAt: number }
+  | { kind: "device"; expiresAt: number };
+
+function readCachedPlayback(cache: Map<string, CachedPlayback>, key: string) {
+  const entry = cache.get(key);
+  if (!entry) return null;
+  if (entry.expiresAt <= Date.now()) {
+    cache.delete(key);
+    return null;
+  }
+  // Refresh insertion order so the least recently used clip is evicted first.
+  cache.delete(key);
+  cache.set(key, entry);
+  return entry;
+}
+
+function storeCachedPlayback(cache: Map<string, CachedPlayback>, key: string, entry: CachedPlayback) {
+  cache.delete(key);
+  cache.set(key, entry);
+  while (cache.size > TTS_CACHE_MAX_ENTRIES) {
+    const oldestKey = cache.keys().next().value;
+    if (oldestKey === undefined) break;
+    cache.delete(oldestKey);
+  }
+}
+
 export type UseTts = {
   /** Message index currently loading audio (fetch in flight). */
   loadingIndex: number | null;
@@ -47,6 +78,10 @@ export function useTts(): UseTts {
   const objectUrlRef = useRef<string | null>(null);
   const playingForRef = useRef<number | null>(null);
   const deviceVoiceRef = useRef(false);
+  // Keep a small, short-lived per-session cache. Replaying the same reply does
+  // not spend another TTS call; provider failures also reuse the device voice
+  // briefly instead of immediately routing the same text to the provider again.
+  const playbackCacheRef = useRef(new Map<string, CachedPlayback>());
   // Monotonic token identifying the current playback attempt. Bumped by every
   // toggle and by stop(), so a fetch or play() that resolves late can tell it
   // has been superseded instead of hijacking whatever is playing now.
@@ -165,19 +200,34 @@ export function useTts(): UseTts {
         playDeviceVoice(index, text);
         return;
       }
+      const cacheKey = clampSpeechText(stripMarkdownForSpeech(text)) || text.trim();
+      const cached = readCachedPlayback(playbackCacheRef.current, cacheKey);
+      if (cached?.kind === "device") {
+        playDeviceVoice(index, text);
+        return;
+      }
       const request = ++requestRef.current;
       setLoadingIndex(index);
       void (async () => {
         try {
-          const response = await fetch("/api/ai/tts", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text })
-          });
-          if (!response.ok) {
-            throw new Error("Server synthesis unavailable.");
+          let blob = cached?.kind === "audio" ? cached.blob : null;
+          if (!blob) {
+            const response = await fetch("/api/ai/tts", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ text })
+            });
+            if (!response.ok) {
+              throw new Error("Server synthesis unavailable.");
+            }
+            blob = await response.blob();
+            if (requestRef.current !== request) return;
+            storeCachedPlayback(playbackCacheRef.current, cacheKey, {
+              kind: "audio",
+              blob,
+              expiresAt: Date.now() + TTS_CACHE_TTL_MS
+            });
           }
-          const blob = await response.blob();
           if (requestRef.current !== request) return;
           const url = URL.createObjectURL(blob);
           objectUrlRef.current = url;
@@ -199,6 +249,10 @@ export function useTts(): UseTts {
           // Stopped or superseded while the request was in flight — the user
           // asked for silence, not for the device voice.
           if (requestRef.current !== request) return;
+          storeCachedPlayback(playbackCacheRef.current, cacheKey, {
+            kind: "device",
+            expiresAt: Date.now() + TTS_FALLBACK_CACHE_TTL_MS
+          });
           playDeviceVoice(index, text);
         }
       })();
