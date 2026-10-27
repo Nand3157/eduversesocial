@@ -145,3 +145,7 @@ vite.config.ts.timestamp-*
 # macOS archive metadata (unzipped .zip artifacts, not part of the app)
 __MACOSX/
 ._*
+
+# Generated local analysis and visual review output
+graphify-out/
+.impeccable/review/
