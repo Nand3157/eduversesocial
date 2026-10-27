@@ -4,6 +4,7 @@ import { getWorkspaceContext, EDUVERSE_SYSTEM_PROMPT, isSelfHarmMessage, SELF_HA
 import { fetchMetaAnalytics } from "@/lib/meta-analytics";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { logger } from "@/lib/logger";
 import { DEFAULT_GEMINI_MODEL, getGeminiDisplayName, getGeminiModel } from "@/lib/ai/model";
 
@@ -75,6 +76,15 @@ const FAST_GEMINI_MODEL = getGeminiModel(process.env.GEMINI_FAST_MODEL || DEFAUL
 // chat_messages.content_check caps a row at 20 000 characters. 4096 tokens is
 // roughly 16k characters of prose, so replies are clamped before persistence.
 const MAX_PERSISTED_CHARACTERS = 20_000;
+
+async function persistAssistantMessage(conversationId: string, content: string) {
+  // This write is server-generated. Authenticated clients are intentionally
+  // restricted to inserting user turns by the chat_messages RLS policy.
+  const service = createServiceClient();
+  if (!service) throw new Error("Trusted chat persistence is unavailable.");
+  const { error } = await service.from("chat_messages").insert({ conversation_id: conversationId, role: "assistant", content });
+  if (error) throw error;
+}
 
 type Provider = "gemini" | "snapshot";
 
@@ -448,8 +458,7 @@ export async function POST(request: Request) {
         controller.enqueue(encoder.encode(safeAnswer));
         if (conversationId) {
           try {
-            const { error: messageError } = await supabase.from("chat_messages").insert({ conversation_id: conversationId, role: "assistant", content: safeAnswer });
-            if (messageError) throw messageError;
+            await persistAssistantMessage(conversationId, safeAnswer);
             const { error: conversationError } = await supabase.from("chat_conversations").update({ updated_at: new Date().toISOString() }).eq("id", conversationId);
             if (conversationError) throw conversationError;
           } catch (e) {
@@ -513,8 +522,7 @@ export async function POST(request: Request) {
         }
         if (conversationId && answer.trim()) {
           try {
-            const { error: messageError } = await supabase.from("chat_messages").insert({ conversation_id: conversationId, role: "assistant", content: answer.trim().slice(0, MAX_PERSISTED_CHARACTERS) });
-            if (messageError) throw messageError;
+            await persistAssistantMessage(conversationId, answer.trim().slice(0, MAX_PERSISTED_CHARACTERS));
             const { error: conversationError } = await supabase.from("chat_conversations").update({ updated_at: new Date().toISOString() }).eq("id", conversationId);
             if (conversationError) throw conversationError;
           } catch (error) {
