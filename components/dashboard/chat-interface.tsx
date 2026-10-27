@@ -14,6 +14,7 @@ import { VOICE_LANGUAGES } from "@/lib/ai/voice-input";
 import { decodeClipToPcm } from "@/lib/audio/pcm-clip";
 import { useDashboardStore } from "@/lib/stores/dashboard-store";
 import { accountStorageKey } from "@/lib/account-storage";
+import { DEFAULT_TTS_PRESENTATION, isTtsPresentation, TTS_PREFERENCE_STORAGE_KEY, type TtsPresentation } from "@/lib/ai/tts-preference";
 
 type Message = {
   role: "assistant" | "user";
@@ -337,7 +338,9 @@ export function ChatInterface() {
   const { data: analytics } = useAnalytics();
   const userEmail = useDashboardStore((state) => state.userEmail);
   const voiceModeStorageKey = accountStorageKey("eduverse:voice-mode", userEmail);
+  const ttsPreferenceStorageKey = accountStorageKey(TTS_PREFERENCE_STORAGE_KEY, userEmail);
   const chatCacheKey = accountStorageKey("eduverse:chat-history", userEmail);
+  const [ttsPresentation, setTtsPresentation] = useState<TtsPresentation>(DEFAULT_TTS_PRESENTATION);
   const [messages, setMessages] = useState<Message[]>([welcome]);
   const [hasOlderMessages, setHasOlderMessages] = useState(false);
   const [loadingOlderMessages, setLoadingOlderMessages] = useState(false);
@@ -353,6 +356,17 @@ export function ChatInterface() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loadingConversation, setLoadingConversation] = useState(false);
   const [deletingConversationId, setDeletingConversationId] = useState<string | null>(null);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      try {
+        const saved = localStorage.getItem(ttsPreferenceStorageKey);
+        setTtsPresentation(isTtsPresentation(saved) ? saved : DEFAULT_TTS_PRESENTATION);
+      } catch {
+        setTtsPresentation(DEFAULT_TTS_PRESENTATION);
+      }
+    });
+  }, [ttsPreferenceStorageKey]);
   const [conversationError, setConversationError] = useState<string | null>(null);
   // Mobile-only disclosure for the conversation list (the desktop aside is lg+).
   const [conversationsOpen, setConversationsOpen] = useState(false);
@@ -451,8 +465,8 @@ export function ChatInterface() {
     const signature = voiceSignature(messages.length - 1, last.content);
     if (voiceSpokenRef.current === signature) return;
     voiceSpokenRef.current = signature;
-    ttsToggle(messages.length - 1, last.content);
-  }, [voiceMode, thinking, messages, ttsToggle]);
+    ttsToggle(messages.length - 1, last.content, ttsPresentation);
+  }, [voiceMode, thinking, messages, ttsToggle, ttsPresentation]);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -836,13 +850,14 @@ export function ChatInterface() {
   }
 
   return (
-    <div className="grid h-[calc(100dvh_-_160px_-_env(safe-area-inset-bottom))] min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-2xl border border-borderSoft bg-card shadow-sm sm:h-[calc(100dvh_-_168px_-_env(safe-area-inset-bottom))] lg:h-[calc(100dvh-150px)] lg:grid-cols-[240px_1fr] lg:grid-rows-[minmax(0,1fr)]">
+    <div className="grid h-[calc(100dvh_-_160px_-_env(safe-area-inset-bottom))] min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-2xl border border-borderSoft bg-card shadow-sm sm:h-[calc(100dvh_-_168px_-_env(safe-area-inset-bottom))] lg:h-[calc(100dvh-150px)] lg:grid-cols-[240px_1fr] lg:grid-rows-[minmax(0,1fr)]">
       {/* Compact conversation switcher for phones/tablets — the aside below is lg+ only */}
-      <div className="max-h-[55dvh] overflow-y-auto border-b border-borderSoft bg-surface p-3 lg:hidden">
+      <div className="max-h-[38dvh] overflow-y-auto border-b border-borderSoft bg-surface p-2.5 sm:max-h-[55dvh] sm:p-3 lg:hidden">
         <div className="flex items-center gap-2">
-          <Button className="bg-ink text-background hover:bg-ink/90" onClick={startNewConversation} size="sm">
+          <Button aria-label="New conversation" className="shrink-0 bg-ink text-background hover:bg-ink/90" onClick={startNewConversation} size="sm">
             <Sparkles aria-hidden="true" className="h-4 w-4" />
-            New conversation
+            <span className="sm:hidden">New</span>
+            <span className="hidden sm:inline">New conversation</span>
           </Button>
           <Button
             aria-controls="mobile-conversation-list"
@@ -852,7 +867,8 @@ export function ChatInterface() {
             size="sm"
             variant="secondary"
           >
-            <span>Saved conversations ({conversations.length})</span>
+            <span className="truncate sm:hidden">Saved ({conversations.length})</span>
+            <span className="hidden sm:inline">Saved conversations ({conversations.length})</span>
             <ChevronDown aria-hidden="true" className={`h-3.5 w-3.5 transition-transform ${conversationsOpen ? "rotate-180" : ""}`} />
           </Button>
         </div>
@@ -935,17 +951,17 @@ export function ChatInterface() {
       {/* Chat panel */}
       <section className="flex min-h-0 flex-col overflow-hidden">
         {/* Header */}
-        <div className="shrink-0 border-b border-borderSoft p-5">
+        <div className="shrink-0 border-b border-borderSoft px-3 py-3 sm:p-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <span aria-hidden="true" className="grid h-9 w-9 place-items-center rounded-full bg-primary text-background">
                 <Bot className="h-4 w-4" />
               </span>
-              <div>
-                <h1 className="font-heading text-lg font-medium text-ink">EduVerse Assistant</h1>
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-xs text-success">{activeProvider} · memory-aware</p>
-                  <AnalyticsAccountSelector />
+              <div className="min-w-0">
+                <h1 className="truncate font-heading text-base font-medium text-ink sm:text-lg">EduVerse Assistant</h1>
+                <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                  <p className="truncate text-xs text-success">{activeProvider} · memory-aware</p>
+                  <span className="hidden lg:inline-flex"><AnalyticsAccountSelector /></span>
                 </div>
               </div>
             </div>
@@ -972,7 +988,7 @@ export function ChatInterface() {
         </div>
 
         {/* Messages */}
-        <div ref={scrollContainerRef} role="log" aria-live="polite" aria-label="Conversation messages" className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain p-5">
+        <div ref={scrollContainerRef} role="log" aria-live="polite" aria-label="Conversation messages" className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-3 sm:space-y-5 sm:p-5">
           {hasOlderMessages && (
             <div className="flex flex-col items-center gap-2">
               <button
@@ -1011,8 +1027,8 @@ export function ChatInterface() {
                 <div
                   className={
                     message.role === "user"
-                      ? "ml-auto max-w-xl rounded-2xl rounded-tr-sm bg-ink p-4 text-sm leading-6 text-background"
-                      : "max-w-xl rounded-2xl rounded-tl-sm border border-borderSoft bg-surface p-4 text-sm leading-6 text-ink"
+                      ? "ml-auto max-w-xl break-words rounded-2xl rounded-tr-sm bg-ink p-4 text-sm leading-6 text-background"
+                      : "max-w-xl break-words rounded-2xl rounded-tl-sm border border-borderSoft bg-surface p-4 text-sm leading-6 text-ink"
                   }
                 >
                   {message.role === "user" ? (
@@ -1024,7 +1040,7 @@ export function ChatInterface() {
                         <div className="mt-3 flex items-center gap-2">
                           <button
                             type="button"
-                            onClick={() => tts.toggle(index, message.content)}
+                            onClick={() => tts.toggle(index, message.content, ttsPresentation)}
                             disabled={tts.unsupported || (tts.loadingIndex !== null && tts.loadingIndex !== index) || Boolean(tts.playingIndex !== null && tts.playingIndex !== index)}
                             aria-label={tts.playingIndex === index ? "Stop reading aloud" : "Read this reply aloud"}
                             title={tts.playingIndex === index ? (tts.usingDeviceVoice ? "Stop (device voice)" : "Stop") : "Read aloud"}
@@ -1076,7 +1092,7 @@ export function ChatInterface() {
         </div>
 
         {/* Input area */}
-        <div className="shrink-0 border-t border-borderSoft p-4">
+        <div className="shrink-0 border-t border-borderSoft p-3 sm:p-4">
           {persistenceWarning && (
             <p role="status" className="mb-3 flex items-center gap-1.5 rounded-xl border border-[var(--warn)] bg-[var(--warn-soft)] px-3 py-2 text-xs text-warning-ink">
               <CloudOff aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
@@ -1211,7 +1227,7 @@ export function ChatInterface() {
               id="chat-message"
               rows={1}
               className="max-h-40 min-w-0 flex-1 resize-none rounded-2xl border border-borderSoft bg-surface px-4 py-3 text-sm text-ink outline-none transition-[border-color,box-shadow] placeholder:text-faintText focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/40"
-              placeholder="Ask about your audience…"
+              placeholder="Ask a question…"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -1228,14 +1244,14 @@ export function ChatInterface() {
             </Button>
           </form>
 
-          <div className="mt-2 flex items-center justify-center gap-1.5 text-[10px] text-faintText">
+          <div className="mt-2 flex min-w-0 items-center justify-center gap-1.5 text-[10px] text-faintText sm:text-center">
             <Globe aria-hidden="true" className="h-3 w-3" />
             <label className="sr-only" htmlFor="voice-language">Speech language for voice input</label>
             <select
               id="voice-language"
               value={languageCode}
               onChange={(e) => setLanguageCode(e.target.value)}
-              className="max-w-[220px] cursor-pointer truncate rounded-md border border-transparent bg-transparent py-0.5 text-[10px] text-mutedText outline-none transition hover:border-borderSoft focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="max-w-[190px] cursor-pointer truncate rounded-md border border-transparent bg-transparent py-0.5 text-xs text-mutedText outline-none transition hover:border-borderSoft focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 sm:max-w-[220px] sm:text-[10px]"
             >
               {VOICE_LANGUAGES.map((language) => (
                 <option key={language.code} value={language.code}>
@@ -1243,10 +1259,10 @@ export function ChatInterface() {
                 </option>
               ))}
             </select>
-            <span aria-hidden="true">·</span>
-            <span>Voice transcription powered by Gemini 3.5 Transcribe</span>
+            <span aria-hidden="true" className="hidden sm:inline">·</span>
+            <span className="hidden sm:inline">Voice transcription powered by Gemini 3.5 Transcribe</span>
           </div>
-          <p className="mt-1 text-center text-[10px] text-faintText">
+          <p className="mt-1 hidden text-center text-[10px] text-faintText sm:block">
             Enter to send · Shift+Enter for new line · Image, voice and read-aloud supported
           </p>
         </div>

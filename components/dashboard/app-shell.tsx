@@ -269,12 +269,12 @@ export function AppShell({ children, email, profile, initialAnalytics }: { child
             </div>
 
             <div className="ml-auto flex items-center gap-2">
-              <AnalyticsAccountSelector />
+              <AnalyticsAccountSelector compactMobile />
               <button onClick={() => setPublisherModalOpen(true)} className="hidden items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold tracking-tight text-primary-foreground shadow-sm hover:bg-primary-strong sm:inline-flex">
                 <Send aria-hidden="true" className="h-3.5 w-3.5" /> Schedule post
               </button>
               <ThemeToggle />
-              <Button asChild aria-label="Notifications" size="icon" variant="secondary" className="bg-surface border-borderSoft text-mutedText hover:text-ink">
+              <Button asChild aria-label="Notifications" size="icon" variant="secondary" className="hidden bg-surface border-borderSoft text-mutedText hover:text-ink sm:inline-flex">
                 <Link href="/dashboard/notifications"><Bell aria-hidden="true" className="h-4 w-4" /></Link>
               </Button>
               <form action={signOut}>
@@ -285,9 +285,9 @@ export function AppShell({ children, email, profile, initialAnalytics }: { child
             </div>
           </GlassHeader>
 
-          <main id="main-content" className="p-4 pb-[calc(80px_+_env(safe-area-inset-bottom))] sm:p-6 sm:pb-[calc(80px_+_env(safe-area-inset-bottom))] lg:p-8 lg:pb-8">
+          <main id="main-content" className="min-w-0 p-4 pb-[calc(80px_+_env(safe-area-inset-bottom))] sm:p-6 sm:pb-[calc(80px_+_env(safe-area-inset-bottom))] lg:p-8 lg:pb-8">
             <AnalyticsErrorBanner />
-            <motion.div key={pathname} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}>
+            <motion.div key={pathname} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }} className="min-w-0">
               {children}
             </motion.div>
           </main>

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { clampSpeechText, stripMarkdownForSpeech } from "@/lib/speech/speech-text";
+import { TTS_VOICE_BY_PRESENTATION, type TtsPresentation } from "@/lib/ai/tts-preference";
 
 const TTS_CACHE_TTL_MS = 10 * 60_000;
 const TTS_FALLBACK_CACHE_TTL_MS = 60_000;
@@ -46,7 +47,7 @@ export type UseTts = {
   /** True while the current playback uses the on-device voice fallback. */
   usingDeviceVoice: boolean;
   /** Toggle play/stop for a message. Only one clip plays at a time. */
-  toggle: (index: number, text: string) => void;
+  toggle: (index: number, text: string, presentation: TtsPresentation) => void;
   /** Stop playback and clear pending audio. */
   stop: () => void;
 };
@@ -152,7 +153,7 @@ export function useTts(): UseTts {
   }, []);
 
   /** Fallback path: speak the stripped text with the browser's own voice. */
-  const playDeviceVoice = useCallback((index: number, text: string) => {
+  const playDeviceVoice = useCallback((index: number, text: string, presentation: TtsPresentation) => {
     if (typeof window === "undefined" || !("speechSynthesis" in window) || typeof SpeechSynthesisUtterance === "undefined") {
       setErrorIndex(index);
       return;
@@ -160,6 +161,12 @@ export function useTts(): UseTts {
     const synth = window.speechSynthesis;
     synth.cancel();
     const utterance = new SpeechSynthesisUtterance(clampSpeechText(stripMarkdownForSpeech(text)));
+    const names = synth.getVoices();
+    const genderPattern = presentation === "female"
+      ? /\b(female|woman|samantha|victoria|karen|zira|susan|ava|allison|aria|jenny)\b/i
+      : /\b(male|man|david|alex|daniel|james|fred|george|mark|guy|ryan)\b/i;
+    const matchingVoice = names.find((voice) => genderPattern.test(voice.name));
+    if (matchingVoice) utterance.voice = matchingVoice;
     playingForRef.current = index;
     deviceVoiceRef.current = true;
     utterance.onend = () => {
@@ -185,7 +192,7 @@ export function useTts(): UseTts {
   }, []);
 
   const toggle = useCallback(
-    (index: number, text: string) => {
+    (index: number, text: string, presentation: TtsPresentation) => {
       setErrorIndex(null);
       // Second click on the playing message stops it (either engine).
       if (playingForRef.current === index) {
@@ -197,13 +204,14 @@ export function useTts(): UseTts {
       // Server-quality voice first; the device voice is the fallback.
       const element = audioRef.current;
       if (!element) {
-        playDeviceVoice(index, text);
+        playDeviceVoice(index, text, presentation);
         return;
       }
-      const cacheKey = clampSpeechText(stripMarkdownForSpeech(text)) || text.trim();
+      const voice = TTS_VOICE_BY_PRESENTATION[presentation];
+      const cacheKey = `${voice}:${clampSpeechText(stripMarkdownForSpeech(text)) || text.trim()}`;
       const cached = readCachedPlayback(playbackCacheRef.current, cacheKey);
       if (cached?.kind === "device") {
-        playDeviceVoice(index, text);
+        playDeviceVoice(index, text, presentation);
         return;
       }
       const request = ++requestRef.current;
@@ -215,7 +223,7 @@ export function useTts(): UseTts {
             const response = await fetch("/api/ai/tts", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ text })
+              body: JSON.stringify({ text, voice })
             });
             if (!response.ok) {
               throw new Error("Server synthesis unavailable.");
@@ -253,7 +261,7 @@ export function useTts(): UseTts {
             kind: "device",
             expiresAt: Date.now() + TTS_FALLBACK_CACHE_TTL_MS
           });
-          playDeviceVoice(index, text);
+          playDeviceVoice(index, text, presentation);
         }
       })();
     },

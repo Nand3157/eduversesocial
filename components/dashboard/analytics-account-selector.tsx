@@ -18,7 +18,7 @@ function platformName(platform: Account["platform"]) {
   return platform === "facebook" ? "Facebook" : platform === "instagram" ? "Instagram" : "Threads";
 }
 
-export function AnalyticsAccountSelector() {
+export function AnalyticsAccountSelector({ compactMobile = false }: { compactMobile?: boolean }) {
   const { accounts, selectedAccountId, selectAccount, loading } = useAnalytics();
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -120,19 +120,19 @@ export function AnalyticsAccountSelector() {
           setActiveIndex(selectedIndex);
           setOpen((value) => !value);
         }}
-        className="group flex h-10 min-w-0 max-w-[220px] items-center gap-2 rounded-xl border border-borderSoft bg-card px-2 text-left shadow-sm transition duration-200 hover:border-primary/40 hover:bg-surface focus-visible:border-primary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 sm:max-w-[260px]"
+        className={`group flex h-10 min-w-0 max-w-[220px] items-center gap-2 rounded-xl border border-borderSoft bg-card px-2 text-left shadow-sm transition duration-200 hover:border-primary/40 hover:bg-surface focus-visible:border-primary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 sm:max-w-[260px] ${compactMobile ? "w-10 justify-center px-0 sm:w-auto sm:justify-start sm:px-2" : ""}`}
       >
         <span aria-hidden="true" className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-accent-soft text-primary transition group-hover:bg-primary group-hover:text-primary-foreground">
           <PlatformIcon platform={selected?.platform} className="h-3.5 w-3.5" />
         </span>
-        <span className="flex min-w-0 flex-1 flex-col leading-tight">
+        <span className={`flex min-w-0 flex-1 flex-col leading-tight ${compactMobile ? "hidden sm:flex" : ""}`}>
           <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-faintText">Account</span>
           <span className="truncate text-xs font-semibold text-ink">{selectedLabel}</span>
         </span>
         {loading ? (
-          <Loader2 aria-hidden="true" className="h-3.5 w-3.5 shrink-0 animate-spin text-primary" />
+          <Loader2 aria-hidden="true" className={`h-3.5 w-3.5 shrink-0 animate-spin text-primary ${compactMobile ? "hidden sm:block" : ""}`} />
         ) : (
-          <ChevronDown aria-hidden="true" className={`h-3.5 w-3.5 shrink-0 text-faintText transition duration-200 group-hover:text-primary ${open ? "rotate-180 text-primary" : ""}`} />
+          <ChevronDown aria-hidden="true" className={`h-3.5 w-3.5 shrink-0 text-faintText transition duration-200 group-hover:text-primary ${open ? "rotate-180 text-primary" : ""} ${compactMobile ? "hidden sm:block" : ""}`} />
         )}
       </button>
 

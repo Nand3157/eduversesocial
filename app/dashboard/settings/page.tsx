@@ -25,6 +25,7 @@ import type { MetaAccount } from "@/lib/meta-api";
 
 import { useDashboardStore } from "@/lib/stores/dashboard-store";
 import { accountStorageKey } from "@/lib/account-storage";
+import { DEFAULT_TTS_PRESENTATION, isTtsPresentation, TTS_PREFERENCE_STORAGE_KEY, type TtsPresentation } from "@/lib/ai/tts-preference";
 
 const SETTINGS_INPUT =
   "mt-1.5 h-10 w-full rounded-xl border border-borderSoft bg-surface px-3 text-sm outline-none transition focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 dark:border-borderSoft dark:bg-surface/[0.04]";
@@ -37,6 +38,26 @@ export default function SettingsPage() {
   const teamStorageKey = accountStorageKey("eduverse:team-members", userEmail);
   const notificationStorageKey = accountStorageKey("eduverse:notification-preferences", userEmail);
   const csvStorageKey = accountStorageKey("eduverse:csv-import", userEmail);
+  const ttsPreferenceStorageKey = accountStorageKey(TTS_PREFERENCE_STORAGE_KEY, userEmail);
+  const [ttsPresentation, setTtsPresentation] = useState<TtsPresentation>(DEFAULT_TTS_PRESENTATION);
+  const [ttsPreferenceLoadedFor, setTtsPreferenceLoadedFor] = useState("");
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      try {
+        const saved = localStorage.getItem(ttsPreferenceStorageKey);
+        setTtsPresentation(isTtsPresentation(saved) ? saved : DEFAULT_TTS_PRESENTATION);
+      } catch {
+        setTtsPresentation(DEFAULT_TTS_PRESENTATION);
+      }
+      setTtsPreferenceLoadedFor(ttsPreferenceStorageKey);
+    });
+  }, [ttsPreferenceStorageKey]);
+
+  useEffect(() => {
+    if (ttsPreferenceLoadedFor !== ttsPreferenceStorageKey) return;
+    try { localStorage.setItem(ttsPreferenceStorageKey, ttsPresentation); } catch {}
+  }, [ttsPresentation, ttsPreferenceLoadedFor, ttsPreferenceStorageKey]);
 
   // Local modal form state
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -401,7 +422,7 @@ export default function SettingsPage() {
 
       {/* Floating Toast Notification */}
       {toastMessage && (
-        <div role="status" aria-live="polite" className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] right-[calc(1.5rem+env(safe-area-inset-right))] z-50 flex items-center gap-2 rounded-xl bg-ink px-4 py-3 text-sm font-medium text-background shadow-glass animate-in fade-in slide-in-from-bottom-5">
+        <div role="status" aria-live="polite" className="fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] left-4 right-4 z-50 flex items-center gap-2 rounded-xl bg-ink px-4 py-3 text-sm font-medium text-background shadow-glass animate-in fade-in slide-in-from-bottom-5 sm:bottom-[calc(1.5rem+env(safe-area-inset-bottom))] sm:left-auto sm:right-[calc(1.5rem+env(safe-area-inset-right))]">
           <CheckCircle2 aria-hidden="true" className="h-4 w-4 shrink-0 text-success" />
           <span>{toastMessage}</span>
           {lastRemovedMember && toastMessage.startsWith("Removed") && (
@@ -545,6 +566,30 @@ export default function SettingsPage() {
                 Preferences
               </Button>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Read-aloud voice Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Read-aloud voice</CardTitle>
+            <CardDescription>Choose the same voice for Listen and voice mode.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div role="group" aria-label="Read-aloud voice presentation" className="grid grid-cols-2 gap-2">
+              {(["female", "male"] as const).map((presentation) => (
+                <button
+                  key={presentation}
+                  type="button"
+                  aria-pressed={ttsPresentation === presentation}
+                  onClick={() => setTtsPresentation(presentation)}
+                  className={`min-h-10 rounded-xl border px-3 text-sm font-medium capitalize transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${ttsPresentation === presentation ? "border-primary bg-primary/10 text-primary" : "border-borderSoft bg-surface text-mutedText hover:text-ink"}`}
+                >
+                  {presentation}
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-mutedText">Saved in this browser for this account.</p>
           </CardContent>
         </Card>
 

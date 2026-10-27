@@ -155,7 +155,7 @@ export default function ReviewsModerationPage() {
       )}
 
       {toast && (
-        <div role="status" aria-live="polite" className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] right-[calc(1.5rem+env(safe-area-inset-right))] z-50 flex items-center gap-2 rounded-xl bg-ink px-4 py-3 text-sm font-medium text-background shadow-glass">
+        <div role="status" aria-live="polite" className="fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] left-4 right-4 z-50 flex items-center gap-2 rounded-xl bg-ink px-4 py-3 text-sm font-medium text-background shadow-glass sm:bottom-[calc(1.5rem+env(safe-area-inset-bottom))] sm:left-auto sm:right-[calc(1.5rem+env(safe-area-inset-right))]">
           <CheckCircle2 aria-hidden="true" className="h-4 w-4 shrink-0 text-success" />
           <span>{toast}</span>
         </div>
