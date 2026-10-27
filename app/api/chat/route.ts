@@ -93,6 +93,7 @@ function latestUserMessage(messages: ChatMessage[]) {
 }
 
 const RECENT_POST_LOOKUP = /\b(?:latest|recent|newest|last)\s+(?:(?:published|meta|facebook|instagram|threads)\s+){0,2}posts?\b|\bposts?\s+(?:i|we)\s+(?:posted|published)\s+(?:most\s+)?recently\b|\bwhat did (?:i|we)\s+(?:post|publish)\s+(?:last|recently)\b/i;
+const ACCOUNT_NAME_LOOKUP = /\b(?:account|profile)\b.{0,24}\b(?:name|handle|username|called)\b|\b(?:name|handle|username|called)\b.{0,24}\b(?:account|profile)\b|\b(?:my|the)\s+(?:instagram|insta|ig|facebook|fb|threads)\s+(?:(?:account|profile)\s+)?(?:name|handle|username)\b/i;
 
 function formatCount(value: string) {
   const number = Number(value.replace(/,/g, ""));
@@ -101,6 +102,27 @@ function formatCount(value: string) {
 
 function getSnapshotAnswer(question: string, snapshot?: WorkspaceSnapshot) {
   if (!snapshot || /\b(why|analy[sz]e|analysis|compare|comparison|strategy|recommend|forecast|trend|explain|evaluate|perform(?:ed|ance)? well|underperform)\b/i.test(question)) return null;
+
+  if (ACCOUNT_NAME_LOOKUP.test(question)) {
+    const requestedPlatform = /\b(?:instagram|insta|ig)\b/i.test(question)
+      ? "instagram"
+      : /\b(?:facebook|fb)\b/i.test(question)
+        ? "facebook"
+        : /\bthreads\b/i.test(question)
+          ? "threads"
+          : null;
+    const accounts = snapshot.accounts.filter((account) => !requestedPlatform || account.platform.toLowerCase() === requestedPlatform);
+    if (!accounts.length) {
+      return requestedPlatform
+        ? `I don't see a connected ${requestedPlatform === "instagram" ? "Instagram" : requestedPlatform === "facebook" ? "Facebook" : "Threads"} account in the current live snapshot.`
+        : "I don't see any connected accounts in the current live snapshot.";
+    }
+    return accounts.map((account) => {
+      const platform = account.platform.charAt(0).toUpperCase() + account.platform.slice(1);
+      const handle = account.handle?.trim();
+      return `${platform}: ${account.name}${handle && handle.toLowerCase() !== account.name.toLowerCase() ? ` (${handle})` : ""}`;
+    }).join("\n");
+  }
 
   if (RECENT_POST_LOOKUP.test(question) || /\bwhat(?:'s| is) my latest post\b/i.test(question)) {
     const post = snapshot.recentPosts[0];
@@ -128,6 +150,46 @@ function getSnapshotAnswer(question: string, snapshot?: WorkspaceSnapshot) {
   if (!metric || !/\b(what|how many|how much|show|give|total|current|my)\b/i.test(question)) return null;
   if (metric.value === null) return `${metric.label} isn’t available in the current Meta snapshot.`;
   return `${metric.label}: ${new Intl.NumberFormat("en", { maximumFractionDigits: 1 }).format(metric.value)}${metric.suffix}.`;
+}
+
+async function getConnectedAccountAnswer(
+  supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>,
+  userId: string,
+  question: string,
+  snapshot?: WorkspaceSnapshot
+) {
+  const workspaceId = await getWorkspaceId(supabase, userId);
+  if (workspaceId) {
+    const { data, error } = await supabase
+      .from("social_accounts")
+      .select("display_name,username,handle,platform")
+      .eq("workspace_id", workspaceId)
+      .neq("status", "disconnected");
+    if (!error && data) {
+      const requestedPlatform = /\b(?:instagram|insta|ig)\b/i.test(question)
+        ? "instagram"
+        : /\b(?:facebook|fb)\b/i.test(question)
+          ? "facebook"
+          : /\bthreads\b/i.test(question)
+            ? "threads"
+            : null;
+      const accounts = data.filter((account) => !requestedPlatform || account.platform.toLowerCase() === requestedPlatform);
+      if (accounts.length) {
+        return accounts.map((account) => {
+          const name = account.display_name || account.username || account.handle || "Unnamed account";
+          const handle = account.username ? `@${account.username}` : account.handle;
+          const platform = account.platform.charAt(0).toUpperCase() + account.platform.slice(1);
+          return `${platform}: ${name}${handle && handle.toLowerCase() !== name.toLowerCase() ? ` (${handle})` : ""}`;
+        }).join("\n");
+      }
+      const snapshotAnswer = getSnapshotAnswer(question, snapshot);
+      if (snapshotAnswer) return snapshotAnswer;
+      return requestedPlatform
+        ? `There isn't a connected ${requestedPlatform === "instagram" ? "Instagram" : requestedPlatform === "facebook" ? "Facebook" : "Threads"} account in this workspace yet.`
+        : "There aren't any connected social accounts in this workspace yet.";
+    }
+  }
+  return getSnapshotAnswer(question, snapshot);
 }
 
 async function* singleChunk(text: string) {
@@ -211,7 +273,7 @@ const workspaceContextPending = new Map<string, Promise<string>>();
 
 function needsMetaContext(messages: ChatMessage[]) {
   const latest = latestUserMessage(messages);
-  return Boolean(latest && (RECENT_POST_LOOKUP.test(latest.content) || /\b(analytics?|insights?|audience|followers?|reach|impressions?|engagement|best[ -]?times?|posting window|instagram|facebook|threads|meta account|connected account|perform\w*|underperform\w*|worst|strongest|weakest|top[ -]?perform\w*|best[ -]?perform\w*|metrics|growth|reels?|carousel)\b/i.test(latest.content)));
+  return Boolean(latest && (RECENT_POST_LOOKUP.test(latest.content) || ACCOUNT_NAME_LOOKUP.test(latest.content) || /\b(analytics?|insights?|audience|followers?|reach|impressions?|engagement|best[ -]?times?|posting window|instagram|insta|ig account|facebook|threads|meta account|connected account|perform\w*|underperform\w*|worst|strongest|weakest|top[ -]?perform\w*|best[ -]?perform\w*|metrics|growth|reels?|carousel)\b/i.test(latest.content)));
 }
 
 async function getLiveWorkspaceContext(userId?: string, allowLiveFetch = false) {
@@ -403,7 +465,12 @@ export async function POST(request: Request) {
   const isSelfHarm = isSelfHarmMessage(latest.content);
   const clientSnapshot = parsed.data.workspaceSnapshot;
   const includeMetaContext = needsMetaContext(parsed.data.messages);
-  const fastAnswer = isSelfHarm ? null : getSnapshotAnswer(latest.content, clientSnapshot);
+  const isAccountNameLookup = ACCOUNT_NAME_LOOKUP.test(latest.content);
+  const fastAnswer = isSelfHarm
+    ? null
+    : isAccountNameLookup
+      ? await getConnectedAccountAnswer(supabase, user.id, latest.content, clientSnapshot)
+      : getSnapshotAnswer(latest.content, clientSnapshot);
   const workspaceContextPromise = fastAnswer
     ? Promise.resolve(SKIPPED_WORKSPACE_CONTEXT)
     : !isSelfHarm
